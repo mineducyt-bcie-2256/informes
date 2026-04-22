@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"C:\\\\informe-bcie\\\\.claude\")",
+      "Bash(npx tsc:*)",
+      "Bash(pandoc \"I:\\\\Mi unidad\\\\BCIE 2025\\\\Formatos y seguimiento\\\\Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\" -o output.md)",
+      "Bash(pandoc \"I:\\\\Mi unidad\\\\BCIE 2025\\\\Formatos y seguimiento\\\\Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\" -t plain)",
+      "Bash(findstr -i \"react-pdf\\\\|pdf\")",
+      "Bash(findstr /i \"react-pdf\\\\|pdf\")"
+    ]
+  }
+}

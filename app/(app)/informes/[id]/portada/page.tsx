@@ -1,0 +1,340 @@
+'use client'
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import FormWrapper from '@/components/forms/FormWrapper'
+import { FileText, Building2, User, Briefcase, Hash, PenLine } from 'lucide-react'
+import { MESES } from '@/types'
+
+// ── Tipos ─────────────────────────────────────────────────────────
+interface EscuelaData {
+  nombre: string
+  codigo: string
+  empresa_supervision: string
+  empresa_obras: string
+  numero_contrato: string
+  periodo_mes: number
+  periodo_anio: number
+}
+
+interface Especialista {
+  id: string
+  nombre: string
+  cargo: string | null
+  rol: string
+}
+
+const INIT = {
+  numero_informe:              '' as string | number,
+  nombre_proyecto:             '',
+  numero_contrato_supervision: '',
+  elaborado_por_id:            '',
+  elaborado_por_cargo:         '',
+}
+
+const inputCls  = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+const autoCls   = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-600 cursor-default'
+const labelCls  = 'text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1.5 block'
+const sectionHdr= 'text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4 pb-2 border-b border-slate-100'
+
+// ── Campo de solo lectura (auto) ──────────────────────────────────
+function CampoAuto({ label, value, icon: Icon }: { label: string; value: string; icon?: any }) {
+  return (
+    <div>
+      <label className={labelCls}>{label}</label>
+      <div className={`${autoCls} flex items-center gap-2`}>
+        {Icon && <Icon size={14} className="text-slate-400 shrink-0" />}
+        <span className={value ? '' : 'text-slate-400 italic'}>{value || 'Sin datos'}</span>
+        <span className="ml-auto text-xs text-blue-400 font-medium shrink-0">auto</span>
+      </div>
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════
+// PÁGINA
+// ════════════════════════════════════════════════════════════════
+export default function PortadaPage() {
+  const { id } = useParams<{ id: string }>()
+  const [form,           setForm]           = useState(INIT)
+  const [escuela,        setEscuela]        = useState<EscuelaData | null>(null)
+  const [especialistas,  setEspecialistas]  = useState<Especialista[]>([])
+  const [autoNumero,     setAutoNumero]     = useState<number | null>(null)
+  const supabase = createClient()
+
+  useEffect(() => {
+    async function load() {
+      // 1. Datos del informe + escuela
+      const { data: inf } = await supabase
+        .from('informes')
+        .select('escuela_id, periodo_mes, periodo_anio')
+        .eq('id', id).single()
+      if (!inf) return
+
+      const { data: esc } = await supabase
+        .from('escuelas')
+        .select('nombre, codigo, empresa_supervision, empresa_obras, numero_contrato')
+        .eq('id', inf.escuela_id).single()
+
+      if (esc) {
+        setEscuela({
+          nombre:              esc.nombre,
+          codigo:              esc.codigo,
+          empresa_supervision: esc.empresa_supervision ?? '',
+          empresa_obras:       esc.empresa_obras       ?? '',
+          numero_contrato:     esc.numero_contrato     ?? '',
+          periodo_mes:         inf.periodo_mes,
+          periodo_anio:        inf.periodo_anio,
+        })
+      }
+
+      // 2. Lista de especialistas
+      const { data: perfiles } = await supabase
+        .from('profiles')
+        .select('id, nombre, cargo, rol')
+        .in('rol', ['programador', 'administrador', 'usuario'])
+        .eq('activo', true)
+        .order('nombre')
+      setEspecialistas(perfiles ?? [])
+
+      // 3. Portada existente
+      const { data: portada } = await supabase
+        .from('informe_portada')
+        .select('*')
+        .eq('informe_id', id).single()
+
+      if (portada) {
+        setForm({
+          numero_informe:              portada.numero_informe ?? '',
+          nombre_proyecto:             portada.nombre_proyecto ?? '',
+          numero_contrato_supervision: portada.numero_contrato_supervision ?? '',
+          elaborado_por_id:            portada.elaborado_por_id ?? '',
+          elaborado_por_cargo:         portada.elaborado_por_cargo ?? '',
+        })
+      } else {
+        // 4. Número correlativo: buscar último informe de esta escuela
+        const { data: prevInformes } = await supabase
+          .from('informes')
+          .select('id')
+          .eq('escuela_id', inf.escuela_id)
+          .neq('id', id)
+          .or(`periodo_anio.lt.${inf.periodo_anio},and(periodo_anio.eq.${inf.periodo_anio},periodo_mes.lt.${inf.periodo_mes})`)
+          .order('periodo_anio', { ascending: false })
+          .order('periodo_mes', { ascending: false })
+          .limit(1).single()
+
+        if (prevInformes?.id) {
+          const { data: prevPortada } = await supabase
+            .from('informe_portada')
+            .select('numero_informe')
+            .eq('informe_id', prevInformes.id).single()
+          if (prevPortada?.numero_informe) {
+            const siguiente = (prevPortada.numero_informe as number) + 1
+            setAutoNumero(siguiente)
+            setForm(p => ({ ...p, numero_informe: siguiente }))
+          }
+        }
+      }
+    }
+    load()
+  }, [id])
+
+  function set<K extends keyof typeof INIT>(f: K, v: (typeof INIT)[K]) {
+    setForm(p => ({ ...p, [f]: v }))
+  }
+
+  // Al seleccionar especialista → auto-llenar cargo
+  function seleccionarEspecialista(eid: string) {
+    const esp = especialistas.find(e => e.id === eid)
+    setForm(p => ({
+      ...p,
+      elaborado_por_id:    eid,
+      elaborado_por_cargo: esp?.cargo ?? '',
+    }))
+  }
+
+  async function onSave() {
+    const payload = {
+      informe_id:                  id,
+      numero_informe:              form.numero_informe ? parseInt(String(form.numero_informe)) : null,
+      nombre_proyecto:             form.nombre_proyecto     || null,
+      numero_contrato_supervision: form.numero_contrato_supervision || null,
+      elaborado_por_id:            form.elaborado_por_id    || null,
+      elaborado_por_cargo:         form.elaborado_por_cargo || null,
+    }
+    const { error } = await supabase
+      .from('informe_portada')
+      .upsert(payload, { onConflict: 'informe_id' })
+    if (error) throw new Error(error.message)
+  }
+
+  const espSeleccionado = especialistas.find(e => e.id === form.elaborado_por_id)
+
+  return (
+    <FormWrapper title="Portada del Informe" short="PORTADA" informeId={id} onSave={onSave}>
+      <div className="space-y-8">
+
+        {/* ── Encabezado tipo documento ──────────────────────── */}
+        <div className="bg-blue-900 text-white rounded-xl px-8 py-7 text-center space-y-1 shadow-md">
+          <p className="text-xs font-semibold uppercase tracking-widest text-blue-200">
+            {escuela ? `${MESES[escuela.periodo_mes - 1]} ${escuela.periodo_anio}` : '—'}
+          </p>
+          <h1 className="text-xl font-black uppercase tracking-wide leading-tight">
+            Informe Mensual de Supervisión
+          </h1>
+          <h2 className="text-sm font-semibold text-blue-200 uppercase tracking-wide">
+            Condiciones Seguridad Ocupacional, Ambiental y Social
+          </h2>
+          {form.numero_informe && (
+            <div className="inline-flex items-center gap-2 mt-3 bg-white/10 border border-white/20 rounded-full px-4 py-1">
+              <Hash size={13} className="text-blue-300" />
+              <span className="text-sm font-bold text-white">Informe N.° {form.numero_informe}</span>
+            </div>
+          )}
+        </div>
+
+        {/* ── N.° de Informe ─────────────────────────────────── */}
+        <section>
+          <h3 className={sectionHdr}>
+            <span className="flex items-center gap-2"><Hash size={14} /> Número de Informe</span>
+          </h3>
+          <div className="max-w-xs">
+            <label className={labelCls}>
+              N.° de informe
+              {autoNumero && <span className="ml-2 text-xs text-blue-500 font-normal normal-case">(correlativo automático del anterior)</span>}
+            </label>
+            <input
+              type="number" min={1}
+              value={form.numero_informe}
+              onChange={e => set('numero_informe', e.target.value)}
+              placeholder="Ej: 1"
+              className={inputCls}
+            />
+          </div>
+        </section>
+
+        {/* ── Proyecto ───────────────────────────────────────── */}
+        <section>
+          <h3 className={sectionHdr}>
+            <span className="flex items-center gap-2"><FileText size={14} /> Datos del Proyecto</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className={labelCls}>Nombre del proyecto</label>
+              <input value={form.nombre_proyecto}
+                onChange={e => set('nombre_proyecto', e.target.value)}
+                placeholder="Ingrese el nombre del proyecto..."
+                className={inputCls} />
+            </div>
+            <div>
+              <label className={labelCls}>N.° de contrato de supervisión</label>
+              <input value={form.numero_contrato_supervision}
+                onChange={e => set('numero_contrato_supervision', e.target.value)}
+                placeholder="Número de contrato..."
+                className={inputCls} />
+            </div>
+          </div>
+        </section>
+
+        {/* ── Centro Educativo ───────────────────────────────── */}
+        <section>
+          <h3 className={sectionHdr}>
+            <span className="flex items-center gap-2"><Building2 size={14} /> Centro Educativo</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2">
+              <CampoAuto label="Centro educativo" value={escuela?.nombre ?? ''} icon={Building2} />
+            </div>
+            <div>
+              <CampoAuto label="Código" value={escuela?.codigo ?? ''} />
+            </div>
+          </div>
+        </section>
+
+        {/* ── Presentado por ─────────────────────────────────── */}
+        <section>
+          <h3 className={sectionHdr}>
+            <span className="flex items-center gap-2"><Building2 size={14} /> Presentado por</span>
+          </h3>
+          <CampoAuto label="Empresa de supervisión" value={escuela?.empresa_supervision ?? ''} icon={Building2} />
+        </section>
+
+        {/* ── Elaborado por ──────────────────────────────────── */}
+        <section>
+          <h3 className={sectionHdr}>
+            <span className="flex items-center gap-2"><User size={14} /> Elaborado por</span>
+          </h3>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Especialista */}
+              <div>
+                <label className={labelCls}>Especialista</label>
+                <select
+                  value={form.elaborado_por_id}
+                  onChange={e => seleccionarEspecialista(e.target.value)}
+                  className={inputCls}>
+                  <option value="">Seleccionar especialista...</option>
+                  {especialistas.map(e => (
+                    <option key={e.id} value={e.id}>{e.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              {/* Cargo (auto) */}
+              <div>
+                <label className={labelCls}>
+                  Cargo
+                  {form.elaborado_por_id && <span className="ml-2 text-xs text-blue-500 font-normal normal-case">automático</span>}
+                </label>
+                <input
+                  value={form.elaborado_por_cargo}
+                  onChange={e => set('elaborado_por_cargo', e.target.value)}
+                  placeholder="Se llena automáticamente al seleccionar especialista..."
+                  className={form.elaborado_por_id ? `${autoCls}` : inputCls}
+                  readOnly={!!form.elaborado_por_id && !!espSeleccionado?.cargo}
+                />
+              </div>
+            </div>
+
+            {/* Firma y sello */}
+            <div className="border-2 border-dashed border-slate-200 rounded-xl p-6">
+              <div className="grid grid-cols-2 gap-8">
+                <div className="flex flex-col items-center gap-3">
+                  <PenLine size={20} className="text-slate-300" />
+                  <div className="w-full border-b-2 border-slate-300 h-12" />
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-slate-600">
+                      {espSeleccionado?.nombre ?? 'Especialista'}
+                    </p>
+                    <p className="text-xs text-slate-400">{form.elaborado_por_cargo || 'Cargo'}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Firma</p>
+                  </div>
+                </div>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-16 h-16 border-2 border-dashed border-slate-200 rounded-full flex items-center justify-center">
+                    <span className="text-xs text-slate-300 text-center leading-tight">Sello<br/>empresa</span>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-slate-600">{escuela?.empresa_supervision ?? '—'}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Sello</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Empresa Contratista ────────────────────────────── */}
+        <section>
+          <h3 className={sectionHdr}>
+            <span className="flex items-center gap-2"><Briefcase size={14} /> Empresa Contratista</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <CampoAuto label="Empresa contratista" value={escuela?.empresa_obras ?? ''} icon={Building2} />
+            <CampoAuto label="N.° de contrato" value={escuela?.numero_contrato ?? ''} />
+          </div>
+        </section>
+
+      </div>
+    </FormWrapper>
+  )
+}
