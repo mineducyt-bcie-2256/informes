@@ -1,7 +1,7 @@
 'use client'
 import {
   PDFDownloadLink, Document, Page, Text, View, StyleSheet,
-  PDFViewer,
+  PDFViewer, Image,
 } from '@react-pdf/renderer'
 import { Download, Eye } from 'lucide-react'
 import { useState } from 'react'
@@ -251,137 +251,153 @@ function Portada({ data }: { data: any }) {
 
   // Elaboradores visibles en portada
   const elaVisibles = elaboradores.filter((e: any) => e.aparece_portada !== false)
-  const sinElaboradores = elaVisibles.length === 0
+
+  // Si no hay elaboradores en informe, usar el de portada como fallback
+  const listaFinal: { nombre: string; cargo: string }[] =
+    elaVisibles.length > 0
+      ? elaVisibles.map((e: any) => ({ nombre: val(e.nombre), cargo: val(e.cargo, '') }))
+      : portada?.elaborado_por_nombre
+        ? [{ nombre: portada.elaborado_por_nombre, cargo: portada.elaborado_por_cargo ?? '' }]
+        : []
 
   return (
     <Page size="A4" style={s.coverPage}>
 
       {/* ── Encabezado centrado ── */}
       <View style={s.coverTop}>
-        {/* Logo circular */}
         <View style={s.coverLogoArea}>
           <Text style={s.coverLogoText}>BCIE</Text>
         </View>
 
         <Text style={s.coverLabel}>PROGRAMA DE INFRAESTRUCTURA ESCOLAR</Text>
 
-        <Text style={s.coverTitle}>
-          INFORME MENSUAL DE SUPERVISIÓN
-        </Text>
+        <Text style={s.coverTitle}>INFORME MENSUAL DE SUPERVISIÓN</Text>
 
-        <Text style={s.coverSubtitle}>
-          Seguimiento de Condiciones Ambientales y Sociales
+        {portada?.numero_informe && (
+          <View style={{ marginTop: 4, marginBottom: 2 }}>
+            <Text style={{ color: GOLD, fontSize: 11, fontFamily: 'Helvetica-Bold', textAlign: 'center' }}>
+              N.° {String(portada.numero_informe).padStart(3, '0')}
+            </Text>
+          </View>
+        )}
+
+        <Text style={[s.coverSubtitle, { marginBottom: 5, marginTop: 8, fontSize: 12 }]}>
+          Implementación de condiciones ambientales y sociales
+        </Text>
+        <Text style={[s.coverSubtitle, { marginBottom: 5, fontSize: 11 }]}>
+          Etapa de construcción
+        </Text>
+        <Text style={[s.coverSubtitle, { fontSize: 10.5, fontFamily: 'Helvetica-Bold', color: NAVY2, marginBottom: 18 }]}>
+          Plan Específico de Gestión Ambiental y Social — PEGAS
         </Text>
 
         <View style={s.coverDivider} />
       </View>
 
-      {/* ── Datos del informe ── */}
+      {/* ── Cuerpo ── */}
       <View style={s.coverInfo}>
 
-        {/* CE + Empresa supervisión (debajo del nombre) */}
-        <View style={[s.coverInfoBlock, {
-          borderLeftWidth: 4, borderLeftColor: GOLD,
-          paddingLeft: 12, marginBottom: 20,
-        }]}>
-          <Text style={s.coverInfoLabel}>CENTRO EDUCATIVO</Text>
-          <Text style={[s.coverInfoValue, { fontSize: 13, marginTop: 2, marginBottom: 4 }]}>
-            {val(esc?.nombre)}
-          </Text>
-          <Text style={s.coverInfoSub}>
-            {val(esc?.empresa_supervision)}
-          </Text>
-          <Text style={[s.coverInfoLabel, { marginTop: 4 }]}>
-            {[esc?.codigo, esc?.departamento, esc?.grupos?.numero ? `Grupo ${esc.grupos.numero}` : null]
-              .filter(Boolean).join('  ·  ')}
+        {/* 1. Nombre CE */}
+        <View style={[s.coverInfoBlock, { borderLeftWidth: 4, borderLeftColor: GOLD, paddingLeft: 12, marginBottom: 14 }]}>
+          <Text style={[s.coverInfoValue, { fontSize: 14, marginBottom: 6 }]}>{val(esc?.nombre)}</Text>
+          {esc?.codigo && (
+            <Text style={{ fontSize: 8, color: MUTED, marginBottom: 3 }}>
+              <Text style={{ fontFamily: 'Helvetica-Bold', color: DARK }}>Código </Text>
+              {esc.codigo}
+            </Text>
+          )}
+          <Text style={{ fontSize: 8, color: MUTED }}>
+            {[esc?.departamento, esc?.distrito].filter(Boolean).join('  ·  ')}
           </Text>
         </View>
 
-        {/* Línea divisora */}
-        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 16 }} />
+        {/* Línea */}
+        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 12 }} />
 
-        {/* Grid 2 col: Empresa contratista + Contratos */}
-        <View style={{ flexDirection: 'row', gap: 30, marginBottom: 16 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={s.coverInfoLabel}>EMPRESA CONTRATISTA</Text>
-            <Text style={[s.coverInfoValue, { marginTop: 3 }]}>{val(esc?.empresa_obras)}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={s.coverInfoLabel}>N.° CONTRATO (OBRAS)</Text>
-            <Text style={[s.coverInfoValue, { marginTop: 3 }]}>{val(esc?.numero_contrato)}</Text>
-            {portada?.numero_contrato_supervision && (
-              <>
-                <Text style={[s.coverInfoLabel, { marginTop: 8 }]}>N.° CONTRATO SUPERVISIÓN</Text>
-                <Text style={[s.coverInfoValue, { marginTop: 3 }]}>{portada.numero_contrato_supervision}</Text>
-              </>
-            )}
-          </View>
+        {/* 2. Datos fijos del proyecto */}
+        <View style={{ marginBottom: 14 }}>
+          <Text style={{ fontSize: 8.5, color: DARK, marginBottom: 3 }}>
+            <Text style={{ fontFamily: 'Helvetica-Bold' }}>Proyecto: </Text>
+            Préstamo BCIE No. 2256-SV
+          </Text>
+          <Text style={{ fontSize: 8.5, color: DARK, marginBottom: 3 }}>
+            <Text style={{ fontFamily: 'Helvetica-Bold' }}>Código de proyecto </Text>
+            No. 7800
+          </Text>
+          <Text style={{ fontSize: 8.5, color: DARK }}>
+            Programa mi Nueva Escuela de El Salvador
+          </Text>
         </View>
 
-        {/* Línea divisora */}
-        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 16 }} />
+        {/* Línea */}
+        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 12 }} />
 
-        {/* Periodo / N° Informe / Estado */}
-        <View style={{ flexDirection: 'row', gap: 30, marginBottom: 16 }}>
+        {/* 3. Empresa de supervisión */}
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 20, marginBottom: 14 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={s.coverInfoLabel}>EMPRESA DE SUPERVISIÓN</Text>
+            <Text style={[s.coverInfoValue, { marginTop: 3 }]}>{val(esc?.empresa_supervision)}</Text>
+          </View>
+          {portada?.numero_contrato_supervision && (
+            <View style={{ flex: 1 }}>
+              <Text style={s.coverInfoLabel}>CONTRATO DE SUPERVISIÓN</Text>
+              <Text style={[s.coverInfoValue, { marginTop: 3 }]}>{portada.numero_contrato_supervision}</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Línea */}
+        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 12 }} />
+
+        {/* 4. Elaborado por */}
+        {listaFinal.length > 0 && (
+          <View style={{ marginBottom: 14 }}>
+            <Text style={[s.coverInfoLabel, { marginBottom: 8 }]}>ELABORADO POR</Text>
+            {listaFinal.map((esp, i) => (
+              <View key={i} style={{
+                marginBottom: i < listaFinal.length - 1 ? 8 : 0,
+                paddingBottom: i < listaFinal.length - 1 ? 8 : 0,
+                borderBottomWidth: i < listaFinal.length - 1 ? 1 : 0,
+                borderBottomColor: BORDER,
+              }}>
+                <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: DARK, marginBottom: 2 }}>
+                  {esp.nombre}
+                </Text>
+                {esp.cargo ? (
+                  <Text style={{ fontSize: 8, color: MUTED }}>{esp.cargo}</Text>
+                ) : null}
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Línea */}
+        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 12 }} />
+
+        {/* 5. Periodo / N° Informe / Estado */}
+        <View style={{ flexDirection: 'row', gap: 24 }}>
           <View>
             <Text style={s.coverInfoLabel}>PERIODO</Text>
-            <Text style={[s.coverInfoValue, { fontSize: 12, marginTop: 3, color: NAVY }]}>{periodo}</Text>
+            <Text style={[s.coverInfoValue, { fontSize: 11, marginTop: 3, color: NAVY }]}>{periodo}</Text>
           </View>
           {portada?.numero_informe && (
             <View>
               <Text style={s.coverInfoLabel}>N.° DE INFORME</Text>
-              <Text style={[s.coverInfoValue, { fontSize: 12, marginTop: 3, color: NAVY }]}>
+              <Text style={[s.coverInfoValue, { fontSize: 11, marginTop: 3, color: NAVY }]}>
                 {String(portada.numero_informe).padStart(3, '0')}
               </Text>
             </View>
           )}
           <View>
-            <Text style={[s.coverInfoLabel, { marginBottom: 6 }]}>ESTADO</Text>
+            <Text style={[s.coverInfoLabel, { marginBottom: 5 }]}>ESTADO</Text>
             <View style={[s.coverBadge, { backgroundColor: ec.bg }]}>
               <Text style={[s.coverBadgeText, { color: ec.color }]}>{estado.toUpperCase()}</Text>
             </View>
           </View>
         </View>
-
-        {/* Elaborado por */}
-        {!sinElaboradores && (
-          <>
-            <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 14 }} />
-            <Text style={[s.coverInfoLabel, { marginBottom: 8 }]}>ELABORADO POR</Text>
-            {elaVisibles.map((e: any, i: number) => (
-              <View key={i} style={{
-                flexDirection: 'row', alignItems: 'center',
-                paddingVertical: 5, borderBottomWidth: i < elaVisibles.length - 1 ? 1 : 0,
-                borderBottomColor: BORDER,
-              }}>
-                <Text style={{ fontSize: 9, color: DARK, fontFamily: 'Helvetica-Bold', flex: 1 }}>
-                  {val(e.nombre)}
-                </Text>
-                {e.cargo && (
-                  <Text style={{ fontSize: 8, color: MUTED }}>{e.cargo}</Text>
-                )}
-              </View>
-            ))}
-          </>
-        )}
-
-        {sinElaboradores && portada?.elaborado_por_nombre && (
-          <>
-            <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 14 }} />
-            <Text style={[s.coverInfoLabel, { marginBottom: 8 }]}>ELABORADO POR</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontSize: 9, color: DARK, fontFamily: 'Helvetica-Bold', flex: 1 }}>
-                {portada.elaborado_por_nombre}
-              </Text>
-              {portada.elaborado_por_cargo && (
-                <Text style={{ fontSize: 8, color: MUTED }}>{portada.elaborado_por_cargo}</Text>
-              )}
-            </View>
-          </>
-        )}
       </View>
 
-      {/* ── Franja inferior fija ── */}
+      {/* ── Franja inferior ── */}
       <View style={s.coverFooterStrip}>
         <View>
           <Text style={s.coverFooterLabel}>SISTEMA SCAS</Text>
@@ -561,23 +577,12 @@ function SeccionGenerales({ data }: { data: any }) {
   const espContratista: any[] = c1317.especialistas_contratista ?? []
   const espSupervision: any[] = c1317.especialistas_supervision ?? []
 
-  // Calcular días restantes para vigencia
-  const diasRestantes = (fecha?: string | null): number | null => {
-    if (!fecha) return null
-    const diff = new Date(fecha).getTime() - Date.now()
-    return Math.ceil(diff / (1000 * 60 * 60 * 24))
-  }
+  const mapUrl: string | null = data.mapImageUrl ?? null
+  const lat = esc?.latitud
+  const lon = esc?.longitud
 
-  const vigenciaBadge = (fecha?: string | null) => {
-    if (!fecha) return null
-    const dias = diasRestantes(fecha)!
-    if (dias < 0)   return { label: 'VENCIDA', bg: '#fee2e2', color: RED }
-    if (dias < 60)  return { label: `${dias}d restantes`, bg: '#fef3c7', color: AMBER }
-    return { label: `${dias}d restantes`, bg: '#dcfce7', color: GREEN }
-  }
-
-  const marnBadge = vigenciaBadge(c1317.marn_vigencia_hasta)
-  const dotBadge  = vigenciaBadge(c1317.dot_vigencia_hasta)
+  const resolucionAmbiental = esc?.resolucion_ambiental ?? null
+  const fechaRa = esc?.fecha_ra ?? (esc as any)?.fechas_de_ra ?? null
 
   return (
     <Page size="A4" style={s.page}>
@@ -585,7 +590,6 @@ function SeccionGenerales({ data }: { data: any }) {
 
       {/* Banner sección */}
       <View style={s.sectionBanner}>
-        <Text style={s.sectionNum}>C13-17</Text>
         <Text style={s.sectionTitle}>Generales del Informe de Supervisión</Text>
       </View>
 
@@ -601,10 +605,53 @@ function SeccionGenerales({ data }: { data: any }) {
       <SubBanner title="3. Alcance" />
       <TextBlock text={c1317.alcance} />
 
+      {/* Ubicación */}
+      <SubBanner title="4. Ubicación del Centro Educativo" />
+      <View style={[s.card, { marginBottom: 8 }]}>
+        <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 4 }}>
+          {val(esc?.nombre)}
+        </Text>
+        <Text style={{ fontSize: 8, color: MUTED, marginBottom: 2 }}>
+          Código: {val(esc?.codigo)}
+        </Text>
+        <Text style={{ fontSize: 8, color: MUTED }}>
+          {[esc?.departamento, esc?.distrito].filter(Boolean).join('  ·  ') || '—'}
+        </Text>
+      </View>
+
+      {/* Resolución Ambiental */}
+      <SubBanner title="5. Resolución Ambiental — MARN" />
+      {resolucionAmbiental ? (
+        <View style={[s.card, { backgroundColor: '#f8fafc', marginBottom: 8 }]}>
+          <View style={{ flexDirection: 'row', gap: 30 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 7, color: MUTED, fontFamily: 'Helvetica-Bold', letterSpacing: 0.5, marginBottom: 3 }}>
+                N.° RESOLUCIÓN AMBIENTAL
+              </Text>
+              <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: DARK }}>
+                {resolucionAmbiental}
+              </Text>
+            </View>
+            {fechaRa && (
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 7, color: MUTED, fontFamily: 'Helvetica-Bold', letterSpacing: 0.5, marginBottom: 3 }}>
+                  FECHA DE RESOLUCIÓN
+                </Text>
+                <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: DARK }}>
+                  {fechaRa}
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
+      ) : (
+        <Text style={s.noData}>Sin resolución ambiental registrada.</Text>
+      )}
+
       {/* Especialistas Contratista */}
       {espContratista.length > 0 && (
         <>
-          <SubBanner title="4. Especialistas — Empresa Contratista" />
+          <SubBanner title="6. Especialistas — Empresa Contratista (Condición 13)" />
           <View style={s.table}>
             <View style={s.tableHead}>
               <Text style={[s.tableHeadCell, { flex: 2 }]}>Nombre</Text>
@@ -627,7 +674,7 @@ function SeccionGenerales({ data }: { data: any }) {
       {/* Especialistas Supervisión */}
       {espSupervision.length > 0 && (
         <>
-          <SubBanner title="5. Especialistas — Empresa de Supervisión" />
+          <SubBanner title="7. Especialistas — Empresa de Supervisión (Condición 17)" />
           <View style={s.table}>
             <View style={s.tableHead}>
               <Text style={[s.tableHeadCell, { flex: 2 }]}>Nombre</Text>
@@ -643,39 +690,6 @@ function SeccionGenerales({ data }: { data: any }) {
                 <Text style={[s.tableCell, { flex: 2 }]}>{val(e.correo)}</Text>
               </View>
             ))}
-          </View>
-        </>
-      )}
-
-      {/* Permisos */}
-      {(c1317.marn_numero || c1317.dot_numero) && (
-        <>
-          <SubBanner title="6. Permisos y Resoluciones" />
-          <View style={s.cols2}>
-            {/* MARN */}
-            <View style={[s.col, s.card]}>
-              <Text style={s.cardTitle}>RESOLUCIÓN AMBIENTAL — MARN</Text>
-              <Field label="N.° Resolución" value={c1317.marn_numero} />
-              <Field label="Fecha de emisión" value={c1317.marn_emision} />
-              <Field label="Vigencia hasta" value={c1317.marn_vigencia_hasta} />
-              {marnBadge && (
-                <View style={[s.chip, { backgroundColor: marnBadge.bg, marginTop: 4 }]}>
-                  <Text style={[s.chipText, { color: marnBadge.color }]}>{marnBadge.label}</Text>
-                </View>
-              )}
-            </View>
-            {/* DOT */}
-            <View style={[s.col, s.card]}>
-              <Text style={s.cardTitle}>PERMISO DOT</Text>
-              <Field label="N.° Permiso" value={c1317.dot_numero} />
-              <Field label="Fecha de emisión" value={c1317.dot_emision} />
-              <Field label="Vigencia hasta" value={c1317.dot_vigencia_hasta} />
-              {dotBadge && (
-                <View style={[s.chip, { backgroundColor: dotBadge.bg, marginTop: 4 }]}>
-                  <Text style={[s.chipText, { color: dotBadge.color }]}>{dotBadge.label}</Text>
-                </View>
-              )}
-            </View>
           </View>
         </>
       )}

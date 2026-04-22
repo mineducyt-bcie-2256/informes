@@ -1,6 +1,6 @@
 'use client'
 import { useState, useRef } from 'react'
-import { Upload, X, CheckCircle, Sparkles, AlertTriangle } from 'lucide-react'
+import { Upload, X, CheckCircle, Sparkles, AlertTriangle, Wrench } from 'lucide-react'
 import * as XLSX from 'xlsx'
 
 interface Resultado {

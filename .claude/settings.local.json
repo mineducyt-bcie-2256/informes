@@ -6,7 +6,10 @@
       "Bash(pandoc \"I:\\\\Mi unidad\\\\BCIE 2025\\\\Formatos y seguimiento\\\\Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\" -o output.md)",
       "Bash(pandoc \"I:\\\\Mi unidad\\\\BCIE 2025\\\\Formatos y seguimiento\\\\Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\" -t plain)",
       "Bash(findstr -i \"react-pdf\\\\|pdf\")",
-      "Bash(findstr /i \"react-pdf\\\\|pdf\")"
+      "Bash(findstr /i \"react-pdf\\\\|pdf\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

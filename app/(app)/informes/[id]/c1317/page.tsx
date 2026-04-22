@@ -4,8 +4,8 @@ import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
 import {
-  Pencil, Lock, MapPin, Users, Shield, Plus, Trash2,
-  Building2, FileCheck, CalendarDays, UserPlus
+  Pencil, Lock, MapPin, Users, Shield, Trash2,
+  Building2, UserPlus
 } from 'lucide-react'
 
 // ── Tipos ─────────────────────────────────────────────────────────
@@ -19,9 +19,12 @@ interface Especialista {
 
 interface EscuelaGeo {
   nombre:                string
+  departamento:          string | null
+  distrito:              string | null
   latitud:               number | null
   longitud:              number | null
   resolucion_ambiental:  string | null
+  fecha_ra:              string | null
 }
 
 const CARGOS_ESP = [
@@ -146,13 +149,23 @@ function TarjetaEspecialista({
           </div>
         </button>
         <div className="flex items-center gap-2 shrink-0 ml-2">
-          <button
-            type="button"
-            onClick={() => setExpandido(p => !p)}
-            className="text-xs text-blue-600 hover:underline px-2"
-          >
-            {expandido ? 'Colapsar' : 'Editar'}
-          </button>
+          {expandido ? (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="text-xs text-red-500 hover:text-red-700 hover:underline px-2 font-medium"
+            >
+              Eliminar
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setExpandido(true)}
+              className="text-xs text-blue-600 hover:underline px-2"
+            >
+              Editar
+            </button>
+          )}
           <button
             type="button"
             onClick={onDelete}
@@ -218,22 +231,6 @@ function TarjetaEspecialista({
   )
 }
 
-// ════════════════════════════════════════════════════════════════
-// Badge de vigencia de permisos
-// ════════════════════════════════════════════════════════════════
-function BadgeVigencia({ fecha }: { fecha: string }) {
-  if (!fecha) return null
-  const dias = Math.ceil((new Date(fecha).getTime() - Date.now()) / 86400000)
-  const cls  = dias <= 0   ? 'bg-red-100 text-red-700 border-red-200'
-             : dias <= 30  ? 'bg-amber-100 text-amber-700 border-amber-200'
-                           : 'bg-emerald-100 text-emerald-700 border-emerald-200'
-  const label = dias <= 0 ? 'Vencido' : dias <= 30 ? `Por vencer (${dias} días)` : `Vigente (${dias} días)`
-  return (
-    <span className={`inline-flex items-center gap-1 text-xs border px-2 py-0.5 rounded-full font-medium ${cls}`}>
-      <CalendarDays size={10} />{label}
-    </span>
-  )
-}
 
 // ════════════════════════════════════════════════════════════════
 // PÁGINA PRINCIPAL
@@ -252,11 +249,6 @@ export default function C1317Page() {
   const [marnFechaEmision,           setMarnFechaEmision]           = useState('')
   const [marnFechaVencimiento,       setMarnFechaVencimiento]       = useState('')
   const [marnObs,                    setMarnObs]                    = useState('')
-  const [dotNumero,                  setDotNumero]                  = useState('')
-  const [dotTipo,                    setDotTipo]                    = useState('')
-  const [dotFechaEmision,            setDotFechaEmision]            = useState('')
-  const [dotFechaVencimiento,        setDotFechaVencimiento]        = useState('')
-  const [dotObs,                     setDotObs]                     = useState('')
   const [escuela,                    setEscuela]                    = useState<EscuelaGeo | null>(null)
   const [cargandoTextos,             setCargandoTextos]             = useState(false)
 
@@ -273,7 +265,7 @@ export default function C1317Page() {
       // 2. Datos de la escuela (coordenadas + resolución ambiental)
       const { data: esc } = await supabase
         .from('escuelas')
-        .select('nombre, latitud, longitud, resolucion_ambiental')
+        .select('*')
         .eq('id', inf.escuela_id).single()
       if (esc) setEscuela(esc as EscuelaGeo)
 
@@ -293,11 +285,6 @@ export default function C1317Page() {
         setMarnFechaEmision(reg.marn_fecha_emision ?? '')
         setMarnFechaVencimiento(reg.marn_fecha_vencimiento ?? '')
         setMarnObs(reg.marn_observaciones ?? '')
-        setDotNumero(reg.dot_numero_permiso ?? '')
-        setDotTipo(reg.dot_tipo_permiso ?? '')
-        setDotFechaEmision(reg.dot_fecha_emision ?? '')
-        setDotFechaVencimiento(reg.dot_fecha_vencimiento ?? '')
-        setDotObs(reg.dot_observaciones ?? '')
         return
       }
 
@@ -324,11 +311,6 @@ export default function C1317Page() {
           setMarnFechaEmision(prev.marn_fecha_emision ?? '')
           setMarnFechaVencimiento(prev.marn_fecha_vencimiento ?? '')
           setMarnObs(prev.marn_observaciones ?? '')
-          setDotNumero(prev.dot_numero_permiso ?? '')
-          setDotTipo(prev.dot_tipo_permiso ?? '')
-          setDotFechaEmision(prev.dot_fecha_emision ?? '')
-          setDotFechaVencimiento(prev.dot_fecha_vencimiento ?? '')
-          setDotObs(prev.dot_observaciones ?? '')
         }
       }
       setCargandoTextos(false)
@@ -349,11 +331,6 @@ export default function C1317Page() {
       marn_fecha_emision:          marnFechaEmision   || null,
       marn_fecha_vencimiento:      marnFechaVencimiento   || null,
       marn_observaciones:          marnObs      || null,
-      dot_numero_permiso:          dotNumero    || null,
-      dot_tipo_permiso:            dotTipo      || null,
-      dot_fecha_emision:           dotFechaEmision    || null,
-      dot_fecha_vencimiento:       dotFechaVencimiento    || null,
-      dot_observaciones:           dotObs       || null,
     }
     const { error } = await supabase
       .from('informe_c1317')
@@ -386,6 +363,12 @@ export default function C1317Page() {
   const mapSrc = lat && lon
     ? `https://maps.google.com/maps?q=${lat},${lon}&z=17&output=embed`
     : null
+
+  // fecha_ra puede estar bajo distintos nombres si fue auto-sanitizado en imports previos
+  const fechaRa = escuela?.fecha_ra
+    ?? (escuela as any)?.fechas_de_ra
+    ?? (escuela as any)?.fecha_de_ra
+    ?? null
 
   const inp   = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
   const lbl   = 'text-xs text-slate-500 mb-1 block'
@@ -437,43 +420,56 @@ export default function C1317Page() {
           <h3 className={hdr}>
             <span className="flex items-center gap-2"><MapPin size={14} /> Ubicación del Centro Educativo</span>
           </h3>
-          {mapSrc ? (
-            <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-              <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
-                  {escuela?.nombre}
-                </span>
+
+          <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+            {/* Cabecera con datos del CE */}
+            <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">
+                  {escuela?.nombre ?? '—'}
+                </p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {[escuela?.departamento, escuela?.distrito].filter(Boolean).join(' · ') || 'Sin departamento / distrito registrado'}
+                </p>
+              </div>
+              {lat && lon && (
                 <a
                   href={`https://www.google.com/maps?q=${lat},${lon}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                  className="text-xs text-blue-600 hover:underline flex items-center gap-1 shrink-0"
                 >
-                  <MapPin size={11} /> Ver en mapa completo
+                  <MapPin size={11} /> Ver en Maps
                 </a>
-              </div>
-              <iframe
-                title="Ubicación del centro educativo"
-                src={mapSrc}
-                className="w-full h-72 border-0"
-                loading="lazy"
-              />
-              <div className="bg-slate-50 px-4 py-2 border-t border-slate-200 flex gap-6">
-                <span className="text-xs text-slate-500">
-                  <span className="font-medium text-slate-600">Latitud:</span> {lat}
-                </span>
-                <span className="text-xs text-slate-500">
-                  <span className="font-medium text-slate-600">Longitud:</span> {lon}
-                </span>
-              </div>
+              )}
             </div>
-          ) : (
-            <div className="rounded-xl border-2 border-dashed border-slate-200 h-48 flex flex-col items-center justify-center gap-2 text-slate-400">
-              <MapPin size={28} className="text-slate-300" />
-              <p className="text-sm">Sin coordenadas registradas para este centro educativo</p>
-              <p className="text-xs">Actualiza la latitud y longitud en la ficha de la escuela</p>
-            </div>
-          )}
+
+            {/* Mapa o aviso */}
+            {mapSrc ? (
+              <>
+                <iframe
+                  title="Ubicación del centro educativo"
+                  src={mapSrc}
+                  className="w-full h-72 border-0"
+                  loading="lazy"
+                />
+                <div className="bg-slate-50 px-4 py-2 border-t border-slate-200 flex gap-6">
+                  <span className="text-xs text-slate-500">
+                    <span className="font-medium text-slate-600">Latitud:</span> {lat}
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    <span className="font-medium text-slate-600">Longitud:</span> {lon}
+                  </span>
+                  <span className="ml-auto text-xs text-blue-400 font-medium">auto</span>
+                </div>
+              </>
+            ) : (
+              <div className="h-36 flex flex-col items-center justify-center gap-2 text-slate-400 bg-white">
+                <MapPin size={24} className="text-slate-300" />
+                <p className="text-sm">Sin coordenadas — el mapa se mostrará cuando se importen lat/lon</p>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* ── 5. Especialistas Empresa Contratista ─────────────── */}
@@ -545,101 +541,39 @@ export default function C1317Page() {
           <h3 className={hdr}>
             <span className="flex items-center gap-2"><Shield size={14} /> Resolución Ambiental — MARN</span>
           </h3>
+
           {escuela?.resolucion_ambiental ? (
-            /* Campo auto desde la base de datos de la escuela */
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start gap-3">
-              <Shield size={16} className="text-emerald-600 mt-0.5 shrink-0" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* N° Resolución */}
               <div>
-                <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide mb-1">
-                  Resolución registrada en la escuela
-                </p>
-                <p className="text-sm text-emerald-900 font-medium">{escuela.resolucion_ambiental}</p>
+                <label className={lbl}>Resolución ambiental</label>
+                <div className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-700 flex items-center justify-between">
+                  <span className="font-medium">{escuela.resolucion_ambiental}</span>
+                  <span className="ml-2 text-xs text-blue-400 font-medium shrink-0">auto</span>
+                </div>
+              </div>
+              {/* Fecha RA */}
+              <div>
+                <label className={lbl}>Fecha de resolución ambiental (RA)</label>
+                <div className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm bg-slate-50 text-slate-700 flex items-center justify-between">
+                  <span>{fechaRa ?? '—'}</span>
+                  <span className="ml-2 text-xs text-blue-400 font-medium shrink-0">auto</span>
+                </div>
               </div>
             </div>
           ) : (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-xs text-amber-700 flex items-center gap-2">
-              <Shield size={13} />
-              No hay resolución ambiental registrada en la ficha de la escuela. Completa los datos del permiso manualmente.
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 text-amber-800">
+              <Shield size={16} className="mt-0.5 shrink-0 text-amber-500" />
+              <div>
+                <p className="text-sm font-semibold">Sin resolución ambiental registrada</p>
+                <p className="text-xs mt-1">
+                  Actualiza la columna <strong>Resolución ambiental</strong> y <strong>Fecha RA</strong> en el archivo Excel de escuelas e impórtalo de nuevo.
+                </p>
+              </div>
             </div>
           )}
-
-          <div className="bg-slate-50 rounded-xl p-5 space-y-4 mt-3">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className={lbl}>Número de permiso MARN</label>
-                <input value={marnNumero} onChange={e => setMarnNumero(e.target.value)}
-                  placeholder="Ej: 0123-2024-MARN" className={inp} />
-              </div>
-              <div>
-                <label className={lbl}>Fecha de emisión</label>
-                <input type="date" value={marnFechaEmision}
-                  onChange={e => setMarnFechaEmision(e.target.value)} className={inp} />
-              </div>
-              <div>
-                <label className={lbl}>
-                  Fecha de vencimiento&nbsp;
-                  {marnFechaVencimiento && <BadgeVigencia fecha={marnFechaVencimiento} />}
-                </label>
-                <input type="date" value={marnFechaVencimiento}
-                  onChange={e => setMarnFechaVencimiento(e.target.value)} className={inp} />
-              </div>
-            </div>
-            <div>
-              <label className={lbl}>Observaciones / Condiciones del permiso</label>
-              <textarea value={marnObs} onChange={e => setMarnObs(e.target.value)} rows={3}
-                placeholder="Condiciones ambientales, medidas de mitigación requeridas..."
-                className={`${inp} resize-none`} />
-            </div>
-          </div>
         </section>
 
-        {/* ── 8. Permiso DOT ───────────────────────────────────── */}
-        <section>
-          <h3 className={hdr}>
-            <span className="flex items-center gap-2"><FileCheck size={14} /> Permiso DOT</span>
-          </h3>
-          <div className="bg-slate-50 rounded-xl p-5 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className={lbl}>Número de permiso</label>
-                <input value={dotNumero} onChange={e => setDotNumero(e.target.value)}
-                  placeholder="Ej: DOT-0456-2024" className={inp} />
-              </div>
-              <div>
-                <label className={lbl}>Tipo de permiso</label>
-                <select value={dotTipo} onChange={e => setDotTipo(e.target.value)} className={inp}>
-                  <option value="">Seleccionar tipo...</option>
-                  <option>Permiso de construcción</option>
-                  <option>Permiso de ocupación de vía</option>
-                  <option>Licencia de construcción</option>
-                  <option>Permiso de demolición</option>
-                  <option>Otro</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className={lbl}>Fecha de emisión</label>
-                <input type="date" value={dotFechaEmision}
-                  onChange={e => setDotFechaEmision(e.target.value)} className={inp} />
-              </div>
-              <div>
-                <label className={lbl}>
-                  Fecha de vencimiento&nbsp;
-                  {dotFechaVencimiento && <BadgeVigencia fecha={dotFechaVencimiento} />}
-                </label>
-                <input type="date" value={dotFechaVencimiento}
-                  onChange={e => setDotFechaVencimiento(e.target.value)} className={inp} />
-              </div>
-            </div>
-            <div>
-              <label className={lbl}>Observaciones</label>
-              <textarea value={dotObs} onChange={e => setDotObs(e.target.value)} rows={3}
-                placeholder="Condiciones del permiso, restricciones de horario, señalización requerida..."
-                className={`${inp} resize-none`} />
-            </div>
-          </div>
-        </section>
 
       </div>
     </FormWrapper>

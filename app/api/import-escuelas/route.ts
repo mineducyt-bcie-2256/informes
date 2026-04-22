@@ -34,6 +34,16 @@ const KNOWN_COLUMNS: Record<string, { field: string; type: 'text' | 'numeric' | 
   'Reubicacion Temporal':            { field: 'reubicacion_temporal',     type: 'text'    },
   'Resolución Ambiental':            { field: 'resolucion_ambiental',     type: 'text'    },
   'Resolucion Ambiental':            { field: 'resolucion_ambiental',     type: 'text'    },
+  'Resolución ambiental':            { field: 'resolucion_ambiental',     type: 'text'    },
+  'Resolucion ambiental':            { field: 'resolucion_ambiental',     type: 'text'    },
+  'Fechas de RA':                    { field: 'fecha_ra',                  type: 'date'    },
+  'Fechas de Ra':                    { field: 'fecha_ra',                  type: 'date'    },
+  'Fecha de RA':                     { field: 'fecha_ra',                  type: 'date'    },
+  'Fecha de Ra':                     { field: 'fecha_ra',                  type: 'date'    },
+  'Fecha RA':                        { field: 'fecha_ra',                  type: 'date'    },
+  'Fecha Ra':                        { field: 'fecha_ra',                  type: 'date'    },
+  'Fecha Resolución Ambiental':      { field: 'fecha_ra',                  type: 'date'    },
+  'Fecha Resolucion Ambiental':      { field: 'fecha_ra',                  type: 'date'    },
 }
 
 // ── Columnas con coincidencia parcial (el encabezado cambia con fecha, etc.)
@@ -67,6 +77,16 @@ function sanitize(header: string): string {
     .replace(/^\d/, 'c_$&')                              // si empieza con número
 }
 
+// ── Convertir serial de fecha Excel → dd/mm/yyyy ─────────────────
+function excelSerialToDate(serial: number): string {
+  // Excel cuenta desde 1 ene 1900; ajuste por bug del año bisiesto de Excel
+  const date = new Date(Math.round((serial - 25569) * 86400 * 1000))
+  const d = String(date.getUTCDate()).padStart(2, '0')
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0')
+  const y = date.getUTCFullYear()
+  return `${d}/${m}/${y}`
+}
+
 // ── Detectar tipo de dato de la columna ───────────────────────────
 function detectType(values: any[]): string {
   const nonEmpty = values.filter(v => v !== null && v !== undefined && v !== '')
@@ -98,21 +118,73 @@ export async function POST(req: NextRequest) {
     // 1. Detectar todas las cabeceras presentes en el Excel
     const allHeaders = Array.from(new Set(rows.flatMap(r => Object.keys(r))))
 
+    // 1b. Migraciones: renombrar columnas mal nombradas + corregir tipos incorrectos
+    const RENAMES: { from: string; to: string }[] = [
+      { from: 'fechas_de_ra',             to: 'fecha_ra' },
+      { from: 'fecha_de_ra',              to: 'fecha_ra' },
+      { from: 'fecha_resolucion_ambient', to: 'resolucion_ambiental' },
+    ]
+    for (const { from, to } of RENAMES) {
+      await adminClient.rpc('exec_sql', {
+        sql: `DO $$ BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema='public' AND table_name='escuelas' AND column_name='${from}'
+          ) AND NOT EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema='public' AND table_name='escuelas' AND column_name='${to}'
+          ) THEN
+            ALTER TABLE escuelas RENAME COLUMN "${from}" TO "${to}";
+          END IF;
+        END $$;`
+      })
+    }
+
+    // Columnas que deben ser TEXT pero pudieron haberse creado como INTEGER/NUMERIC
+    const FORCE_TEXT = ['fecha_ra', 'resolucion_ambiental']
+    for (const col of FORCE_TEXT) {
+      await adminClient.rpc('exec_sql', {
+        sql: `DO $$ BEGIN
+          IF EXISTS (
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema='public' AND table_name='escuelas'
+              AND column_name='${col}'
+              AND data_type IN ('integer','bigint','numeric','double precision','real')
+          ) THEN
+            ALTER TABLE escuelas ALTER COLUMN "${col}" TYPE TEXT USING "${col}"::TEXT;
+          END IF;
+        END $$;`
+      })
+    }
+
     // 2. Columnas existentes en la BD
     const existing = await getExistingColumns()
 
-    // 3. Identificar columnas nuevas (no conocidas y no existentes)
+    // 3. Identificar columnas que faltan: desconocidas nuevas + conocidas que aún no existen en BD
+    const pgTypeMap: Record<string, string> = {
+      text: 'TEXT', numeric: 'NUMERIC', integer: 'INTEGER', boolean: 'BOOLEAN', date: 'TEXT',
+    }
     const newColumns: { header: string; field: string; pgType: string }[] = []
+    const seenFields = new Set<string>()
 
     for (const header of allHeaders) {
       const known = resolveHeader(header)
-      if (known) continue // ya mapeada a un campo existente
+      if (known) {
+        // Columna conocida: crearla si aún no existe en BD
+        if (!existing.has(known.field) && !seenFields.has(known.field)) {
+          seenFields.add(known.field)
+          newColumns.push({ header, field: known.field, pgType: pgTypeMap[known.type] ?? 'TEXT' })
+        }
+        continue
+      }
 
       const field = sanitize(header)
       if (!field) continue
       if (existing.has(field)) continue // ya existe en BD
+      if (seenFields.has(field)) continue
 
       // Detectar tipo según los valores de esa columna
+      seenFields.add(field)
       const values = rows.map(r => r[header])
       const pgType = detectType(values)
       newColumns.push({ header, field, pgType })
@@ -153,6 +225,11 @@ export async function POST(req: NextRequest) {
           const val = rawVal === '' || rawVal === undefined ? null : rawVal
           if      (known.type === 'integer') record[known.field] = parseInt(String(val))   || null
           else if (known.type === 'numeric') record[known.field] = parseFloat(String(val)) || null
+          else if (known.type === 'date') {
+            if (!val) { record[known.field] = null }
+            else if (!isNaN(Number(val))) { record[known.field] = excelSerialToDate(Number(val)) }
+            else { record[known.field] = String(val).trim() }
+          }
           else                               record[known.field] = val ? String(val).trim() : null
           continue
         }

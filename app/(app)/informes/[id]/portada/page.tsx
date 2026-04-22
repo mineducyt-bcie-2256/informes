@@ -1,9 +1,9 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
-import { FileText, Building2, User, Briefcase, Hash, PenLine } from 'lucide-react'
+import { FileText, Building2, User, Briefcase, Hash, Upload, X, ImageIcon } from 'lucide-react'
 import { MESES } from '@/types'
 
 // ── Tipos ─────────────────────────────────────────────────────────
@@ -30,6 +30,8 @@ const INIT = {
   numero_contrato_supervision: '',
   elaborado_por_id:            '',
   elaborado_por_cargo:         '',
+  firma_url:                   '' as string,
+  sello_url:                   '' as string,
 }
 
 const inputCls  = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -47,6 +49,127 @@ function CampoAuto({ label, value, icon: Icon }: { label: string; value: string;
         <span className={value ? '' : 'text-slate-400 italic'}>{value || 'Sin datos'}</span>
         <span className="ml-auto text-xs text-blue-400 font-medium shrink-0">auto</span>
       </div>
+    </div>
+  )
+}
+
+// ── Uploader de imagen (firma o sello) ────────────────────────────
+function ImageUploader({
+  label, sublabel, value, onChange, shape = 'rect', informeId, slot,
+}: {
+  label: string
+  sublabel: string
+  value: string
+  onChange: (url: string) => void
+  shape?: 'rect' | 'circle'
+  informeId: string
+  slot: string   // 'firma' | 'sello'
+}) {
+  const supabase  = createClient()
+  const inputRef  = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [error,     setError]     = useState('')
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    setError('')
+
+    const ext  = file.name.split('.').pop()
+    const path = `informes/${informeId}/${slot}.${ext}`
+
+    const { error: upErr } = await supabase.storage
+      .from('firmas-sellos')
+      .upload(path, file, { upsert: true })
+
+    if (upErr) { setError(upErr.message); setUploading(false); return }
+
+    const { data } = supabase.storage.from('firmas-sellos').getPublicUrl(path)
+    onChange(data.publicUrl)
+    setUploading(false)
+  }
+
+  function handleRemove() {
+    onChange('')
+    if (inputRef.current) inputRef.current.value = ''
+  }
+
+  const isCircle = shape === 'circle'
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      {/* Área de imagen / placeholder */}
+      <div
+        className={`relative border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center overflow-hidden transition-colors hover:border-blue-300 ${
+          isCircle ? 'rounded-full w-24 h-24' : 'rounded-xl w-full h-28'
+        }`}
+      >
+        {value ? (
+          <>
+            <img
+              src={value}
+              alt={label}
+              className={`object-contain ${isCircle ? 'w-full h-full' : 'max-h-24 max-w-full p-2'}`}
+            />
+            <button
+              type="button"
+              onClick={handleRemove}
+              className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600"
+            >
+              <X size={10} />
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="flex flex-col items-center gap-1.5 text-slate-400 hover:text-blue-500 transition-colors p-3"
+          >
+            {uploading
+              ? <span className="text-xs text-blue-500 animate-pulse">Subiendo...</span>
+              : <>
+                  <ImageIcon size={isCircle ? 22 : 18} />
+                  <span className="text-xs text-center leading-tight">Subir imagen</span>
+                </>
+            }
+          </button>
+        )}
+      </div>
+
+      {/* Botón cambiar si ya hay imagen */}
+      {value && (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium"
+        >
+          <Upload size={11} /> Cambiar
+        </button>
+      )}
+
+      {error && <p className="text-xs text-red-500">{error}</p>}
+
+      {/* Línea de firma (solo rect) */}
+      {!isCircle && !value && (
+        <div className="w-full border-b-2 border-slate-300" />
+      )}
+
+      {/* Nombre y etiqueta */}
+      <div className="text-center">
+        <p className="text-xs font-semibold text-slate-700">{label}</p>
+        <p className="text-xs text-slate-400 mt-0.5">{sublabel}</p>
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg,image/webp"
+        className="hidden"
+        onChange={handleFile}
+      />
     </div>
   )
 }
@@ -110,9 +233,11 @@ export default function PortadaPage() {
           numero_contrato_supervision: portada.numero_contrato_supervision ?? '',
           elaborado_por_id:            portada.elaborado_por_id ?? '',
           elaborado_por_cargo:         portada.elaborado_por_cargo ?? '',
+          firma_url:                   portada.firma_url ?? '',
+          sello_url:                   portada.sello_url ?? '',
         })
       } else {
-        // 4. Número correlativo: buscar último informe de esta escuela
+        // 4. Número correlativo
         const { data: prevInformes } = await supabase
           .from('informes')
           .select('id')
@@ -143,7 +268,6 @@ export default function PortadaPage() {
     setForm(p => ({ ...p, [f]: v }))
   }
 
-  // Al seleccionar especialista → auto-llenar cargo
   function seleccionarEspecialista(eid: string) {
     const esp = especialistas.find(e => e.id === eid)
     setForm(p => ({
@@ -157,10 +281,12 @@ export default function PortadaPage() {
     const payload = {
       informe_id:                  id,
       numero_informe:              form.numero_informe ? parseInt(String(form.numero_informe)) : null,
-      nombre_proyecto:             form.nombre_proyecto     || null,
-      numero_contrato_supervision: form.numero_contrato_supervision || null,
-      elaborado_por_id:            form.elaborado_por_id    || null,
-      elaborado_por_cargo:         form.elaborado_por_cargo || null,
+      nombre_proyecto:             form.nombre_proyecto              || null,
+      numero_contrato_supervision: form.numero_contrato_supervision  || null,
+      elaborado_por_id:            form.elaborado_por_id             || null,
+      elaborado_por_cargo:         form.elaborado_por_cargo          || null,
+      firma_url:                   form.firma_url                    || null,
+      sello_url:                   form.sello_url                    || null,
     }
     const { error } = await supabase
       .from('informe_portada')
@@ -182,9 +308,12 @@ export default function PortadaPage() {
           <h1 className="text-xl font-black uppercase tracking-wide leading-tight">
             Informe Mensual de Supervisión
           </h1>
-          <h2 className="text-sm font-semibold text-blue-200 uppercase tracking-wide">
-            Condiciones Seguridad Ocupacional, Ambiental y Social
+          <h2 className="text-sm font-medium text-blue-200 leading-snug mt-1">
+            Implementación de condiciones ambientales y sociales de la etapa de construcción
           </h2>
+          <h3 className="text-xs font-semibold text-blue-300 uppercase tracking-wide">
+            Plan Específico de Gestión Ambiental y Social — PEGAS
+          </h3>
           {form.numero_informe && (
             <div className="inline-flex items-center gap-2 mt-3 bg-white/10 border border-white/20 rounded-full px-4 py-1">
               <Hash size={13} className="text-blue-300" />
@@ -264,7 +393,7 @@ export default function PortadaPage() {
           <h3 className={sectionHdr}>
             <span className="flex items-center gap-2"><User size={14} /> Elaborado por</span>
           </h3>
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Especialista */}
               <div>
@@ -279,7 +408,7 @@ export default function PortadaPage() {
                   ))}
                 </select>
               </div>
-              {/* Cargo (auto) */}
+              {/* Cargo */}
               <div>
                 <label className={labelCls}>
                   Cargo
@@ -289,36 +418,42 @@ export default function PortadaPage() {
                   value={form.elaborado_por_cargo}
                   onChange={e => set('elaborado_por_cargo', e.target.value)}
                   placeholder="Se llena automáticamente al seleccionar especialista..."
-                  className={form.elaborado_por_id ? `${autoCls}` : inputCls}
+                  className={form.elaborado_por_id ? autoCls : inputCls}
                   readOnly={!!form.elaborado_por_id && !!espSeleccionado?.cargo}
                 />
               </div>
             </div>
 
-            {/* Firma y sello */}
+            {/* Firma y sello con carga de imagen */}
             <div className="border-2 border-dashed border-slate-200 rounded-xl p-6">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-5 text-center">
+                Firma y Sello
+              </p>
               <div className="grid grid-cols-2 gap-8">
-                <div className="flex flex-col items-center gap-3">
-                  <PenLine size={20} className="text-slate-300" />
-                  <div className="w-full border-b-2 border-slate-300 h-12" />
-                  <div className="text-center">
-                    <p className="text-xs font-semibold text-slate-600">
-                      {espSeleccionado?.nombre ?? 'Especialista'}
-                    </p>
-                    <p className="text-xs text-slate-400">{form.elaborado_por_cargo || 'Cargo'}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Firma</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-16 h-16 border-2 border-dashed border-slate-200 rounded-full flex items-center justify-center">
-                    <span className="text-xs text-slate-300 text-center leading-tight">Sello<br/>empresa</span>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs font-semibold text-slate-600">{escuela?.empresa_supervision ?? '—'}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Sello</p>
-                  </div>
-                </div>
+                {/* Firma */}
+                <ImageUploader
+                  label={espSeleccionado?.nombre ?? 'Especialista'}
+                  sublabel={form.elaborado_por_cargo || 'Firma del especialista'}
+                  value={form.firma_url}
+                  onChange={v => set('firma_url', v)}
+                  shape="rect"
+                  informeId={id}
+                  slot="firma"
+                />
+                {/* Sello */}
+                <ImageUploader
+                  label={escuela?.empresa_supervision ?? 'Empresa de supervisión'}
+                  sublabel="Sello de la empresa"
+                  value={form.sello_url}
+                  onChange={v => set('sello_url', v)}
+                  shape="circle"
+                  informeId={id}
+                  slot="sello"
+                />
               </div>
+              <p className="text-xs text-slate-400 text-center mt-4">
+                Formatos aceptados: PNG, JPG, WEBP · Fondo transparente recomendado para firma
+              </p>
             </div>
           </div>
         </section>
