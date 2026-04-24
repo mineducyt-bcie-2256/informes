@@ -6,6 +6,7 @@ import FormWrapper from '@/components/forms/FormWrapper'
 import EscuelaInfoHeader from '@/components/forms/EscuelaInfoHeader'
 import DescripcionCondicion from '@/components/forms/DescripcionCondicion'
 import CapacitacionesSection from '@/components/forms/CapacitacionesSection'
+import RegistroFotografico, { type Foto } from '@/components/forms/RegistroFotografico'
 import { Users, AlertTriangle, Bell, CheckCircle2 } from 'lucide-react'
 
 // ── Normaliza porcentaje_avance (0.98 → 98 | 98 → 98) ───────────
@@ -45,6 +46,7 @@ const INIT = {
   tiene_capacitaciones: '',
   capacitaciones_list: [] as any[],
   observaciones: '',
+  fotos: [] as Foto[],
 }
 
 const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -199,6 +201,11 @@ export default function PppiPage() {
 
   useEffect(() => {
     async function load() {
+      await fetch('/api/migrate-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table: 'informe_pppi' }),
+      })
       // 1. Intentar cargar datos guardados del informe actual
       const { data: d } = await supabase.from('informe_pppi').select('*').eq('informe_id', id).single()
 
@@ -451,6 +458,11 @@ export default function PppiPage() {
             rows={3} placeholder="Observaciones generales del periodo..."
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
         </div>
+
+        <RegistroFotografico
+          fotos={data.fotos ?? []}
+          onChange={v => set('fotos', v)}
+        />
 
       </div>
     </FormWrapper>

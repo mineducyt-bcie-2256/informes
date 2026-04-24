@@ -6,6 +6,7 @@ import FormWrapper from '@/components/forms/FormWrapper'
 import EscuelaInfoHeader from '@/components/forms/EscuelaInfoHeader'
 import DescripcionCondicion from '@/components/forms/DescripcionCondicion'
 import CapacitacionesSection from '@/components/forms/CapacitacionesSection'
+import RegistroFotografico, { type Foto } from '@/components/forms/RegistroFotografico'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 
 // ── Catálogos ────────────────────────────────────────────────────
@@ -58,6 +59,7 @@ const INIT = {
   residuos_construccion: [] as ResiduoReg[],
   tiene_capacitaciones: '',
   capacitaciones_list:  [] as Capacitacion[],
+  fotos: [] as Foto[],
 }
 
 // ── Componente de sección (FUERA de PgrPage para evitar re-montaje) ──
@@ -300,6 +302,11 @@ export default function PgrPage() {
 
   useEffect(() => {
     async function load() {
+      await fetch('/api/migrate-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table: 'informe_pgr' }),
+      })
       const { data: pgrData } = await supabase
         .from('informe_pgr').select('*').eq('informe_id', id).single()
 
@@ -384,6 +391,11 @@ export default function PgrPage() {
           capacitaciones={data.capacitaciones_list}
           onChangeTiene={v => set('tiene_capacitaciones', v)}
           onChangeCapacitaciones={v => set('capacitaciones_list', v)}
+        />
+
+        <RegistroFotografico
+          fotos={data.fotos ?? []}
+          onChange={v => set('fotos', v)}
         />
 
       </div>

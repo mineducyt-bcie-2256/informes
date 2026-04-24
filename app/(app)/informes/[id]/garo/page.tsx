@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
 import EscuelaInfoHeader from '@/components/forms/EscuelaInfoHeader'
 import DescripcionCondicion from '@/components/forms/DescripcionCondicion'
+import RegistroFotografico, { type Foto } from '@/components/forms/RegistroFotografico'
 import { Plus, Trash2, CheckCircle, XCircle, Pencil } from 'lucide-react'
 
 // ── Opciones ────────────────────────────────────────────────
@@ -58,11 +59,19 @@ const USO_VACIO = {
   impacto_potencial: '', medida_prevencion: '', medios_verificacion: '',
 }
 
+const INCIDENTE_VACIO = () => ({
+  id: crypto.randomUUID(),
+  tipo: '', ubicacion: '', fecha_hora: '', descripcion: '', medidas_correctivas: '',
+})
+
 const INIT = {
   descripcion_condicion: '',
   unidades_sanitarias: [] as typeof UNIDAD_VACIA[],
   usos_agua: [] as typeof USO_VACIO[],
   obras_infraestructura: [] as typeof OBRA_VACIA[],
+  tiene_incidentes: '',
+  incidentes: [] as ReturnType<typeof INCIDENTE_VACIO>[],
+  fotos: [] as Foto[],
 }
 
 // ── Componente ────────────────────────────────────────────────
@@ -88,6 +97,11 @@ export default function GaroPage() {
 
   useEffect(() => {
     async function load() {
+      await fetch('/api/migrate-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table: 'informe_garo' }),
+      })
       // 1. Cargar datos actuales del informe
       const { data: garoData } = await supabase
         .from('informe_garo').select('*').eq('informe_id', id).single()
@@ -669,6 +683,116 @@ export default function GaroPage() {
             </button>
           )}
         </section>
+
+        {/* ── Reporte de incidentes / incumplimientos ── */}
+        <section>
+          <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-4 pb-2 border-b border-slate-100">
+            Reporte de incidentes / incumplimientos
+          </h3>
+
+          {/* Pregunta sí/no */}
+          <div className="mb-4">
+            <p className="text-sm text-slate-700 mb-2">
+              ¿Se identificaron incidentes ambientales relacionados al mal manejo de aguas residuales?
+            </p>
+            <div className="flex gap-4">
+              {['Sí', 'No'].map(op => (
+                <label key={op} className={`flex items-center gap-2 px-4 py-2 rounded-lg border cursor-pointer text-sm font-medium transition-all ${
+                  data.tiene_incidentes === op
+                    ? 'border-blue-500 bg-blue-50 text-blue-800'
+                    : 'border-slate-200 text-slate-600 hover:border-slate-300'
+                }`}>
+                  <input type="radio" name="tiene_incidentes" value={op}
+                    checked={data.tiene_incidentes === op}
+                    onChange={() => set('tiene_incidentes', op)}
+                    className="accent-blue-600" />
+                  {op}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Tabla de incidentes — solo si respondió Sí */}
+          {data.tiene_incidentes === 'Sí' && (
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Detalle de incidentes</label>
+                <button
+                  type="button"
+                  onClick={() => set('incidentes', [...(data.incidentes ?? []), INCIDENTE_VACIO()])}
+                  className="flex items-center gap-1.5 text-xs bg-blue-900 text-white px-3 py-1.5 rounded-lg hover:bg-blue-800 transition"
+                >
+                  <Plus size={13} /> Agregar incidente
+                </button>
+              </div>
+
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-slate-800 text-white">
+                      <th className="px-3 py-2.5 text-left font-semibold w-36">Tipo de incidente</th>
+                      <th className="px-3 py-2.5 text-left font-semibold w-32">Ubicación</th>
+                      <th className="px-3 py-2.5 text-left font-semibold w-36">Fecha y hora</th>
+                      <th className="px-3 py-2.5 text-left font-semibold">Descripción</th>
+                      <th className="px-3 py-2.5 text-left font-semibold">Medidas correctivas implementadas</th>
+                      <th className="w-8" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(data.incidentes ?? []).length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-6 text-center text-slate-400 italic">
+                          Sin incidentes registrados. Haz clic en "Agregar incidente".
+                        </td>
+                      </tr>
+                    )}
+                    {(data.incidentes ?? []).map((item, i) => (
+                      <tr key={item.id} className={i % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                        <td className="px-2 py-1.5">
+                          <input value={item.tipo}
+                            onChange={e => set('incidentes', (data.incidentes ?? []).map((x, j) => j === i ? { ...x, tipo: e.target.value } : x))}
+                            placeholder="Ej: Derrame, Contaminación..." className="w-full border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <input value={item.ubicacion}
+                            onChange={e => set('incidentes', (data.incidentes ?? []).map((x, j) => j === i ? { ...x, ubicacion: e.target.value } : x))}
+                            placeholder="Sector / área..." className="w-full border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <input type="datetime-local" value={item.fecha_hora}
+                            onChange={e => set('incidentes', (data.incidentes ?? []).map((x, j) => j === i ? { ...x, fecha_hora: e.target.value } : x))}
+                            className="w-full border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400" />
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <textarea value={item.descripcion} rows={2}
+                            onChange={e => set('incidentes', (data.incidentes ?? []).map((x, j) => j === i ? { ...x, descripcion: e.target.value } : x))}
+                            placeholder="Describa el incidente..." className="w-full border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none" />
+                        </td>
+                        <td className="px-2 py-1.5">
+                          <textarea value={item.medidas_correctivas} rows={2}
+                            onChange={e => set('incidentes', (data.incidentes ?? []).map((x, j) => j === i ? { ...x, medidas_correctivas: e.target.value } : x))}
+                            placeholder="Acciones tomadas..." className="w-full border border-slate-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none" />
+                        </td>
+                        <td className="px-2 py-1.5 text-center">
+                          <button type="button"
+                            onClick={() => set('incidentes', (data.incidentes ?? []).filter((_, j) => j !== i))}
+                            className="text-slate-300 hover:text-red-500 transition">
+                            <Trash2 size={13} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <RegistroFotografico
+          fotos={data.fotos ?? []}
+          onChange={v => set('fotos', v)}
+        />
 
       </div>
     </FormWrapper>

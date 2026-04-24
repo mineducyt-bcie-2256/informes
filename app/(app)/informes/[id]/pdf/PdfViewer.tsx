@@ -235,6 +235,46 @@ function Footer({ escuela, periodo }: { escuela: string; periodo: string }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// REGISTRO FOTOGRÁFICO (reutilizable en todas las secciones)
+// ═══════════════════════════════════════════════════════════════════
+// Carta: 612pt - 45*2 margen = 522pt contenido. 2 fotos + 10 separación = 256pt c/u
+const FW = 256
+const FH = 170
+
+function FotosGrid({ fotos }: { fotos: any[] }) {
+  if (!fotos?.length) return null
+
+  const pares: any[][] = []
+  for (let i = 0; i < fotos.length; i += 2) pares.push(fotos.slice(i, i + 2))
+
+  return (
+    <>
+      <SubBanner title="Registro Fotográfico" />
+      {pares.map((par, ri) => (
+        <View key={ri} style={{ flexDirection: 'row', marginBottom: 12 }}>
+          {/* columna izquierda */}
+          <View style={{ width: FW, marginRight: 10 }}>
+            <Image src={par[0].url} style={{ width: FW, height: FH, borderRadius: 3 }} />
+            {par[0].descripcion
+              ? <Text style={{ fontSize: 7, color: MUTED, marginTop: 3, textAlign: 'center' }}>{par[0].descripcion}</Text>
+              : null}
+          </View>
+          {/* columna derecha */}
+          {par[1] && (
+            <View style={{ width: FW }}>
+              <Image src={par[1].url} style={{ width: FW, height: FH, borderRadius: 3 }} />
+              {par[1].descripcion
+                ? <Text style={{ fontSize: 7, color: MUTED, marginTop: 3, textAlign: 'center' }}>{par[1].descripcion}</Text>
+                : null}
+            </View>
+          )}
+        </View>
+      ))}
+    </>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // PORTADA
 // ═══════════════════════════════════════════════════════════════════
 function Portada({ data }: { data: any }) {
@@ -261,7 +301,7 @@ function Portada({ data }: { data: any }) {
         : []
 
   return (
-    <Page size="A4" style={s.coverPage}>
+    <Page size="LETTER" style={s.coverPage}>
 
       {/* ── Encabezado centrado ── */}
       <View style={s.coverTop}>
@@ -447,7 +487,7 @@ function ResumenEjecutivo({ data }: { data: any }) {
   const estudiantesPRT = parseInt(prt?.num_estudiantes) || 0
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
 
       {/* Encabezado de sección */}
@@ -585,7 +625,7 @@ function SeccionGenerales({ data }: { data: any }) {
   const fechaRa = esc?.fecha_ra ?? (esc as any)?.fechas_de_ra ?? null
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
 
       {/* Banner sección */}
@@ -693,6 +733,7 @@ function SeccionGenerales({ data }: { data: any }) {
           </View>
         </>
       )}
+      <FotosGrid fotos={c1317?.fotos ?? []} />
     </Page>
   )
 }
@@ -708,7 +749,7 @@ function SeccionHSSO({ data }: { data: any }) {
   const capacitaciones: any[] = hsso.capacitaciones_list ?? []
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
 
       <View style={s.sectionBanner}>
@@ -728,7 +769,7 @@ function SeccionHSSO({ data }: { data: any }) {
       )}
 
       {/* Personal */}
-      <SubBanner title="Personal en obra" />
+      <SubBanner title="Personal que labora en el proyecto" />
       <View style={s.kpiRow}>
         <View style={s.kpiBox}>
           <Text style={s.kpiNum}>{val(hsso.personal_hombres, '0')}</Text>
@@ -746,18 +787,43 @@ function SeccionHSSO({ data }: { data: any }) {
 
       {/* EPP */}
       <SubBanner title="Equipos de protección personal (EPP)" />
-      <View style={s.cols2}>
+      <View style={[s.cols2, { marginBottom: 6 }]}>
         <View style={s.col}>
           <Field label="EPP entregado" value={hsso.epp_entregado} />
           <Field label="Personal cubierto" value={hsso.epp_personal_cubierto} />
         </View>
         <View style={s.col}>
           <Field label="Personal sin uso EPP" value={hsso.epp_sin_uso} />
-          <Field label="Motivo de no uso" value={hsso.epp_motivo_no_uso} />
+          {hsso.epp_motivo_no_uso && <Field label="Motivo de no uso" value={hsso.epp_motivo_no_uso} />}
         </View>
       </View>
       {hsso.epp_recomendaciones && (
-        <Field label="Recomendaciones EPP" value={hsso.epp_recomendaciones} />
+        <Field label="Avance / recomendaciones EPP" value={hsso.epp_recomendaciones} />
+      )}
+
+      {/* Tabla detalle EPP */}
+      {(hsso.epp_items ?? []).length > 0 && (
+        <>
+          <SubBanner title="Detalle de EPP entregado" />
+          <View style={s.table}>
+            <View style={s.tableHead}>
+              <Text style={[s.tableHeadCell, { flex: 2 }]}>EPP</Text>
+              <Text style={[s.tableHeadCell, { flex: 2 }]}>Tipo (Área de trabajo)</Text>
+              <Text style={[s.tableHeadCell, { flex: 1 }]}>Cantidad</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Fecha entrega</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Estado EPP</Text>
+            </View>
+            {(hsso.epp_items as any[]).map((item: any, i: number) => (
+              <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                <Text style={[s.tableCell, { flex: 2 }]}>{val(item.epp)}</Text>
+                <Text style={[s.tableCell, { flex: 2 }]}>{val(item.tipo)}</Text>
+                <Text style={[s.tableCell, { flex: 1 }]}>{val(item.cantidad)}</Text>
+                <Text style={[s.tableCell, { flex: 1.5 }]}>{val(item.fecha_entrega)}</Text>
+                <Text style={[s.tableCell, { flex: 1.5 }]}>{val(item.estado)}</Text>
+              </View>
+            ))}
+          </View>
+        </>
       )}
 
       {/* Accidentes */}
@@ -791,22 +857,25 @@ function SeccionHSSO({ data }: { data: any }) {
           <SubBanner title="Capacitaciones realizadas" />
           <View style={s.table}>
             <View style={s.tableHead}>
-              <Text style={[s.tableHeadCell, { flex: 2 }]}>Tema</Text>
-              <Text style={s.tableHeadCell}>Fecha</Text>
-              <Text style={s.tableHeadCell}>Personal</Text>
-              <Text style={s.tableHeadCell}>Impartida por</Text>
+              <Text style={[s.tableHeadCell, { flex: 3 }]}>Temática</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Fecha</Text>
+              <Text style={s.tableHeadCell}>Hombres</Text>
+              <Text style={s.tableHeadCell}>Mujeres</Text>
+              <Text style={s.tableHeadCell}>Total</Text>
             </View>
             {capacitaciones.map((c: any, i: number) => (
               <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-                <Text style={[s.tableCell, { flex: 2 }]}>{val(c.tema)}</Text>
-                <Text style={s.tableCell}>{val(c.fecha)}</Text>
-                <Text style={s.tableCell}>{val(c.personal)}</Text>
-                <Text style={s.tableCell}>{val(c.impartida_por)}</Text>
+                <Text style={[s.tableCell, { flex: 3 }]}>{val(c.tematica)}</Text>
+                <Text style={[s.tableCell, { flex: 1.5 }]}>{val(c.fecha)}</Text>
+                <Text style={s.tableCell}>{val(c.hombres, '0')}</Text>
+                <Text style={s.tableCell}>{val(c.mujeres, '0')}</Text>
+                <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold' }]}>{val(c.total, '0')}</Text>
               </View>
             ))}
           </View>
         </>
       )}
+      <FotosGrid fotos={hsso.fotos ?? []} />
     </Page>
   )
 }
@@ -821,7 +890,7 @@ function SeccionGARO({ data }: { data: any }) {
   const actividades: any[] = garo.actividades ?? []
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
 
       <View style={s.sectionBanner}>
@@ -883,6 +952,32 @@ function SeccionGARO({ data }: { data: any }) {
           <TextBlock text={garo.observaciones} />
         </>
       )}
+
+      {/* Incidentes */}
+      <SubBanner title="Reporte de incidentes / incumplimientos" />
+      <Field label="¿Se identificaron incidentes ambientales?" value={garo.tiene_incidentes ?? '—'} />
+      {(garo.incidentes ?? []).length > 0 && (
+        <View style={s.table}>
+          <View style={s.tableHead}>
+            <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Tipo de incidente</Text>
+            <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Ubicación</Text>
+            <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Fecha y hora</Text>
+            <Text style={[s.tableHeadCell, { flex: 2 }]}>Descripción</Text>
+            <Text style={[s.tableHeadCell, { flex: 2 }]}>Medidas correctivas</Text>
+          </View>
+          {(garo.incidentes as any[]).map((item: any, i: number) => (
+            <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+              <Text style={[s.tableCell, { flex: 1.5 }]}>{val(item.tipo)}</Text>
+              <Text style={[s.tableCell, { flex: 1.2 }]}>{val(item.ubicacion)}</Text>
+              <Text style={[s.tableCell, { flex: 1.5 }]}>{val(item.fecha_hora)}</Text>
+              <Text style={[s.tableCell, { flex: 2 }]}>{val(item.descripcion)}</Text>
+              <Text style={[s.tableCell, { flex: 2 }]}>{val(item.medidas_correctivas)}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <FotosGrid fotos={garo.fotos ?? []} />
     </Page>
   )
 }
@@ -895,7 +990,7 @@ function SeccionPGR({ data }: { data: any }) {
   if (!pgr) return null
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
 
       <View style={s.sectionBanner}>
@@ -954,6 +1049,7 @@ function SeccionPGR({ data }: { data: any }) {
           <TextBlock text={pgr.observaciones} />
         </>
       )}
+      <FotosGrid fotos={pgr.fotos ?? []} />
     </Page>
   )
 }
@@ -968,7 +1064,7 @@ function SeccionMCEAR({ data }: { data: any }) {
   const mediciones: any[] = mcear.mediciones ?? []
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
 
       <View style={s.sectionBanner}>
@@ -1023,6 +1119,7 @@ function SeccionMCEAR({ data }: { data: any }) {
           <TextBlock text={mcear.observaciones} />
         </>
       )}
+      <FotosGrid fotos={mcear.fotos ?? []} />
     </Page>
   )
 }
@@ -1037,7 +1134,7 @@ function SeccionPPPI({ data }: { data: any }) {
   const reuniones: any[] = pppi.reuniones ?? []
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
 
       <View style={s.sectionBanner}>
@@ -1088,6 +1185,7 @@ function SeccionPPPI({ data }: { data: any }) {
           </View>
         </>
       )}
+      <FotosGrid fotos={pppi.fotos ?? []} />
     </Page>
   )
 }
@@ -1102,7 +1200,7 @@ function SeccionMAQR({ data }: { data: any }) {
   const quejas: any[] = maqr.quejas_list ?? []
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
 
       <View style={s.sectionBanner}>
@@ -1167,6 +1265,7 @@ function SeccionMAQR({ data }: { data: any }) {
           <TextBlock text={maqr.observaciones} />
         </>
       )}
+      <FotosGrid fotos={maqr.fotos ?? []} />
     </Page>
   )
 }
@@ -1181,7 +1280,7 @@ function SeccionPRT({ data }: { data: any }) {
   const lugares: any[] = prt.lugares ?? []
 
   return (
-    <Page size="A4" style={s.page}>
+    <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
 
       <View style={s.sectionBanner}>
@@ -1248,6 +1347,7 @@ function SeccionPRT({ data }: { data: any }) {
           <TextBlock text={prt.observaciones} />
         </>
       )}
+      <FotosGrid fotos={prt.fotos ?? []} />
     </Page>
   )
 }

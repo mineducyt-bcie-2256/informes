@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
 import EscuelaInfoHeader from '@/components/forms/EscuelaInfoHeader'
 import DescripcionCondicion from '@/components/forms/DescripcionCondicion'
+import RegistroFotografico, { type Foto } from '@/components/forms/RegistroFotografico'
 import { Wind, Volume2, XCircle } from 'lucide-react'
 
 // ── Clasificaciones de calidad de aire ──────────────────────────
@@ -147,6 +148,7 @@ const INIT = {
   descripcion_condicion: '',
   mediciones_aire:     [] as MedicionAire[],
   mediciones_acustica: [] as MedicionAcustica[],
+  fotos: [] as Foto[],
 }
 
 const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -479,6 +481,11 @@ export default function McearPage() {
 
   useEffect(() => {
     async function load() {
+      await fetch('/api/migrate-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table: 'informe_mcear' }),
+      })
       const { data: d } = await supabase.from('informe_mcear').select('*').eq('informe_id', id).single()
       if (d) {
         setData({ ...INIT, ...d, mediciones_aire: d.mediciones_aire ?? [], mediciones_acustica: d.mediciones_acustica ?? [] })
@@ -541,6 +548,11 @@ export default function McearPage() {
         <SeccionContaminacionAcustica
           mediciones={data.mediciones_acustica}
           onChange={v => set('mediciones_acustica', v)}
+        />
+
+        <RegistroFotografico
+          fotos={data.fotos ?? []}
+          onChange={v => set('fotos', v)}
         />
 
       </div>

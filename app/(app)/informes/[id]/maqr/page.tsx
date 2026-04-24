@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
 import EscuelaInfoHeader from '@/components/forms/EscuelaInfoHeader'
 import DescripcionCondicion from '@/components/forms/DescripcionCondicion'
+import RegistroFotografico, { type Foto } from '@/components/forms/RegistroFotografico'
 import {
   Plus, Trash2, Mailbox, AlertCircle, Mail, Phone, MessageCircle,
   Info, ChevronDown, ChevronUp, Clock, BarChart2, PlusCircle, X, History,
@@ -638,6 +639,7 @@ export default function MaqrPage() {
   const [descripcion,       setDescripcion]       = useState('')
   const [medios,            setMedios]            = useState<MediosRecepcion>(MEDIOS_INIT)
   const [quejas,            setQuejas]            = useState<Queja[]>([])
+  const [fotos,             setFotos]             = useState<Foto[]>([])
   const [autoLoaded,        setAutoLoaded]        = useState(false)
   const [autoLoadedQuejas,  setAutoLoadedQuejas]  = useState(false)
   const [statsAcum,         setStatsAcum]         = useState({ total: 0, abiertas: 0, resueltas: 0 })
@@ -645,6 +647,11 @@ export default function MaqrPage() {
 
   useEffect(() => {
     async function load() {
+      await fetch('/api/migrate-form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table: 'informe_maqr' }),
+      })
       // Informe header — needed for prev-period lookup and accumulated stats
       const { data: inf } = await supabase.from('informes')
         .select('escuela_id, periodo_mes, periodo_anio').eq('id', id).single()
@@ -655,6 +662,7 @@ export default function MaqrPage() {
       if (d) {
         setDescripcion(d.descripcion_condicion ?? '')
         setMedios(d.medios_recepcion ?? MEDIOS_INIT)
+        setFotos(d.fotos ?? [])
         const { data: qs } = await supabase.from('informe_maqr_quejas').select('*').eq('maqr_id', d.id).order('numero_queja')
         setQuejas((qs ?? []).map((q: any) => ({ ...QUEJA_INIT, ...q, medidas: q.medidas ?? [] })))
       } else if (inf) {
@@ -716,7 +724,7 @@ export default function MaqrPage() {
 
   async function onSave() {
     const { data: maqrData, error: e1 } = await supabase.from('informe_maqr')
-      .upsert({ informe_id: id, descripcion_condicion: descripcion, medios_recepcion: medios, cantidad_quejas: quejas.length }, { onConflict: 'informe_id' })
+      .upsert({ informe_id: id, descripcion_condicion: descripcion, medios_recepcion: medios, cantidad_quejas: quejas.length, fotos }, { onConflict: 'informe_id' })
       .select().single()
     if (e1) throw new Error(e1.message)
 
@@ -804,6 +812,11 @@ export default function MaqrPage() {
             </p>
           )}
         </section>
+
+        <RegistroFotografico
+          fotos={fotos}
+          onChange={v => setFotos(v)}
+        />
 
       </div>
     </FormWrapper>

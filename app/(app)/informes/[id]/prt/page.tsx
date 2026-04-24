@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
 import EscuelaInfoHeader from '@/components/forms/EscuelaInfoHeader'
 import DescripcionCondicion from '@/components/forms/DescripcionCondicion'
+import RegistroFotografico, { type Foto } from '@/components/forms/RegistroFotografico'
 import { Plus, Trash2, Monitor, Users, MapPin, Wrench, X } from 'lucide-react'
 
 // ════════════════════════════════════════════════════════════════
@@ -96,6 +97,7 @@ const INIT = {
   modalidad:             [] as string[],
   lugares:               [crearLugar()] as LugarData[],
   virtual:               crearLugar() as LugarData,
+  fotos:                 [] as Foto[],
 }
 
 // ── Estilos comunes ───────────────────────────────────────────────
@@ -499,16 +501,23 @@ export default function PrtPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.from('informe_prt').select('*').eq('informe_id', id).single()
-      .then(({ data: d }) => {
-        if (!d) return
-        setForm({
-          descripcion_condicion: d.descripcion_condicion ?? '',
-          modalidad:             d.modalidad ?? [],
-          lugares:               d.lugares?.length ? d.lugares : [crearLugar()],
-          virtual:               d.virtual ?? crearLugar(),
+    fetch('/api/migrate-form', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ table: 'informe_prt' }),
+    }).finally(() => {
+      supabase.from('informe_prt').select('*').eq('informe_id', id).single()
+        .then(({ data: d }) => {
+          if (!d) return
+          setForm({
+            descripcion_condicion: d.descripcion_condicion ?? '',
+            modalidad:             d.modalidad ?? [],
+            lugares:               d.lugares?.length ? d.lugares : [crearLugar()],
+            virtual:               d.virtual ?? crearLugar(),
+            fotos:                 d.fotos ?? [],
+          })
         })
-      })
+    })
   }, [id])
 
   function set<K extends keyof typeof INIT>(f: K, v: (typeof INIT)[K]) {
@@ -555,6 +564,7 @@ export default function PrtPage() {
       tipo_continuidad:      form.modalidad.join(', '),
       lugar_reubicacion:     form.lugares.map(l => l.direccion).filter(Boolean).join(' / '),
       tipo_uso:              [...new Set(form.lugares.map(l => l.condicion_uso).filter(Boolean))].join(', '),
+      fotos:                 form.fotos,
     }
     const { error } = await supabase.from('informe_prt').upsert(payload, { onConflict: 'informe_id' })
     if (error) throw new Error(error.message)
@@ -882,6 +892,11 @@ export default function PrtPage() {
         )}
 
         <SeccionAnalisis />
+
+        <RegistroFotografico
+          fotos={form.fotos ?? []}
+          onChange={v => set('fotos', v)}
+        />
 
       </div>
     </FormWrapper>
