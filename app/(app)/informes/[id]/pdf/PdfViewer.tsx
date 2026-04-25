@@ -237,9 +237,17 @@ function Footer({ escuela, periodo }: { escuela: string; periodo: string }) {
 // ═══════════════════════════════════════════════════════════════════
 // REGISTRO FOTOGRÁFICO (reutilizable en todas las secciones)
 // ═══════════════════════════════════════════════════════════════════
-// Carta: 612pt - 45*2 margen = 522pt contenido. 2 fotos + 10 separación = 256pt c/u
+// Contenido: 612 - 45*2 = 522pt. Dos fotos + 10 gap = (522-10)/2 = 256pt c/u
 const FW = 256
-const FH = 170
+const FH = 175
+const FGAP = 10   // separación entre fotos
+const ROW_H = FH + 18  // alto del bloque = foto + descripción
+
+/** Inserta transformación Cloudinary para imagen ya recortada */
+function cloudCrop(url: string): string {
+  if (!url.includes('cloudinary.com')) return url
+  return url.replace('/upload/', `/upload/w_${FW * 2},h_${FH * 2},c_fill,q_80/`)
+}
 
 function FotosGrid({ fotos }: { fotos: any[] }) {
   if (!fotos?.length) return null
@@ -251,23 +259,29 @@ function FotosGrid({ fotos }: { fotos: any[] }) {
     <>
       <SubBanner title="Registro Fotográfico" />
       {pares.map((par, ri) => (
-        <View key={ri} style={{ flexDirection: 'row', marginBottom: 12 }}>
-          {/* columna izquierda */}
-          <View style={{ width: FW, marginRight: 10 }}>
-            <Image src={par[0].url} style={{ width: FW, height: FH, borderRadius: 3 }} />
-            {par[0].descripcion
-              ? <Text style={{ fontSize: 7, color: MUTED, marginTop: 3, textAlign: 'center' }}>{par[0].descripcion}</Text>
-              : null}
-          </View>
-          {/* columna derecha */}
+        // Contenedor con altura fija y posicionamiento absoluto para las fotos
+        <View key={ri} style={{ width: 522, height: ROW_H, marginBottom: 8, position: 'relative' }}>
+
+          {/* Foto izquierda — posición absoluta en x=0 */}
+          <Image
+            src={cloudCrop(par[0].url)}
+            style={{ position: 'absolute', left: 0, top: 0, width: FW, height: FH, borderRadius: 3 }}
+          />
+          {par[0].descripcion
+            ? <Text style={{ position: 'absolute', left: 0, top: FH + 2, width: FW, fontSize: 7, color: MUTED, textAlign: 'center' }}>{par[0].descripcion}</Text>
+            : null}
+
+          {/* Foto derecha — posición absoluta en x = FW + FGAP */}
           {par[1] && (
-            <View style={{ width: FW }}>
-              <Image src={par[1].url} style={{ width: FW, height: FH, borderRadius: 3 }} />
-              {par[1].descripcion
-                ? <Text style={{ fontSize: 7, color: MUTED, marginTop: 3, textAlign: 'center' }}>{par[1].descripcion}</Text>
-                : null}
-            </View>
+            <Image
+              src={cloudCrop(par[1].url)}
+              style={{ position: 'absolute', left: FW + FGAP, top: 0, width: FW, height: FH, borderRadius: 3 }}
+            />
           )}
+          {par[1]?.descripcion
+            ? <Text style={{ position: 'absolute', left: FW + FGAP, top: FH + 2, width: FW, fontSize: 7, color: MUTED, textAlign: 'center' }}>{par[1].descripcion}</Text>
+            : null}
+
         </View>
       ))}
     </>
@@ -884,10 +898,18 @@ function SeccionHSSO({ data }: { data: any }) {
 // GARO
 // ═══════════════════════════════════════════════════════════════════
 function SeccionGARO({ data }: { data: any }) {
-  const { esc, periodo, garo } = data
+  const { esc, periodo, garo, hsso } = data
   if (!garo) return null
 
-  const actividades: any[] = garo.actividades ?? []
+  const unidades: any[]  = garo.unidades_sanitarias ?? []
+  const usos: any[]      = garo.usos_agua           ?? []
+  const obras: any[]     = garo.obras_infraestructura ?? []
+  const incidentes: any[] = garo.incidentes          ?? []
+
+  // Personal desde HSSO
+  const ph = hsso?.personal_hombres ?? '—'
+  const pm = hsso?.personal_mujeres ?? '—'
+  const pt = hsso?.personal_total   ?? '—'
 
   return (
     <Page size="LETTER" style={s.page}>
@@ -898,6 +920,7 @@ function SeccionGARO({ data }: { data: any }) {
         <Text style={s.sectionTitle}>Condición 2 — Gestión de Aguas Residuales Ordinarias (GARO)</Text>
       </View>
 
+      {/* Descripción */}
       {garo.descripcion_condicion && (
         <>
           <SubBanner title="Descripción de la condición" />
@@ -905,67 +928,136 @@ function SeccionGARO({ data }: { data: any }) {
         </>
       )}
 
-      {/* Personal */}
+      {/* Personal (tomado de HSSO) */}
       <SubBanner title="Personal en obra" />
-      <View style={s.cols2}>
-        <View style={s.col}>
-          <Field label="Hombres" value={garo.personal_hombres} />
-          <Field label="Mujeres" value={garo.personal_mujeres} />
-          <Field label="Total" value={garo.personal_total} />
+      <View style={s.kpiRow}>
+        <View style={s.kpiBox}>
+          <Text style={s.kpiNum}>{ph}</Text>
+          <Text style={s.kpiLabel}>Hombres</Text>
         </View>
-        <View style={s.col}>
-          <Field label="Tipo de sanitario" value={garo.sanitario_tipo} />
-          <Field label="Sanitarios hombres" value={garo.sanitario_hombres} />
-          <Field label="Sanitarios mujeres" value={garo.sanitario_mujeres} />
+        <View style={s.kpiBox}>
+          <Text style={s.kpiNum}>{pm}</Text>
+          <Text style={s.kpiLabel}>Mujeres</Text>
+        </View>
+        <View style={[s.kpiBox, { borderColor: NAVY, borderWidth: 2 }]}>
+          <Text style={[s.kpiNum, { color: NAVY }]}>{pt}</Text>
+          <Text style={s.kpiLabel}>Total</Text>
         </View>
       </View>
 
-      {/* Agua */}
-      <SubBanner title="Uso y manejo del agua" />
-      <Field label="Procedencia del agua" value={garo.agua_procedencia} />
-      <Field label="Manejo de aguas residuales" value={garo.manejo_aguas_residuales} />
-      <Field label="Sistema de tratamiento" value={garo.sistema_tratamiento} />
+      {/* Unidades sanitarias */}
+      {unidades.length > 0 && (() => {
+        const totalH = unidades.reduce((s: number, u: any) => s + (parseInt(u.hombres) || 0), 0)
+        const totalM = unidades.reduce((s: number, u: any) => s + (parseInt(u.mujeres) || 0), 0)
+        const reqH   = hsso?.personal_hombres ? Math.ceil(parseInt(hsso.personal_hombres) / 20) : 0
+        const reqM   = hsso?.personal_mujeres ? Math.ceil(parseInt(hsso.personal_mujeres) / 20) : 0
+        const cumpleH = totalH >= reqH
+        const cumpleM = totalM >= reqM
+        const cumple  = cumpleH && cumpleM
+        return (
+          <>
+            <SubBanner title="Unidades sanitarias instaladas en el proyecto" />
 
-      {/* Actividades */}
-      {actividades.length > 0 && (
+            {/* Criterio de cumplimiento */}
+            <View style={[s.chip, cumple ? s.chipGreen : s.chipRed, { marginBottom: 6, flexDirection: 'row', gap: 16 }]}>
+              <Text style={[s.chipText, { color: cumple ? GREEN : RED, fontFamily: 'Helvetica-Bold' }]}>
+                {cumple ? '✓ CUMPLE con el criterio (1 unidad / 20 personas)' : '✗ NO CUMPLE con el criterio (1 unidad / 20 personas)'}
+              </Text>
+              <Text style={[s.chipText, { color: cumpleH ? GREEN : RED }]}>
+                Hombres: {totalH} instaladas / {reqH} requeridas
+              </Text>
+              <Text style={[s.chipText, { color: cumpleM ? GREEN : RED }]}>
+                Mujeres: {totalM} instaladas / {reqM} requeridas
+              </Text>
+            </View>
+
+            <View style={s.table}>
+              <View style={s.tableHead}>
+                <Text style={[s.tableHeadCell, { flex: 2 }]}>Tipo</Text>
+                <Text style={s.tableHeadCell}>Hombres</Text>
+                <Text style={s.tableHeadCell}>Mujeres</Text>
+                <Text style={s.tableHeadCell}>Total</Text>
+              </View>
+              {unidades.map((u: any, i: number) => (
+                <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                  <Text style={[s.tableCell, { flex: 2 }]}>{val(u.tipo)}</Text>
+                  <Text style={s.tableCell}>{val(u.hombres, '0')}</Text>
+                  <Text style={s.tableCell}>{val(u.mujeres, '0')}</Text>
+                  <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold' }]}>{val(u.total, '0')}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )
+      })()}
+
+      {/* Manejo de aguas residuales */}
+      {usos.length > 0 && (
         <>
-          <SubBanner title="Actividades que generan aguas residuales" />
+          <SubBanner title="Manejo de aguas residuales en las actividades del proyecto" />
           <View style={s.table}>
             <View style={s.tableHead}>
-              <Text style={[s.tableHeadCell, { flex: 2 }]}>Categoría</Text>
+              <Text style={[s.tableHeadCell, { flex: 2 }]}>Procedencia del agua</Text>
               <Text style={[s.tableHeadCell, { flex: 2 }]}>Actividad</Text>
+              <Text style={[s.tableHeadCell, { flex: 1 }]}>Volumen (L)</Text>
+              <Text style={[s.tableHeadCell, { flex: 2 }]}>Impacto potencial</Text>
+              <Text style={[s.tableHeadCell, { flex: 2 }]}>Medida de prevención</Text>
             </View>
-            {actividades.map((a: any, i: number) => (
+            {usos.map((u: any, i: number) => {
+              const procedencia = u.procedencia === 'Otros' ? u.procedencia_otro : u.procedencia
+              const actividad   = u.actividad_cat === 'e'
+                ? u.actividad_otro_texto
+                : (u.actividad_especifica === 'Otros' ? u.actividad_especifica_otro : u.actividad_especifica) || u.actividad_cat
+              return (
+                <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                  <Text style={[s.tableCell, { flex: 2 }]}>{val(procedencia)}</Text>
+                  <Text style={[s.tableCell, { flex: 2 }]}>{val(actividad)}</Text>
+                  <Text style={[s.tableCell, { flex: 1 }]}>{val(u.volumen_litros, '0')}</Text>
+                  <Text style={[s.tableCell, { flex: 2 }]}>{val(u.impacto_potencial)}</Text>
+                  <Text style={[s.tableCell, { flex: 2 }]}>{val(u.medida_prevencion)}</Text>
+                </View>
+              )
+            })}
+          </View>
+        </>
+      )}
+
+      {/* Obras de infraestructura */}
+      {obras.length > 0 && (
+        <>
+          <SubBanner title="Mejoramiento o construcción de instalaciones para gestión de aguas residuales" />
+          <View style={s.table}>
+            <View style={s.tableHead}>
+              <Text style={[s.tableHeadCell, { flex: 2.5 }]}>Infraestructura</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Intervención</Text>
+              <Text style={[s.tableHeadCell, { flex: 1 }]}>Avance</Text>
+              <Text style={[s.tableHeadCell, { flex: 3 }]}>Descripción</Text>
+            </View>
+            {obras.map((o: any, i: number) => (
               <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-                <Text style={[s.tableCell, { flex: 2 }]}>{val(a.categoria)}</Text>
-                <Text style={[s.tableCell, { flex: 2 }]}>{val(a.actividad)}</Text>
+                <Text style={[s.tableCell, { flex: 2.5 }]}>{val(o.infraestructura)}</Text>
+                <Text style={[s.tableCell, { flex: 1.5 }]}>{val(o.intervencion)}</Text>
+                <Text style={[s.tableCell, { flex: 1 }]}>{o.porcentaje_avance != null ? `${o.porcentaje_avance}%` : '—'}</Text>
+                <Text style={[s.tableCell, { flex: 3 }]}>{val(o.descripcion)}</Text>
               </View>
             ))}
           </View>
         </>
       )}
 
-      {/* Observaciones */}
-      {garo.observaciones && (
-        <>
-          <SubBanner title="Observaciones" />
-          <TextBlock text={garo.observaciones} />
-        </>
-      )}
-
       {/* Incidentes */}
       <SubBanner title="Reporte de incidentes / incumplimientos" />
-      <Field label="¿Se identificaron incidentes ambientales?" value={garo.tiene_incidentes ?? '—'} />
-      {(garo.incidentes ?? []).length > 0 && (
+      <Field label="¿Se identificaron incidentes ambientales relacionados al mal manejo de aguas residuales?" value={garo.tiene_incidentes ?? '—'} />
+      {incidentes.length > 0 && (
         <View style={s.table}>
           <View style={s.tableHead}>
-            <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Tipo de incidente</Text>
+            <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Tipo</Text>
             <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Ubicación</Text>
             <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Fecha y hora</Text>
             <Text style={[s.tableHeadCell, { flex: 2 }]}>Descripción</Text>
             <Text style={[s.tableHeadCell, { flex: 2 }]}>Medidas correctivas</Text>
           </View>
-          {(garo.incidentes as any[]).map((item: any, i: number) => (
+          {incidentes.map((item: any, i: number) => (
             <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
               <Text style={[s.tableCell, { flex: 1.5 }]}>{val(item.tipo)}</Text>
               <Text style={[s.tableCell, { flex: 1.2 }]}>{val(item.ubicacion)}</Text>
@@ -985,6 +1077,72 @@ function SeccionGARO({ data }: { data: any }) {
 // ═══════════════════════════════════════════════════════════════════
 // PGR
 // ═══════════════════════════════════════════════════════════════════
+function TablaResiduos({ titulo, lista }: { titulo: string; lista: any[] }) {
+  if (!lista?.length) return null
+  return (
+    <>
+      <SubBanner title={titulo} />
+      <View style={s.table}>
+        <View style={s.tableHead}>
+          <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Categoría</Text>
+          <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Tipo de residuo</Text>
+          <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Material</Text>
+          <Text style={[s.tableHeadCell, { flex: 0.8 }]}>Peso (kg)</Text>
+          <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Manejo</Text>
+        </View>
+        {lista.map((r: any, ri: number) =>
+          (r.materiales ?? []).length > 0
+            ? (r.materiales as any[]).map((m: any, mi: number) => (
+              <View key={`${ri}-${mi}`} style={(ri + mi) % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                <Text style={[s.tableCell, { flex: 1.2 }]}>{mi === 0 ? val(r.categoria) : ''}</Text>
+                <Text style={[s.tableCell, { flex: 1.5 }]}>{mi === 0 ? val(r.tipo_residuo) : ''}</Text>
+                <Text style={[s.tableCell, { flex: 1.5 }]}>{val(m.nombre)}</Text>
+                <Text style={[s.tableCell, { flex: 0.8 }]}>{m.peso_kg > 0 ? m.peso_kg : '—'}</Text>
+                <Text style={[s.tableCell, { flex: 1.5 }]}>{val(m.manejo)}</Text>
+              </View>
+            ))
+            : [(
+              <View key={ri} style={ri % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                <Text style={[s.tableCell, { flex: 1.2 }]}>{val(r.categoria)}</Text>
+                <Text style={[s.tableCell, { flex: 1.5 }]}>{val(r.tipo_residuo)}</Text>
+                <Text style={[s.tableCell, { flex: 1.5 }]}>—</Text>
+                <Text style={[s.tableCell, { flex: 0.8 }]}>—</Text>
+                <Text style={[s.tableCell, { flex: 1.5 }]}>—</Text>
+              </View>
+            )]
+        )}
+      </View>
+    </>
+  )
+}
+
+function TablaCapacitaciones({ lista }: { lista: any[] }) {
+  if (!lista?.length) return null
+  return (
+    <>
+      <SubBanner title="Capacitaciones realizadas" />
+      <View style={s.table}>
+        <View style={s.tableHead}>
+          <Text style={[s.tableHeadCell, { flex: 3 }]}>Temática</Text>
+          <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Fecha</Text>
+          <Text style={s.tableHeadCell}>Hombres</Text>
+          <Text style={s.tableHeadCell}>Mujeres</Text>
+          <Text style={s.tableHeadCell}>Total</Text>
+        </View>
+        {lista.map((c: any, i: number) => (
+          <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+            <Text style={[s.tableCell, { flex: 3 }]}>{val(c.tematica)}</Text>
+            <Text style={[s.tableCell, { flex: 1.5 }]}>{val(c.fecha)}</Text>
+            <Text style={s.tableCell}>{val(c.hombres, '0')}</Text>
+            <Text style={s.tableCell}>{val(c.mujeres, '0')}</Text>
+            <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold' }]}>{val(c.total, '0')}</Text>
+          </View>
+        ))}
+      </View>
+    </>
+  )
+}
+
 function SeccionPGR({ data }: { data: any }) {
   const { esc, periodo, pgr } = data
   if (!pgr) return null
@@ -992,62 +1150,21 @@ function SeccionPGR({ data }: { data: any }) {
   return (
     <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
-
       <View style={s.sectionBanner}>
         <Text style={s.sectionNum}>3</Text>
         <Text style={s.sectionTitle}>Condición 3 — Plan de Gestión de Residuos (PGR)</Text>
       </View>
 
       {pgr.descripcion_condicion && (
-        <>
-          <SubBanner title="Descripción de la condición" />
-          <TextBlock text={pgr.descripcion_condicion} />
-        </>
+        <><SubBanner title="Descripción de la condición" /><TextBlock text={pgr.descripcion_condicion} /></>
       )}
 
-      {/* Residuos demolición */}
-      <SubBanner title="Residuos de demolición" />
-      <View style={s.cols2}>
-        <View style={[s.col, s.card]}>
-          <Text style={s.cardTitle}>No peligrosos</Text>
-          <SiNo v={pgr.dem_no_peligrosos} />
-          {pgr.dem_no_pel_detalle && (
-            <Text style={[s.textBlock, { marginTop: 4 }]}>{pgr.dem_no_pel_detalle}</Text>
-          )}
-        </View>
-        <View style={[s.col, s.card]}>
-          <Text style={s.cardTitle}>Peligrosos</Text>
-          <SiNo v={pgr.dem_peligrosos} />
-          {pgr.dem_pel_detalle && (
-            <Text style={[s.textBlock, { marginTop: 4 }]}>{pgr.dem_pel_detalle}</Text>
-          )}
-        </View>
-      </View>
-
-      {/* Residuos construcción */}
-      <SubBanner title="Residuos de construcción" />
-      <View style={s.cols2}>
-        <View style={[s.col, s.card]}>
-          <Text style={s.cardTitle}>No peligrosos</Text>
-          <SiNo v={pgr.con_no_peligrosos} />
-          {pgr.con_no_pel_tratamiento && (
-            <Field label="Tratamiento" value={pgr.con_no_pel_tratamiento} />
-          )}
-        </View>
-        <View style={[s.col, s.card]}>
-          <Text style={s.cardTitle}>Peligrosos</Text>
-          <SiNo v={pgr.con_peligrosos} />
-          {pgr.con_pel_detalle && (
-            <Text style={[s.textBlock, { marginTop: 4 }]}>{pgr.con_pel_detalle}</Text>
-          )}
-        </View>
-      </View>
+      <TablaResiduos titulo="Residuos de demolición" lista={pgr.residuos_demolicion ?? []} />
+      <TablaResiduos titulo="Residuos de construcción" lista={pgr.residuos_construccion ?? []} />
+      <TablaCapacitaciones lista={pgr.capacitaciones_list ?? []} />
 
       {pgr.observaciones && (
-        <>
-          <SubBanner title="Observaciones" />
-          <TextBlock text={pgr.observaciones} />
-        </>
+        <><SubBanner title="Observaciones" /><TextBlock text={pgr.observaciones} /></>
       )}
       <FotosGrid fotos={pgr.fotos ?? []} />
     </Page>
@@ -1061,64 +1178,81 @@ function SeccionMCEAR({ data }: { data: any }) {
   const { esc, periodo, mcear } = data
   if (!mcear) return null
 
-  const mediciones: any[] = mcear.mediciones ?? []
+  const medAire: any[]     = mcear.mediciones_aire     ?? []
+  const medAcustica: any[] = mcear.mediciones_acustica ?? []
 
   return (
     <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
-
       <View style={s.sectionBanner}>
         <Text style={s.sectionNum}>4</Text>
         <Text style={s.sectionTitle}>Condición 4 — Monitoreo de Calidad de Emisiones y Ruido (MCEAR)</Text>
       </View>
 
       {mcear.descripcion_condicion && (
-        <>
-          <SubBanner title="Descripción de la condición" />
-          <TextBlock text={mcear.descripcion_condicion} />
-        </>
+        <><SubBanner title="Descripción de la condición" /><TextBlock text={mcear.descripcion_condicion} /></>
       )}
 
-      <SubBanner title="Datos de emisiones y ruido" />
-      <View style={s.cols2}>
-        <View style={s.col}>
-          <Field label="Nivel de polvo" value={mcear.nivel_polvo} />
-          <Field label="Control de polvo" value={mcear.control_polvo} />
-        </View>
-        <View style={s.col}>
-          <Field label="Nivel de ruido" value={mcear.nivel_ruido} />
-          <Field label="Medidas de mitigación" value={mcear.mitigacion_ruido} />
-        </View>
-      </View>
-
-      {mediciones.length > 0 && (
+      {/* Calidad del aire */}
+      {medAire.length > 0 && (
         <>
-          <SubBanner title="Mediciones registradas" />
+          <SubBanner title="Mediciones de calidad del aire" />
           <View style={s.table}>
             <View style={s.tableHead}>
-              <Text style={s.tableHeadCell}>Tipo</Text>
-              <Text style={s.tableHeadCell}>Fecha</Text>
-              <Text style={s.tableHeadCell}>Resultado</Text>
-              <Text style={[s.tableHeadCell, { flex: 2 }]}>Observación</Text>
+              <Text style={[s.tableHeadCell, { flex: 2 }]}>Clasificación</Text>
+              <Text style={s.tableHeadCell}>PM10</Text>
+              <Text style={s.tableHeadCell}>PM2.5</Text>
+              <Text style={s.tableHeadCell}>ICA</Text>
+              <Text style={s.tableHeadCell}>CO₂ (ppm)</Text>
+              <Text style={[s.tableHeadCell, { flex: 2 }]}>Medidas ambientales</Text>
             </View>
-            {mediciones.map((m: any, i: number) => (
+            {medAire.map((m: any, i: number) => (
               <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-                <Text style={s.tableCell}>{val(m.tipo)}</Text>
-                <Text style={s.tableCell}>{val(m.fecha)}</Text>
-                <Text style={s.tableCell}>{val(m.resultado)}</Text>
-                <Text style={[s.tableCell, { flex: 2 }]}>{val(m.observacion)}</Text>
+                <Text style={[s.tableCell, { flex: 2 }]}>{val(m.clasificacion)}</Text>
+                {m.no_registrado
+                  ? <Text style={[s.tableCell, { flex: 5, color: MUTED, fontStyle: 'italic' }]}>No registrado — {val(m.motivo_no_registro)}</Text>
+                  : <>
+                      <Text style={s.tableCell}>{val(m.pm10, '—')}</Text>
+                      <Text style={s.tableCell}>{val(m.pm25, '—')}</Text>
+                      <Text style={s.tableCell}>{val(m.ica, '—')}</Text>
+                      <Text style={s.tableCell}>{val(m.co2, '—')}</Text>
+                      <Text style={[s.tableCell, { flex: 2 }]}>{val(m.medidas_ambientales)}</Text>
+                    </>
+                }
               </View>
             ))}
           </View>
         </>
       )}
 
-      {mcear.observaciones && (
+      {/* Contaminación acústica */}
+      {medAcustica.length > 0 && (
         <>
-          <SubBanner title="Observaciones" />
-          <TextBlock text={mcear.observaciones} />
+          <SubBanner title="Mediciones acústicas" />
+          <View style={s.table}>
+            <View style={s.tableHead}>
+              <Text style={[s.tableHeadCell, { flex: 2 }]}>Fuentes de ruido</Text>
+              <Text style={s.tableHeadCell}>dB</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Equipo / Técnica</Text>
+              <Text style={[s.tableHeadCell, { flex: 2 }]}>Medidas ambientales</Text>
+            </View>
+            {medAcustica.map((m: any, i: number) => (
+              <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                <Text style={[s.tableCell, { flex: 2 }]}>{(m.fuentes ?? []).join(', ') || '—'}</Text>
+                {m.no_registrado
+                  ? <Text style={[s.tableCell, { flex: 4.5, color: MUTED, fontStyle: 'italic' }]}>No registrado — {val(m.motivo_no_registro)}</Text>
+                  : <>
+                      <Text style={s.tableCell}>{val(m.db, '—')}</Text>
+                      <Text style={[s.tableCell, { flex: 1.5 }]}>{val(m.equipo_tecnica)}</Text>
+                      <Text style={[s.tableCell, { flex: 2 }]}>{val(m.medidas_ambientales)}</Text>
+                    </>
+                }
+              </View>
+            ))}
+          </View>
         </>
       )}
+
       <FotosGrid fotos={mcear.fotos ?? []} />
     </Page>
   )
@@ -1131,59 +1265,92 @@ function SeccionPPPI({ data }: { data: any }) {
   const { esc, periodo, pppi } = data
   if (!pppi) return null
 
-  const reuniones: any[] = pppi.reuniones ?? []
+  const partes: any   = pppi.partes_interesadas ?? {}
+  const caps: any[]   = pppi.capacitaciones_list ?? []
+  const PARTES_KEYS   = [
+    { key: 'alumnos', label: 'Alumnos' },
+    { key: 'profesores', label: 'Profesores' },
+    { key: 'director', label: 'Director' },
+    { key: 'cde', label: 'CDE' },
+  ]
+  const partesActivas = PARTES_KEYS.filter(p => partes[p.key]?.activa)
 
   return (
     <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
-
       <View style={s.sectionBanner}>
         <Text style={s.sectionNum}>5</Text>
         <Text style={s.sectionTitle}>Condición 5 — Plan de Participación de Partes Interesadas (PPPI)</Text>
       </View>
 
       {pppi.descripcion_condicion && (
+        <><SubBanner title="Descripción de la condición" /><TextBlock text={pppi.descripcion_condicion} /></>
+      )}
+
+      {/* Partes interesadas */}
+      {partesActivas.length > 0 && (
         <>
-          <SubBanner title="Descripción de la condición" />
-          <TextBlock text={pppi.descripcion_condicion} />
+          <SubBanner title="Partes interesadas" />
+          <View style={s.table}>
+            <View style={s.tableHead}>
+              <Text style={[s.tableHeadCell, { flex: 2 }]}>Parte interesada</Text>
+              <Text style={s.tableHeadCell}>Hombres</Text>
+              <Text style={s.tableHeadCell}>Mujeres</Text>
+              <Text style={s.tableHeadCell}>Total</Text>
+            </View>
+            {partesActivas.map((p, i) => {
+              const v = partes[p.key]
+              return (
+                <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                  <Text style={[s.tableCell, { flex: 2 }]}>{p.label}</Text>
+                  <Text style={s.tableCell}>{v.hombres ?? 0}</Text>
+                  <Text style={s.tableCell}>{v.mujeres ?? 0}</Text>
+                  <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold' }]}>{(v.hombres ?? 0) + (v.mujeres ?? 0)}</Text>
+                </View>
+              )
+            })}
+          </View>
         </>
       )}
 
+      {/* Socializaciones */}
+      {(pppi.socializacion1_fecha || pppi.socializacion2_fecha || pppi.socializacion3_fecha) && (
+        <>
+          <SubBanner title="Socializaciones realizadas" />
+          <View style={s.cols2}>
+            <View style={s.col}>
+              <Field label="1.ª socialización" value={pppi.socializacion1_fecha} />
+              <Field label="2.ª socialización" value={pppi.socializacion2_fecha} />
+              <Field label="3.ª socialización" value={pppi.socializacion3_fecha} />
+            </View>
+            <View style={s.col}>
+              {pppi.comentarios_socializacion && (
+                <Field label="Comentarios" value={pppi.comentarios_socializacion} />
+              )}
+            </View>
+          </View>
+        </>
+      )}
+
+      {/* Código de conducta */}
       <SubBanner title="Código de conducta" />
       <View style={s.cols2}>
         <View style={s.col}>
           <View style={s.fieldRow}>
-            <Text style={s.fieldLabel}>Código de conducta:</Text>
+            <Text style={s.fieldLabel}>Código de conducta firmado:</Text>
             <SiNo v={pppi.codigo_conducta} />
           </View>
-          <Field label="Fecha de firma" value={pppi.codigo_conducta_fecha} />
         </View>
         <View style={s.col}>
-          <Field label="Personal capacitado" value={pppi.personal_capacitado} />
-          <Field label="Observaciones" value={pppi.observaciones_conducta} />
+          <Field label="Personal involucrado" value={pppi.cc_personal_involucrado} />
         </View>
       </View>
 
-      {reuniones.length > 0 && (
-        <>
-          <SubBanner title="Reuniones con partes interesadas" />
-          <View style={s.table}>
-            <View style={s.tableHead}>
-              <Text style={[s.tableHeadCell, { flex: 2 }]}>Tema</Text>
-              <Text style={s.tableHeadCell}>Fecha</Text>
-              <Text style={s.tableHeadCell}>Participantes</Text>
-              <Text style={[s.tableHeadCell, { flex: 2 }]}>Resultado</Text>
-            </View>
-            {reuniones.map((r: any, i: number) => (
-              <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-                <Text style={[s.tableCell, { flex: 2 }]}>{val(r.tema)}</Text>
-                <Text style={s.tableCell}>{val(r.fecha)}</Text>
-                <Text style={s.tableCell}>{val(r.participantes)}</Text>
-                <Text style={[s.tableCell, { flex: 2 }]}>{val(r.resultado)}</Text>
-              </View>
-            ))}
-          </View>
-        </>
+      {/* Capacitaciones */}
+      <TablaCapacitaciones lista={caps} />
+
+      {pppi.observaciones && (
+        <><SubBanner title="Observaciones" /><TextBlock text={pppi.observaciones} /></>
       )}
       <FotosGrid fotos={pppi.fotos ?? []} />
     </Page>
@@ -1197,74 +1364,94 @@ function SeccionMAQR({ data }: { data: any }) {
   const { esc, periodo, maqr } = data
   if (!maqr) return null
 
-  const quejas: any[] = maqr.quejas_list ?? []
+  const medios: any  = maqr.medios_recepcion ?? {}
+  const quejas: any[] = maqr.quejas ?? []
+
+  const mediosActivos = [
+    medios.buzon?.activo    && { nombre: 'Buzón',       detalle: `${medios.buzon.direccion ?? ''} — Resp: ${medios.buzon.responsable_llave ?? ''}` },
+    medios.rotulos?.activo  && { nombre: 'Rótulos',     detalle: `Estado: ${medios.rotulos.estado ?? ''}` },
+    medios.correo?.activo   && { nombre: 'Correo',      detalle: `${medios.correo.correo ?? ''} — Resp: ${medios.correo.responsable ?? ''}` },
+    medios.telefono?.activo && { nombre: 'Teléfono',    detalle: `${medios.telefono.numero ?? ''} — Resp: ${medios.telefono.responsable ?? ''}` },
+    medios.whatsapp?.activo && { nombre: 'WhatsApp',    detalle: `${medios.whatsapp.numero ?? ''} — Resp: ${medios.whatsapp.responsable ?? ''}` },
+  ].filter(Boolean) as { nombre: string; detalle: string }[]
 
   return (
     <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
-
       <View style={s.sectionBanner}>
         <Text style={s.sectionNum}>6</Text>
         <Text style={s.sectionTitle}>Condición 6 — Mecanismo de Atención de Quejas y Reclamos (MAQR)</Text>
       </View>
 
       {maqr.descripcion_condicion && (
-        <>
-          <SubBanner title="Descripción de la condición" />
-          <TextBlock text={maqr.descripcion_condicion} />
-        </>
+        <><SubBanner title="Descripción de la condición" /><TextBlock text={maqr.descripcion_condicion} /></>
       )}
 
-      <SubBanner title="Canal de quejas" />
-      <View style={s.cols2}>
-        <View style={s.col}>
-          <Field label="Teléfono MAQR" value={maqr.telefono_maqr} />
-          <Field label="Correo MAQR" value={maqr.correo_maqr} />
-        </View>
-        <View style={s.col}>
-          <View style={s.fieldRow}>
-            <Text style={s.fieldLabel}>Libro de quejas visible:</Text>
-            <SiNo v={maqr.libro_quejas_visible} />
-          </View>
-          <View style={[s.kpiBox, { marginTop: 4 }]}>
-            <Text style={[s.kpiNum, { color: parseInt(maqr.cantidad_quejas) > 0 ? AMBER : GREEN }]}>
-              {val(maqr.cantidad_quejas, '0')}
-            </Text>
-            <Text style={s.kpiLabel}>Quejas registradas</Text>
-          </View>
-        </View>
-      </View>
-
-      {quejas.length > 0 && (
+      {/* Medios de recepción */}
+      {mediosActivos.length > 0 && (
         <>
-          <SubBanner title="Detalle de quejas" />
+          <SubBanner title="Medios de recepción activos" />
           <View style={s.table}>
             <View style={s.tableHead}>
-              <Text style={s.tableHeadCell}>N.°</Text>
-              <Text style={[s.tableHeadCell, { flex: 2 }]}>Descripción</Text>
-              <Text style={s.tableHeadCell}>Fecha</Text>
-              <Text style={s.tableHeadCell}>Estado</Text>
-              <Text style={[s.tableHeadCell, { flex: 2 }]}>Resolución</Text>
+              <Text style={[s.tableHeadCell, { flex: 1 }]}>Canal</Text>
+              <Text style={[s.tableHeadCell, { flex: 3 }]}>Detalle</Text>
             </View>
-            {quejas.map((q: any, i: number) => (
+            {mediosActivos.map((m, i) => (
               <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-                <Text style={s.tableCell}>{i + 1}</Text>
-                <Text style={[s.tableCell, { flex: 2 }]}>{val(q.descripcion)}</Text>
-                <Text style={s.tableCell}>{val(q.fecha)}</Text>
-                <Text style={s.tableCell}>{val(q.estado)}</Text>
-                <Text style={[s.tableCell, { flex: 2 }]}>{val(q.resolucion)}</Text>
+                <Text style={[s.tableCell, { flex: 1, fontFamily: 'Helvetica-Bold' }]}>{m.nombre}</Text>
+                <Text style={[s.tableCell, { flex: 3 }]}>{m.detalle}</Text>
               </View>
             ))}
           </View>
         </>
       )}
 
-      {maqr.observaciones && (
-        <>
-          <SubBanner title="Observaciones" />
-          <TextBlock text={maqr.observaciones} />
-        </>
+      {/* Resumen quejas */}
+      <SubBanner title="Registro de quejas y reclamos" />
+      <View style={s.kpiRow}>
+        <View style={s.kpiBox}>
+          <Text style={[s.kpiNum, { color: quejas.length > 0 ? AMBER : GREEN }]}>{quejas.length}</Text>
+          <Text style={s.kpiLabel}>Total quejas</Text>
+        </View>
+        <View style={s.kpiBox}>
+          <Text style={[s.kpiNum, { color: GREEN }]}>{quejas.filter((q: any) => q.estado === 'Cerrada').length}</Text>
+          <Text style={s.kpiLabel}>Cerradas</Text>
+        </View>
+        <View style={s.kpiBox}>
+          <Text style={[s.kpiNum, { color: AMBER }]}>{quejas.filter((q: any) => q.estado !== 'Cerrada').length}</Text>
+          <Text style={s.kpiLabel}>Pendientes</Text>
+        </View>
+        <View style={s.kpiBox}>
+          <Text style={[s.kpiNum, { color: RED }]}>{quejas.filter((q: any) => q.arrastrada).length}</Text>
+          <Text style={s.kpiLabel}>Arrastradas</Text>
+        </View>
+      </View>
+
+      {quejas.length > 0 && (
+        <View style={s.table}>
+          <View style={s.tableHead}>
+            <Text style={s.tableHeadCell}>N.°</Text>
+            <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Medio</Text>
+            <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Fecha recep.</Text>
+            <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Tipo</Text>
+            <Text style={[s.tableHeadCell, { flex: 1 }]}>Gravedad</Text>
+            <Text style={[s.tableHeadCell, { flex: 2.5 }]}>Descripción</Text>
+            <Text style={[s.tableHeadCell, { flex: 1 }]}>Estado</Text>
+          </View>
+          {quejas.map((q: any, i: number) => (
+            <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+              <Text style={s.tableCell}>{q.numero_queja ?? i + 1}{q.arrastrada ? '*' : ''}</Text>
+              <Text style={[s.tableCell, { flex: 1.5 }]}>{val(q.medio === 'Otro' ? q.medio_otro : q.medio)}</Text>
+              <Text style={[s.tableCell, { flex: 1.2 }]}>{val(q.fecha_recepcion)}</Text>
+              <Text style={[s.tableCell, { flex: 1.5 }]}>{val(q.tipo_queja === 'Otro' ? q.tipo_queja_otro : q.tipo_queja)}</Text>
+              <Text style={[s.tableCell, { flex: 1 }]}>{val(q.nivel_gravedad)}</Text>
+              <Text style={[s.tableCell, { flex: 2.5 }]}>{val(q.descripcion)}</Text>
+              <Text style={[s.tableCell, { flex: 1 }]}>{val(q.estado)}</Text>
+            </View>
+          ))}
+        </View>
       )}
+
       <FotosGrid fotos={maqr.fotos ?? []} />
     </Page>
   )
@@ -1278,66 +1465,120 @@ function SeccionPRT({ data }: { data: any }) {
   if (!prt) return null
 
   const lugares: any[] = prt.lugares ?? []
+  const modalidad: string[] = prt.modalidad ?? []
 
   return (
     <Page size="LETTER" style={s.page}>
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
-
       <View style={s.sectionBanner}>
         <Text style={s.sectionNum}>7</Text>
         <Text style={s.sectionTitle}>Condición 7 — Plan de Reubicación Temporal (PRT)</Text>
       </View>
 
       {prt.descripcion_condicion && (
-        <>
-          <SubBanner title="Descripción de la condición" />
-          <TextBlock text={prt.descripcion_condicion} />
-        </>
+        <><SubBanner title="Descripción de la condición" /><TextBlock text={prt.descripcion_condicion} /></>
       )}
 
-      <SubBanner title="Datos de reubicación" />
-      <View style={s.cols2}>
-        <View style={s.col}>
-          <Field label="Tipo de continuidad" value={prt.tipo_continuidad} />
-          <Field label="Lugar de reubicación" value={prt.lugar_reubicacion} />
-          <Field label="Dirección" value={prt.direccion_reubicacion} />
-        </View>
-        <View style={s.col}>
-          <View style={s.kpiRow}>
-            <View style={s.kpiBox}>
-              <Text style={s.kpiNum}>{val(prt.num_estudiantes, '0')}</Text>
-              <Text style={s.kpiLabel}>Estudiantes</Text>
-            </View>
-            <View style={s.kpiBox}>
-              <Text style={s.kpiNum}>{val(prt.num_maestros, '0')}</Text>
-              <Text style={s.kpiLabel}>Maestros</Text>
-            </View>
-          </View>
-          {prt.monto_mensual && (
-            <Field label="Monto mensual" value={`$${prt.monto_mensual}`} />
-          )}
-        </View>
-      </View>
+      {/* Modalidad */}
+      {modalidad.length > 0 && (
+        <Field label="Modalidad de continuidad educativa" value={modalidad.join(', ')} />
+      )}
 
+      {/* Lugares presenciales */}
       {lugares.length > 0 && (
         <>
           <SubBanner title="Lugares de reubicación" />
-          <View style={s.table}>
-            <View style={s.tableHead}>
-              <Text style={[s.tableHeadCell, { flex: 2 }]}>Lugar</Text>
-              <Text style={s.tableHeadCell}>Nivel</Text>
-              <Text style={s.tableHeadCell}>Estudiantes</Text>
-              <Text style={s.tableHeadCell}>Aulas</Text>
-            </View>
-            {lugares.map((l: any, i: number) => (
-              <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-                <Text style={[s.tableCell, { flex: 2 }]}>{val(l.nombre)}</Text>
-                <Text style={s.tableCell}>{val(l.nivel)}</Text>
-                <Text style={s.tableCell}>{val(l.estudiantes)}</Text>
-                <Text style={s.tableCell}>{val(l.aulas)}</Text>
+          {lugares.map((l: any, li: number) => {
+            const estTotal  = (l.est_ninos ?? 0) + (l.est_ninas ?? 0)
+            const docTotal  = (l.doc_hombres ?? 0) + (l.doc_mujeres ?? 0)
+            const condicion = l.condicion_uso === 'Otros' ? l.condicion_otros : l.condicion_uso
+            const rubrosActivos = (l.rubros ?? []).filter((r: any) => r.activo)
+            const costoTotal = rubrosActivos.reduce((sum: number, r: any) => sum + ((r.cantidad ?? 1) * (r.costo_unitario ?? 0)), 0)
+            const adecs = Object.entries(l.adecuaciones ?? {}).filter(([, v]: any) => v.activa)
+
+            return (
+              <View key={li} style={{ marginBottom: 10 }}>
+                {/* Encabezado lugar */}
+                <View style={{ backgroundColor: '#f1f5f9', borderRadius: 4, padding: 6, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: NAVY }}>
+                    Lugar #{li + 1} — {val(l.direccion)}
+                  </Text>
+                </View>
+                {/* KPIs */}
+                <View style={s.kpiRow}>
+                  <View style={s.kpiBox}>
+                    <Text style={s.kpiNum}>{l.est_ninos ?? 0}</Text>
+                    <Text style={s.kpiLabel}>Alumnos</Text>
+                  </View>
+                  <View style={s.kpiBox}>
+                    <Text style={s.kpiNum}>{l.est_ninas ?? 0}</Text>
+                    <Text style={s.kpiLabel}>Alumnas</Text>
+                  </View>
+                  <View style={[s.kpiBox, { borderColor: NAVY, borderWidth: 1 }]}>
+                    <Text style={[s.kpiNum, { color: NAVY }]}>{estTotal}</Text>
+                    <Text style={s.kpiLabel}>Total alumnos</Text>
+                  </View>
+                  <View style={s.kpiBox}>
+                    <Text style={s.kpiNum}>{l.doc_hombres ?? 0}</Text>
+                    <Text style={s.kpiLabel}>Doc. hombres</Text>
+                  </View>
+                  <View style={s.kpiBox}>
+                    <Text style={s.kpiNum}>{l.doc_mujeres ?? 0}</Text>
+                    <Text style={s.kpiLabel}>Doc. mujeres</Text>
+                  </View>
+                  <View style={[s.kpiBox, { borderColor: NAVY, borderWidth: 1 }]}>
+                    <Text style={[s.kpiNum, { color: NAVY }]}>{docTotal}</Text>
+                    <Text style={s.kpiLabel}>Total docentes</Text>
+                  </View>
+                </View>
+
+                <Field label="Condición de uso" value={condicion} />
+
+                {/* Rubros de costo */}
+                {rubrosActivos.length > 0 && (
+                  <View style={[s.table, { marginTop: 4 }]}>
+                    <View style={s.tableHead}>
+                      <Text style={[s.tableHeadCell, { flex: 2 }]}>Rubro</Text>
+                      <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Modalidad</Text>
+                      <Text style={s.tableHeadCell}>Cant.</Text>
+                      <Text style={s.tableHeadCell}>Costo unit.</Text>
+                      <Text style={s.tableHeadCell}>Subtotal</Text>
+                    </View>
+                    {rubrosActivos.map((r: any, ri: number) => (
+                      <View key={ri} style={ri % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                        <Text style={[s.tableCell, { flex: 2 }]}>{val(r.nombre)}</Text>
+                        <Text style={[s.tableCell, { flex: 1.5 }]}>{val(r.unidad)}</Text>
+                        <Text style={s.tableCell}>{r.cantidad ?? 1}</Text>
+                        <Text style={s.tableCell}>${r.costo_unitario ?? 0}</Text>
+                        <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold' }]}>${(r.cantidad ?? 1) * (r.costo_unitario ?? 0)}</Text>
+                      </View>
+                    ))}
+                    <View style={[s.tableRow, { backgroundColor: '#e2e8f0' }]}>
+                      <Text style={[s.tableCell, { flex: 2, fontFamily: 'Helvetica-Bold' }]}>TOTAL MENSUAL</Text>
+                      <Text style={[s.tableCell, { flex: 1.5 }]}> </Text>
+                      <Text style={s.tableCell}> </Text>
+                      <Text style={s.tableCell}> </Text>
+                      <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold', color: NAVY }]}>${costoTotal}</Text>
+                    </View>
+                  </View>
+                )}
+
+                {/* Adecuaciones */}
+                {adecs.length > 0 && (
+                  <View style={{ marginTop: 4 }}>
+                    <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: MUTED, marginBottom: 2 }}>Adecuaciones realizadas:</Text>
+                    {adecs.map(([key, v]: any, ai: number) => (
+                      <View key={ai} style={{ flexDirection: 'row', marginBottom: 1 }}>
+                        <Text style={{ fontSize: 7, color: GREEN, marginRight: 4 }}>✓</Text>
+                        <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: DARK, marginRight: 4 }}>{key}:</Text>
+                        <Text style={{ fontSize: 7, color: DARK, flex: 1 }}>{v.descripcion || '—'}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
-            ))}
-          </View>
+            )
+          })}
         </>
       )}
 
