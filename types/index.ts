@@ -69,4 +69,5 @@ export const CONDICIONES = [
   { key: 'pppi',    label: 'Partes Interesadas y Código de Conducta',  short: 'PPPI'    },
   { key: 'maqr',    label: 'Mecanismo de Quejas y Reclamos',           short: 'MAQR'    },
   { key: 'prt',     label: 'Plan de Reubicación Temporal',             short: 'PRT'     },
+  { key: 'cct',     label: 'Código de Conducta de Trabajadores',       short: 'CCT'     },
 ]

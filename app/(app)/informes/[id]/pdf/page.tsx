@@ -25,6 +25,7 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
     { data: pppi },
     { data: maqr },
     { data: prt },
+    { data: cct },
   ] = await Promise.all([
     supabase.from('informe_portada').select('*').eq('informe_id', id).single(),
     supabase.from('informe_c1317').select('*').eq('informe_id', id).single(),
@@ -35,6 +36,7 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
     supabase.from('informe_pppi').select('*').eq('informe_id', id).single(),
     supabase.from('informe_maqr').select('*').eq('informe_id', id).single(),
     supabase.from('informe_prt').select('*').eq('informe_id', id).single(),
+    supabase.from('informe_cct').select('*').eq('informe_id', id).single(),
   ])
 
   // Fetch elaborado_por profile name if portada has elaborado_por_id
@@ -51,10 +53,18 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
   const esc = informe.escuelas as any
   const periodo = `${MESES[informe.periodo_mes - 1]} ${informe.periodo_anio}`
 
+  console.log('=== CCT Data ===')
+  console.log('cct object:', cct)
+  if (cct?.secciones) {
+    console.log('cct.secciones:', cct.secciones)
+    console.log('primer item:', cct.secciones[0]?.items?.[0])
+  }
+  console.log('Todas las condiciones cargadas:', { c1317, hsso, garo, pgr, mcear, pppi, maqr, prt, cct })
+
   const reportData = {
     informe, esc, periodo,
     portada: { ...portada, elaborado_por_nombre: elaboradoPorNombre },
-    c1317, hsso, garo, pgr, mcear, pppi, maqr, prt,
+    c1317, hsso, garo, pgr, mcear, pppi, maqr, prt, cct,
   }
 
   return (

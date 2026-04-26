@@ -39,7 +39,7 @@ export default function CapacitacionesSection({ tieneCapacitaciones, capacitacio
   }
 
   function registrar() {
-    if (!form.tematica.trim()) return
+    if (!form.tematica || !form.tematica.trim()) return
     const nueva = { ...form, id: editIndex !== null ? form.id : String(Date.now()) }
     if (editIndex !== null) {
       onChangeCapacitaciones(capacitaciones.map((c, i) => i === editIndex ? nueva : c))
@@ -223,7 +223,7 @@ export default function CapacitacionesSection({ tieneCapacitaciones, capacitacio
                   className="px-4 py-2 text-sm border border-slate-300 rounded-lg text-slate-600 hover:bg-slate-100">
                   Cancelar
                 </button>
-                <button type="button" onClick={registrar} disabled={!form.tematica.trim()}
+                <button type="button" onClick={registrar} disabled={!form.tematica || !form.tematica.trim()}
                   className="px-5 py-2 text-sm bg-blue-900 text-white rounded-lg hover:bg-blue-800 font-medium disabled:opacity-50">
                   {editIndex !== null ? 'Guardar cambios' : 'Registrar'}
                 </button>

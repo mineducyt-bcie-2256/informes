@@ -14,10 +14,11 @@ const MIGRATIONS: Record<string, { column: string; default: string }[]> = {
   informe_garo:  [{ column: 'incidentes', default: "'[]'::jsonb" }, FOTO_COL],
   informe_pgr:   [FOTO_COL],
   informe_mcear: [FOTO_COL],
-  informe_pppi:  [FOTO_COL],
+  informe_pppi:  [FOTO_COL, { column: 'indicadores_impacto', default: "'{}' ::jsonb" }],
   informe_maqr:  [FOTO_COL],
   informe_prt:   [FOTO_COL],
   informe_c1317: [FOTO_COL],
+  informe_cct:   [FOTO_COL],
 }
 
 export async function POST(req: NextRequest) {

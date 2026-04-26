@@ -10,7 +10,11 @@
       "mcp__Claude_Preview__preview_start",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(findstr \"INIT\\\\|const INIT\\\\|useState\\\\|interface\\\\|type \")"
+      "Bash(findstr \"INIT\\\\|const INIT\\\\|useState\\\\|interface\\\\|type \")",
+      "Bash(npm run *)",
+      "Bash(xargs grep *)",
+      "Read(//i/Mi unidad/BCIE 2025/Formatos y seguimiento/**)",
+      "Bash(pandoc \"Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\" -o -)"
     ]
   }
 }

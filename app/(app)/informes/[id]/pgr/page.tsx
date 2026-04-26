@@ -47,11 +47,19 @@ const CATEGORIA_BADGE: Record<string, string> = {
 }
 
 // ── Tipos ────────────────────────────────────────────────────────
-type Material   = { nombre: string; peso_kg: number; manejo: string; detalle?: string }
-type ResiduoReg = { id: string; categoria: string; tipo_residuo: string; materiales: Material[] }
+type Material   = { nombre: string; peso_kg: number; unidad?: string; manejo: string; detalle?: string }
+
+/** Materiales que se miden en una unidad distinta a kg */
+const UNIDADES_ESPECIALES: Record<string, string> = {
+  'Láminas de asbesto-cemento': 'm²',
+}
+type ResiduoReg = {
+  id: string; categoria: string; tipo_residuo: string; materiales: Material[]
+  gestion_residuos: string; lugar_acopio: string; sitio_recepcion: string
+}
 type Capacitacion = { id: string; fecha: string; tematica: string; hombres: number; mujeres: number; total: number }
 
-const RESIDUO_VACIO: ResiduoReg = { id: '', categoria: '', tipo_residuo: '', materiales: [] }
+const RESIDUO_VACIO: ResiduoReg = { id: '', categoria: '', tipo_residuo: '', materiales: [], gestion_residuos: '', lugar_acopio: '', sitio_recepcion: '' }
 
 const INIT = {
   descripcion_condicion: '',
@@ -81,7 +89,8 @@ function SeccionResiduos({ titulo, catalogo, lista, onChange }: SeccionProps) {
   const ejemplosDisponibles = catalogo[form.categoria]?.ejemplos ?? []
 
   function cambiarCategoria(cat: string) {
-    setForm({ ...RESIDUO_VACIO, id: form.id, categoria: cat, tipo_residuo: catalogo[cat]?.tipo ?? '' })
+    setForm({ ...RESIDUO_VACIO, id: form.id, categoria: cat, tipo_residuo: catalogo[cat]?.tipo ?? '',
+      gestion_residuos: form.gestion_residuos, lugar_acopio: form.lugar_acopio, sitio_recepcion: form.sitio_recepcion })
   }
 
   function toggleMaterial(nombre: string) {
@@ -89,6 +98,7 @@ function SeccionResiduos({ titulo, catalogo, lista, onChange }: SeccionProps) {
       const existe = prev.materiales.find(m => m.nombre === nombre)
       if (existe) return { ...prev, materiales: prev.materiales.filter(m => m.nombre !== nombre) }
       const nuevo: Material = { nombre, peso_kg: 0, manejo: '' }
+      if (UNIDADES_ESPECIALES[nombre]) nuevo.unidad = UNIDADES_ESPECIALES[nombre]
       if (nombre === 'Otro') nuevo.detalle = ''
       return { ...prev, materiales: [...prev.materiales, nuevo] }
     })
@@ -124,7 +134,7 @@ function SeccionResiduos({ titulo, catalogo, lista, onChange }: SeccionProps) {
     setMostrarForm(false); setForm({ ...RESIDUO_VACIO }); setEditIdx(null)
   }
 
-  const totalPeso = lista.reduce((s, r) => s + r.materiales.reduce((ss, m) => ss + (m.peso_kg || 0), 0), 0)
+  const totalPeso = lista.reduce((s, r) => s + r.materiales.reduce((ss, m) => (!m.unidad || m.unidad === 'kg') ? ss + (m.peso_kg || 0) : ss, 0), 0)
 
   return (
     <section>
@@ -136,7 +146,7 @@ function SeccionResiduos({ titulo, catalogo, lista, onChange }: SeccionProps) {
           {(['Inertes', 'No Peligrosos', 'Peligrosos'] as const).map(cat => {
             const registros = lista.filter(r => r.categoria === cat)
             if (!registros.length) return null
-            const peso = registros.reduce((s, r) => s + r.materiales.reduce((ss, m) => ss + (m.peso_kg || 0), 0), 0)
+            const peso = registros.reduce((s, r) => s + r.materiales.reduce((ss, m) => (!m.unidad || m.unidad === 'kg') ? ss + (m.peso_kg || 0) : ss, 0), 0)
             const totalMat = registros.reduce((s, r) => s + r.materiales.length, 0)
             return (
               <div key={cat} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${CATEGORIA_BADGE[cat]}`}>
@@ -187,7 +197,7 @@ function SeccionResiduos({ titulo, catalogo, lista, onChange }: SeccionProps) {
                           {m.nombre === 'Otro' && m.detalle ? `Otro: ${m.detalle}` : m.nombre}
                         </span>
                         {m.peso_kg > 0 && (
-                          <span className="text-xs bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full">{m.peso_kg.toLocaleString()} kg</span>
+                          <span className="text-xs bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full">{m.peso_kg.toLocaleString()} {m.unidad ?? 'kg'}</span>
                         )}
                         {m.manejo && <span className="text-xs text-slate-400 italic">Manejo: {m.manejo}</span>}
                       </div>
@@ -250,7 +260,7 @@ function SeccionResiduos({ titulo, catalogo, lista, onChange }: SeccionProps) {
                             </div>
                           )}
                           <div>
-                            <label className="text-xs font-medium text-slate-500 mb-1 block">Peso estimado (kg)</label>
+                            <label className="text-xs font-medium text-slate-500 mb-1 block">Cantidad estimada ({sel.unidad ?? 'kg'})</label>
                             <input type="number" min={0} step={0.1}
                               value={sel.peso_kg === 0 ? '' : sel.peso_kg}
                               onChange={e => updateMaterial(ej, 'peso_kg', parseFloat(e.target.value) || 0)}
@@ -270,6 +280,49 @@ function SeccionResiduos({ titulo, catalogo, lista, onChange }: SeccionProps) {
               </div>
             </div>
           )}
+
+          {/* Campos adicionales de gestión */}
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">
+                Gestión de los residuos
+                <span className="font-normal text-slate-400 ml-1">(acciones realizadas para el resguardo y disposición final de estos)</span>
+              </label>
+              <textarea
+                rows={3}
+                value={form.gestion_residuos}
+                onChange={e => setForm(p => ({ ...p, gestion_residuos: e.target.value }))}
+                placeholder="Describa las acciones realizadas..."
+                className={`${inputCls} resize-none`}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">
+                Lugar de acopio
+                <span className="font-normal text-slate-400 ml-1">(sitio donde se almacenan los residuos previo a su disposición final)</span>
+              </label>
+              <textarea
+                rows={3}
+                value={form.lugar_acopio}
+                onChange={e => setForm(p => ({ ...p, lugar_acopio: e.target.value }))}
+                placeholder="Indique el lugar de acopio..."
+                className={`${inputCls} resize-none`}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 mb-1 block">
+                Sitio de recepción para disposición final
+                <span className="font-normal text-slate-400 ml-1">(lugar donde se recibirán los materiales, cuenta con permisos, solicitud de los residuos, otros)</span>
+              </label>
+              <textarea
+                rows={3}
+                value={form.sitio_recepcion}
+                onChange={e => setForm(p => ({ ...p, sitio_recepcion: e.target.value }))}
+                placeholder="Indique el sitio de recepción..."
+                className={`${inputCls} resize-none`}
+              />
+            </div>
+          </div>
 
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={cancelar}
@@ -373,7 +426,7 @@ export default function PgrPage() {
         <DescripcionCondicion informeId={id} tabla="informe_pgr" value={data.descripcion_condicion} onChange={v => set('descripcion_condicion', v)} />
 
         <SeccionResiduos
-          titulo="Residuos generados en la etapa de demolición"
+          titulo="Residuos generados en la etapa de demolición y desmontaje"
           catalogo={CATEGORIAS_DEMOLICION}
           lista={data.residuos_demolicion}
           onChange={v => set('residuos_demolicion', v)}
