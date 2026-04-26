@@ -39,6 +39,13 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
     supabase.from('informe_cct').select('*').eq('informe_id', id).single(),
   ])
 
+  // Cargar quejas de MAQR si existe
+  let maqrQuejas: any[] = []
+  if (maqr?.id) {
+    const { data } = await supabase.from('informe_maqr_quejas').select('*').eq('maqr_id', maqr.id).order('numero_queja')
+    maqrQuejas = data ?? []
+  }
+
   // Fetch elaborado_por profile name if portada has elaborado_por_id
   let elaboradoPorNombre: string | null = null
   if (portada?.elaborado_por_id) {
@@ -64,7 +71,7 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
   const reportData = {
     informe, esc, periodo,
     portada: { ...portada, elaborado_por_nombre: elaboradoPorNombre },
-    c1317, hsso, garo, pgr, mcear, pppi, maqr, prt, cct,
+    c1317, hsso, garo, pgr, mcear, pppi, maqr: maqr ? { ...maqr, quejas: maqrQuejas } : null, prt, cct,
   }
 
   return (

@@ -197,136 +197,6 @@ function SeccionMedios({ medios, onChange }: { medios: MediosRecepcion; onChange
 }
 
 // ════════════════════════════════════════════════════════════════
-// CONTADOR / PANEL DE ESTADÍSTICAS — tarjetas
-// ════════════════════════════════════════════════════════════════
-function PanelEstadisticas({ quejas, acum }: { quejas: Queja[]; acum: { total: number; abiertas: number; resueltas: number } }) {
-  if (quejas.length === 0) return null
-
-  const total = quejas.length
-
-  function contarPor(campo: keyof Queja): [string, number][] {
-    const mapa: Record<string, number> = {}
-    quejas.forEach(q => {
-      const val = (q[campo] as string) || 'Sin especificar'
-      mapa[val] = (mapa[val] || 0) + 1
-    })
-    return Object.entries(mapa).sort((a, b) => b[1] - a[1])
-  }
-
-  const ESTADO_DOT: Record<string, string> = {
-    'En proceso':       'bg-blue-500',
-    'En investigación': 'bg-amber-500',
-    'Resuelto':         'bg-green-500',
-    'Cerrado':          'bg-slate-400',
-  }
-  const NIVEL_DOT: Record<string, string> = {
-    'Nivel 1 (Bajo)':  'bg-green-500',
-    'Nivel 2 (Medio)': 'bg-amber-500',
-    'Nivel 3 (Alto)':  'bg-red-500',
-  }
-  const NIVEL_BAR: Record<string, string> = {
-    'Nivel 1 (Bajo)':  'bg-green-400',
-    'Nivel 2 (Medio)': 'bg-amber-400',
-    'Nivel 3 (Alto)':  'bg-red-500',
-  }
-  const ESTADO_BAR: Record<string, string> = {
-    'En proceso':       'bg-blue-500',
-    'En investigación': 'bg-amber-400',
-    'Resuelto':         'bg-green-500',
-    'Cerrado':          'bg-slate-400',
-  }
-
-  // Tarjeta genérica con barras de proporción
-  function TarjetaGrupo({
-    titulo, items, dotMap, barMap, accent,
-  }: {
-    titulo: string
-    items: [string, number][]
-    dotMap?: Record<string, string>
-    barMap?: Record<string, string>
-    accent: string   // color clase bg para la barra default
-  }) {
-    return (
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-        <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">{titulo}</p>
-        <div className="space-y-2.5">
-          {items.map(([label, n]) => {
-            const pct = Math.round((n / total) * 100)
-            const bar = barMap?.[label] ?? accent
-            const dot = dotMap?.[label]
-            return (
-              <div key={label}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    {dot && <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />}
-                    <span className="text-xs text-slate-700 truncate">{label}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                    <span className="text-xs font-bold text-slate-800">{n}</span>
-                    <span className="text-xs text-slate-400">{pct}%</span>
-                  </div>
-                </div>
-                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full transition-all ${bar}`} style={{ width: `${pct}%` }} />
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-    )
-  }
-
-  // Quejas resueltas vs abiertas
-  const resueltas = quejas.filter(q => q.estado === 'Resuelto' || q.estado === 'Cerrado').length
-  const abiertas  = total - resueltas
-
-  return (
-    <div className="space-y-4">
-      {/* Fila superior: totales grandes */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="col-span-1 bg-blue-600 text-white rounded-xl p-4 flex flex-col justify-between shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide opacity-80">Total quejas de este periodo</p>
-          <p className="text-4xl font-black mt-1">{total}</p>
-          {acum.total > 0
-            ? <p className="text-xs opacity-70 mt-1">Acumulado total: <span className="font-bold">{acum.total}</span></p>
-            : <p className="text-xs opacity-70 mt-1">sin datos acumulados aún</p>
-          }
-        </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Abiertas</p>
-          <p className={`text-3xl font-black mt-1 ${abiertas > 0 ? 'text-amber-600' : 'text-slate-300'}`}>{abiertas}</p>
-          <div className="h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
-            <div className="h-full bg-amber-400 rounded-full" style={{ width: `${total ? (abiertas / total) * 100 : 0}%` }} />
-          </div>
-          {acum.total > 0 && (
-            <p className="text-xs text-slate-400 mt-1.5">Acumulado: <span className="font-semibold text-amber-600">{acum.abiertas}</span></p>
-          )}
-        </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Resueltas</p>
-          <p className={`text-3xl font-black mt-1 ${resueltas > 0 ? 'text-green-600' : 'text-slate-300'}`}>{resueltas}</p>
-          <div className="h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
-            <div className="h-full bg-green-500 rounded-full" style={{ width: `${total ? (resueltas / total) * 100 : 0}%` }} />
-          </div>
-          {acum.total > 0 && (
-            <p className="text-xs text-slate-400 mt-1.5">Acumulado: <span className="font-semibold text-green-600">{acum.resueltas}</span></p>
-          )}
-        </div>
-      </div>
-
-      {/* Grid de tarjetas de categorías */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <TarjetaGrupo titulo="Por estado"  items={contarPor('estado')}         dotMap={ESTADO_DOT} barMap={ESTADO_BAR} accent="bg-slate-400" />
-        <TarjetaGrupo titulo="Por nivel"   items={contarPor('nivel_gravedad')} dotMap={NIVEL_DOT}  barMap={NIVEL_BAR} accent="bg-slate-300" />
-        <TarjetaGrupo titulo="Por medio"   items={contarPor('medio')}          accent="bg-blue-400" />
-        <TarjetaGrupo titulo="Por tipo"    items={contarPor('tipo_queja')}     accent="bg-violet-400" />
-        <TarjetaGrupo titulo="Por origen"  items={contarPor('origen')}         accent="bg-teal-400" />
-      </div>
-    </div>
-  )
-}
-
 // ════════════════════════════════════════════════════════════════
 // TARJETA DE QUEJA
 // ════════════════════════════════════════════════════════════════
@@ -664,7 +534,11 @@ export default function MaqrPage() {
         setMedios(d.medios_recepcion ?? MEDIOS_INIT)
         setFotos(d.fotos ?? [])
         const { data: qs } = await supabase.from('informe_maqr_quejas').select('*').eq('maqr_id', d.id).order('numero_queja')
-        setQuejas((qs ?? []).map((q: any) => ({ ...QUEJA_INIT, ...q, medidas: q.medidas ?? [] })))
+        setQuejas((qs ?? []).map((q: any) => ({
+          ...QUEJA_INIT,
+          ...q,
+          medidas: Array.isArray(q.medidas) ? q.medidas : (q.medidas && typeof q.medidas === 'object' ? Object.values(q.medidas) : [])
+        })))
       } else if (inf) {
         // Find most-recent previous informe for this escuela
         const { data: prev } = await supabase.from('informes').select('id')
@@ -684,9 +558,10 @@ export default function MaqrPage() {
               .order('numero_queja')
             if (prevQs && prevQs.length > 0) {
               setQuejas(prevQs.map((q: any, i: number) => ({
-                ...QUEJA_INIT, ...q,
+                ...QUEJA_INIT,
+                ...q,
                 id: `arr-${Date.now()}-${i}`,
-                medidas: q.medidas ?? [],
+                medidas: Array.isArray(q.medidas) ? q.medidas : (q.medidas && typeof q.medidas === 'object' ? Object.values(q.medidas) : []),
                 arrastrada: true,
               })))
               setAutoLoadedQuejas(true)
@@ -795,8 +670,6 @@ export default function MaqrPage() {
               <Plus size={14} /> Registrar queja
             </button>
           </div>
-
-          <PanelEstadisticas quejas={quejas} acum={statsAcum} />
 
           {quejas.length > 0 && <div className="mt-5 space-y-4">
             {quejas.map((q, i) => (

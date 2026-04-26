@@ -89,7 +89,7 @@ export default function DescripcionCondicion({ informeId, tabla, value, onChange
           }`}
         >
           {editando ? (
-            <><Lock size={12} /> Bloquear</>
+            <><Lock size={12} /> Guardar</>
           ) : (
             <><Pencil size={12} /> Editar</>
           )}

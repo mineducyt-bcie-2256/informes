@@ -2465,7 +2465,7 @@ function SeccionMAQR({ data }: { data: any }) {
   if (!maqr) return null
 
   const medios: any  = maqr.medios_recepcion ?? {}
-  const quejas: any[] = maqr.quejas ?? []
+  const quejas: any[] = Array.isArray(maqr.quejas) ? maqr.quejas : Object.values(maqr.quejas || {})
 
   const mediosActivos = [
     medios.buzon?.activo    && { nombre: 'Buzón',       detalle: `${medios.buzon.direccion ?? ''} — Resp: ${medios.buzon.responsable_llave ?? ''}` },
@@ -2475,85 +2475,209 @@ function SeccionMAQR({ data }: { data: any }) {
     medios.whatsapp?.activo && { nombre: 'WhatsApp',    detalle: `${medios.whatsapp.numero ?? ''} — Resp: ${medios.whatsapp.responsable ?? ''}` },
   ].filter(Boolean) as { nombre: string; detalle: string }[]
 
+  // Estadísticas
+  const total = quejas.length
+  const resueltas = quejas.filter((q: any) => q.estado === 'Resuelto' || q.estado === 'Cerrado').length
+  const abiertas = total - resueltas
+
+  function contarPor(campo: string): Record<string, number> {
+    const mapa: Record<string, number> = {}
+    quejas.forEach((q: any) => {
+      const val = (q[campo] as string) || 'Sin especificar'
+      mapa[val] = (mapa[val] || 0) + 1
+    })
+    return mapa
+  }
+
+  const ESTADO_COLORES: Record<string, string> = {
+    'En proceso':       BLUE,
+    'En investigación': AMBER,
+    'Resuelto':         GREEN,
+    'Cerrado':          MUTED,
+  }
+  const NIVEL_COLORES: Record<string, string> = {
+    'Nivel 1 (Bajo)':  GREEN,
+    'Nivel 2 (Medio)': AMBER,
+    'Nivel 3 (Alto)':  RED,
+  }
+
   return (
-    <Page size="LETTER" style={s.page}>
-      <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
-      <View style={s.sectionBanner}>
-        <Text style={s.sectionNum}>6</Text>
-        <Text style={s.sectionTitle}>Condición 6 — Mecanismo de Atención de Quejas y Reclamos (MAQR)</Text>
-      </View>
+    <>
+      {/* PÁGINA 1: INFORMACIÓN GENERAL */}
+      <Page size="LETTER" style={s.page}>
+        <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
+        <View style={s.sectionBanner}>
+          <Text style={s.sectionNum}>6</Text>
+          <Text style={s.sectionTitle}>Condición 6 — Mecanismo de Atención de Quejas y Reclamos (MAQR)</Text>
+        </View>
 
-      {maqr.descripcion_condicion && (
-        <><SubBanner title="Descripción de la condición" /><TextBlock text={maqr.descripcion_condicion} /></>
-      )}
+        {maqr.descripcion_condicion && (
+          <><SubBanner title="Descripción de la condición" /><TextBlock text={maqr.descripcion_condicion} /></>
+        )}
 
-      {/* Medios de recepción */}
-      {mediosActivos.length > 0 && (
-        <>
-          <SubBanner title="Medios de recepción activos" />
+        {/* Medios de recepción */}
+        {mediosActivos.length > 0 && (
+          <>
+            <SubBanner title="Medios de recepción activos" />
+            <View style={s.table}>
+              <View style={s.tableHead}>
+                <Text style={[s.tableHeadCell, { flex: 1 }]}>Canal</Text>
+                <Text style={[s.tableHeadCell, { flex: 3 }]}>Detalle</Text>
+              </View>
+              {mediosActivos.map((m, i) => (
+                <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                  <Text style={[s.tableCell, { flex: 1, fontFamily: 'Helvetica-Bold' }]}>{m.nombre}</Text>
+                  <Text style={[s.tableCell, { flex: 3 }]}>{m.detalle}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* Estadísticas de quejas - Página 1 */}
+        {quejas.length > 0 && (
+          <>
+            <SubBanner title="Estadísticas de Quejas y Reclamos" />
+
+            {/* Tarjetas principales */}
+            <View style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                {/* Total quejas */}
+                <View style={{ flex: 1, backgroundColor: BLUE, padding: 10, borderRadius: 4 }}>
+                  <Text style={{ fontSize: 7, color: '#ffffff', opacity: 0.8, marginBottom: 4 }}>TOTAL QUEJAS DE ESTE PERÍODO</Text>
+                  <Text style={{ fontSize: 24, fontFamily: 'Helvetica-Bold', color: '#ffffff', marginBottom: 4 }}>{total}</Text>
+                  <Text style={{ fontSize: 6, color: '#ffffff' }}>Acumulado total: {total}</Text>
+                </View>
+                {/* Abiertas */}
+                <View style={{ flex: 0.9, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 10, borderRadius: 4 }}>
+                  <Text style={{ fontSize: 6, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 3 }}>ABIERTAS</Text>
+                  <Text style={{ fontSize: 18, fontFamily: 'Helvetica-Bold', color: abiertas > 0 ? AMBER : MUTED, marginBottom: 4 }}>{abiertas}</Text>
+                  <View style={{ height: 3, backgroundColor: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
+                    <View style={{ height: 3, backgroundColor: AMBER, width: `${total > 0 ? (abiertas / total) * 100 : 0}%` }} />
+                  </View>
+                </View>
+                {/* Resueltas */}
+                <View style={{ flex: 0.9, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 10, borderRadius: 4 }}>
+                  <Text style={{ fontSize: 6, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 3 }}>RESUELTAS</Text>
+                  <Text style={{ fontSize: 18, fontFamily: 'Helvetica-Bold', color: resueltas > 0 ? GREEN : MUTED, marginBottom: 4 }}>{resueltas}</Text>
+                  <View style={{ height: 3, backgroundColor: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
+                    <View style={{ height: 3, backgroundColor: GREEN, width: `${total > 0 ? (resueltas / total) * 100 : 0}%` }} />
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Gráficos por categoría */}
+            <View style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+                {/* Por Estado */}
+                <View style={{ flex: 1, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 8, borderRadius: 4 }}>
+                  <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: MUTED, marginBottom: 6, textTransform: 'uppercase' }}>POR ESTADO</Text>
+                  {Object.entries(contarPor('estado')).map(([estado, count]) => (
+                    <View key={estado} style={{ marginBottom: 4 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <Text style={{ fontSize: 5.5, color: DARK }}>{estado}</Text>
+                        <Text style={{ fontSize: 5.5, fontFamily: 'Helvetica-Bold', color: DARK }}>{count}</Text>
+                      </View>
+                      <View style={{ height: 1.5, backgroundColor: '#e2e8f0', borderRadius: 1, overflow: 'hidden' }}>
+                        <View style={{ height: 1.5, backgroundColor: ESTADO_COLORES[estado] || MUTED, width: `${(count / total) * 100}%` }} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Por Nivel */}
+                <View style={{ flex: 1, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 8, borderRadius: 4 }}>
+                  <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: MUTED, marginBottom: 6, textTransform: 'uppercase' }}>POR NIVEL</Text>
+                  {Object.entries(contarPor('nivel_gravedad')).map(([nivel, count]) => (
+                    <View key={nivel} style={{ marginBottom: 4 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <Text style={{ fontSize: 5.5, color: DARK }}>{nivel}</Text>
+                        <Text style={{ fontSize: 5.5, fontFamily: 'Helvetica-Bold', color: DARK }}>{count}</Text>
+                      </View>
+                      <View style={{ height: 1.5, backgroundColor: '#e2e8f0', borderRadius: 1, overflow: 'hidden' }}>
+                        <View style={{ height: 1.5, backgroundColor: NIVEL_COLORES[nivel] || MUTED, width: `${(count / total) * 100}%` }} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {/* Por Medio */}
+                <View style={{ flex: 1, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 8, borderRadius: 4 }}>
+                  <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: MUTED, marginBottom: 6, textTransform: 'uppercase' }}>POR MEDIO</Text>
+                  {Object.entries(contarPor('medio')).map(([medio, count]) => (
+                    <View key={medio} style={{ marginBottom: 4 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <Text style={{ fontSize: 5.5, color: DARK }}>{medio}</Text>
+                        <Text style={{ fontSize: 5.5, fontFamily: 'Helvetica-Bold', color: DARK }}>{count}</Text>
+                      </View>
+                      <View style={{ height: 1.5, backgroundColor: '#e2e8f0', borderRadius: 1, overflow: 'hidden' }}>
+                        <View style={{ height: 1.5, backgroundColor: BLUE, width: `${(count / total) * 100}%` }} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Por Tipo */}
+                <View style={{ flex: 1, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 8, borderRadius: 4 }}>
+                  <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: MUTED, marginBottom: 6, textTransform: 'uppercase' }}>POR TIPO</Text>
+                  {Object.entries(contarPor('tipo_queja')).map(([tipo, count]) => (
+                    <View key={tipo} style={{ marginBottom: 4 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
+                        <Text style={{ fontSize: 5.5, color: DARK }}>{tipo}</Text>
+                        <Text style={{ fontSize: 5.5, fontFamily: 'Helvetica-Bold', color: DARK }}>{count}</Text>
+                      </View>
+                      <View style={{ height: 1.5, backgroundColor: '#e2e8f0', borderRadius: 1, overflow: 'hidden' }}>
+                        <View style={{ height: 1.5, backgroundColor: '#a855f7', width: `${(count / total) * 100}%` }} />
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </>
+        )}
+
+        <FotosGrid fotos={maqr.fotos ?? []} />
+      </Page>
+
+      {/* PÁGINA 2: DETALLE DE QUEJAS */}
+      {quejas.length > 0 && (
+        <Page size="LETTER" style={s.page}>
+          <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
+          <View style={s.sectionBanner}>
+            <Text style={s.sectionNum}>6</Text>
+            <Text style={s.sectionTitle}>Detalle de Quejas y Reclamos</Text>
+          </View>
+
+          <SubBanner title="Registro de quejas y reclamos" />
           <View style={s.table}>
             <View style={s.tableHead}>
-              <Text style={[s.tableHeadCell, { flex: 1 }]}>Canal</Text>
-              <Text style={[s.tableHeadCell, { flex: 3 }]}>Detalle</Text>
+              <Text style={s.tableHeadCell}>N.°</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Medio</Text>
+              <Text style={[s.tableHeadCell, { flex: 1 }]}>Fecha recep.</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Tipo</Text>
+              <Text style={[s.tableHeadCell, { flex: 0.8 }]}>Nivel</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.8 }]}>Descripción</Text>
+              <Text style={[s.tableHeadCell, { flex: 1 }]}>Estado</Text>
             </View>
-            {mediosActivos.map((m, i) => (
+            {quejas.map((q: any, i: number) => (
               <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-                <Text style={[s.tableCell, { flex: 1, fontFamily: 'Helvetica-Bold' }]}>{m.nombre}</Text>
-                <Text style={[s.tableCell, { flex: 3 }]}>{m.detalle}</Text>
+                <Text style={s.tableCell}>{q.numero_queja ?? i + 1}{q.arrastrada ? '*' : ''}</Text>
+                <Text style={[s.tableCell, { flex: 1.2 }]}>{val(q.medio === 'Otro' ? q.medio_otro : q.medio)}</Text>
+                <Text style={[s.tableCell, { flex: 1 }]}>{val(q.fecha_recepcion)}</Text>
+                <Text style={[s.tableCell, { flex: 1.2 }]}>{val(q.tipo_queja === 'Otro' ? q.tipo_queja_otro : q.tipo_queja)}</Text>
+                <Text style={[s.tableCell, { flex: 0.8, fontSize: 6 }]}>{val(q.nivel_gravedad)}</Text>
+                <Text style={[s.tableCell, { flex: 1.8, fontSize: 6 }]}>{val(q.descripcion)}</Text>
+                <Text style={[s.tableCell, { flex: 1 }]}>{val(q.estado)}</Text>
               </View>
             ))}
           </View>
-        </>
+        </Page>
       )}
-
-      {/* Resumen quejas */}
-      <SubBanner title="Registro de quejas y reclamos" />
-      <View style={s.kpiRow}>
-        <View style={s.kpiBox}>
-          <Text style={[s.kpiNum, { color: quejas.length > 0 ? AMBER : GREEN }]}>{quejas.length}</Text>
-          <Text style={s.kpiLabel}>Total quejas</Text>
-        </View>
-        <View style={s.kpiBox}>
-          <Text style={[s.kpiNum, { color: GREEN }]}>{quejas.filter((q: any) => q.estado === 'Cerrada').length}</Text>
-          <Text style={s.kpiLabel}>Cerradas</Text>
-        </View>
-        <View style={s.kpiBox}>
-          <Text style={[s.kpiNum, { color: AMBER }]}>{quejas.filter((q: any) => q.estado !== 'Cerrada').length}</Text>
-          <Text style={s.kpiLabel}>Pendientes</Text>
-        </View>
-        <View style={s.kpiBox}>
-          <Text style={[s.kpiNum, { color: RED }]}>{quejas.filter((q: any) => q.arrastrada).length}</Text>
-          <Text style={s.kpiLabel}>Arrastradas</Text>
-        </View>
-      </View>
-
-      {quejas.length > 0 && (
-        <View style={s.table}>
-          <View style={s.tableHead}>
-            <Text style={s.tableHeadCell}>N.°</Text>
-            <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Medio</Text>
-            <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Fecha recep.</Text>
-            <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Tipo</Text>
-            <Text style={[s.tableHeadCell, { flex: 1 }]}>Gravedad</Text>
-            <Text style={[s.tableHeadCell, { flex: 2.5 }]}>Descripción</Text>
-            <Text style={[s.tableHeadCell, { flex: 1 }]}>Estado</Text>
-          </View>
-          {quejas.map((q: any, i: number) => (
-            <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-              <Text style={s.tableCell}>{q.numero_queja ?? i + 1}{q.arrastrada ? '*' : ''}</Text>
-              <Text style={[s.tableCell, { flex: 1.5 }]}>{val(q.medio === 'Otro' ? q.medio_otro : q.medio)}</Text>
-              <Text style={[s.tableCell, { flex: 1.2 }]}>{val(q.fecha_recepcion)}</Text>
-              <Text style={[s.tableCell, { flex: 1.5 }]}>{val(q.tipo_queja === 'Otro' ? q.tipo_queja_otro : q.tipo_queja)}</Text>
-              <Text style={[s.tableCell, { flex: 1 }]}>{val(q.nivel_gravedad)}</Text>
-              <Text style={[s.tableCell, { flex: 2.5 }]}>{val(q.descripcion)}</Text>
-              <Text style={[s.tableCell, { flex: 1 }]}>{val(q.estado)}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      <FotosGrid fotos={maqr.fotos ?? []} />
-    </Page>
+    </>
   )
 }
 

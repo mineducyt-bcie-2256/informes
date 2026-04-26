@@ -76,7 +76,7 @@ function EditBlock({
               : 'bg-blue-900 text-white hover:bg-blue-800'
           }`}
         >
-          {editando ? <><Lock size={12} /> Bloquear</> : <><Pencil size={12} /> Editar</>}
+          {editando ? <><Lock size={12} /> Guardar</> : <><Pencil size={12} /> Editar</>}
         </button>
       </div>
       {/* Texto */}
