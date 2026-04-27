@@ -70,4 +70,5 @@ export const CONDICIONES = [
   { key: 'maqr',    label: 'Mecanismo de Quejas y Reclamos',           short: 'MAQR'    },
   { key: 'prt',     label: 'Plan de Reubicación Temporal',             short: 'PRT'     },
   { key: 'cct',     label: 'Código de Conducta de Trabajadores',       short: 'CCT'     },
+  { key: 'cumplimiento_ambiental', label: 'Riesgos Críticos - Cumplimiento Ambiental', short: 'CUMPL.AMB' },
 ]

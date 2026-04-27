@@ -6,7 +6,7 @@ import FormWrapper from '@/components/forms/FormWrapper'
 import EscuelaInfoHeader from '@/components/forms/EscuelaInfoHeader'
 import DescripcionCondicion from '@/components/forms/DescripcionCondicion'
 import RegistroFotografico, { type Foto } from '@/components/forms/RegistroFotografico'
-import { Plus, Trash2, Monitor, Users, MapPin, Wrench, X } from 'lucide-react'
+import { Plus, Trash2, Monitor, Users, MapPin, Wrench, X, Edit, Save } from 'lucide-react'
 
 // ════════════════════════════════════════════════════════════════
 // TIPOS
@@ -34,6 +34,8 @@ type LugarData = {
   adec_tiene:      string   // 'Sí' | 'No' | ''
   adec_costo:      string
   adecuaciones:    AdecuacionesMap
+  costos_incluidos?: string // 'Sí' | 'No' | '' - Para alquiler
+  maestros_sitio_presencial?: string // Para virtual: ID del sitio presencial donde están maestros
 }
 
 type Adecuacion      = { activa: boolean; descripcion: string }
@@ -264,22 +266,30 @@ function TablaRubros({ rubros, onChange }: { rubros: RubroRow[]; onChange: (r: R
 // ════════════════════════════════════════════════════════════════
 function TarjetaLugar({
   lugar, index, totalLugares, onChange, onDelete,
-  titulo, labelEstudiantes, nota,
+  titulo, labelEstudiantes, nota, onSave,
 }: {
   lugar: LugarData; index: number; totalLugares: number
   onChange: (l: LugarData) => void
   onDelete: () => void
+  onSave?: () => void
   titulo?: string
   labelEstudiantes?: string
   nota?: string
 }) {
+  const [expanded, setExpanded] = useState(!titulo)
   function upd(field: keyof LugarData, value: any) { onChange({ ...lugar, [field]: value }) }
 
   return (
     <div className="border border-slate-200 rounded-xl overflow-hidden">
       {/* Cabecera */}
       <div className="flex items-center justify-between bg-slate-50 px-4 py-2.5 border-b border-slate-200">
-        <div className="flex items-center gap-2 min-w-0">
+        <button
+          type="button"
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-2 min-w-0 flex-1 hover:opacity-70 transition-opacity">
+          <div className={`transform transition-transform ${expanded ? 'rotate-0' : '-rotate-90'}`}>
+            ▼
+          </div>
           <MapPin size={14} className="text-blue-500 shrink-0" />
           <span className="text-xs font-bold text-slate-500 uppercase shrink-0">
             {titulo ?? `Sitio ${index + 1}`}
@@ -287,15 +297,33 @@ function TarjetaLugar({
           {lugar.direccion && (
             <span className="text-sm text-slate-700 font-medium truncate">{lugar.direccion}</span>
           )}
+        </button>
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          {expanded && onSave && (
+            <button type="button" onClick={() => {
+              onSave()
+              setExpanded(false)
+            }}
+              className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+              <Save size={12} /> Guardar
+            </button>
+          )}
+          {!expanded && onSave && (
+            <button type="button" onClick={() => setExpanded(true)}
+              className="flex items-center gap-1.5 px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+              <Edit size={12} /> Editar
+            </button>
+          )}
+          {totalLugares > 1 && !titulo && (
+            <button type="button" onClick={onDelete}
+              className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors">
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
-        {totalLugares > 1 && !titulo && (
-          <button type="button" onClick={onDelete}
-            className="p-1.5 rounded hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors shrink-0 ml-2">
-            <Trash2 size={14} />
-          </button>
-        )}
       </div>
 
+      {expanded && (
       <div className="bg-white px-4 py-5 space-y-5">
 
         {/* Nota informativa (solo si se pasa) */}
@@ -403,13 +431,45 @@ function TarjetaLugar({
 
         {/* Tabla de costos — solo si Alquiler */}
         {lugar.condicion_uso === 'Alquiler' && (
-          <div>
-            <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3 block">
-              Rubros y costos de la reubicación
-            </label>
-            <TablaRubros
-              rubros={lugar.rubros}
-              onChange={rubros => upd('rubros', rubros)} />
+          <div className="space-y-4">
+            {/* Pregunta: Costos incluidos en otro sitio */}
+            <div>
+              <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3 block">
+                ¿Los costos de alquiler ya están incluidos en otro sitio de reubicación?
+              </label>
+              <div className="flex gap-3">
+                {['Sí', 'No'].map(op => (
+                  <button key={op} type="button"
+                    onClick={() => upd('costos_incluidos', lugar.costos_incluidos === op ? '' : op)}
+                    className={`px-5 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+                      lugar.costos_incluidos === op
+                        ? op === 'Sí' ? 'border-amber-500 bg-amber-50 text-amber-700' : 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-slate-200 text-slate-500 hover:border-slate-300'
+                    }`}>
+                    {op}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tabla de rubros — solo si NO están incluidos en otro sitio */}
+            {lugar.costos_incluidos !== 'Sí' && (
+              <div>
+                <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-3 block">
+                  Rubros y costos de la reubicación
+                </label>
+                <TablaRubros
+                  rubros={lugar.rubros}
+                  onChange={rubros => upd('rubros', rubros)} />
+              </div>
+            )}
+
+            {lugar.costos_incluidos === 'Sí' && (
+              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                <span className="text-amber-600 text-base">⚠️</span>
+                <p className="text-xs text-amber-700 font-medium">Los costos de este sitio están incluidos en otro sitio de reubicación. La sección de rubros se deshabilita.</p>
+              </div>
+            )}
           </div>
         )}
 
@@ -488,16 +548,41 @@ function TarjetaLugar({
         </div>
 
       </div>
+      )}
     </div>
   )
 }
 
+
 // ════════════════════════════════════════════════════════════════
 // PÁGINA PRINCIPAL
 // ════════════════════════════════════════════════════════════════
+interface Cambio {
+  campo: string
+  valorAnterior: any
+  valorNuevo: any
+  fecha: string
+}
+
+interface HistorialCostos {
+  mes: string // "Enero", "Febrero", etc.
+  anio: number
+  sitio: string
+  rubro: string
+  unidad: string
+  cantidad: number
+  costo_unitario: number
+  total: number
+  esCambio: boolean // true si el costo cambió respecto al mes anterior
+}
+
 export default function PrtPage() {
   const { id } = useParams<{ id: string }>()
   const [form, setForm] = useState(INIT)
+  const [editandoVirtualMaestros, setEditandoVirtualMaestros] = useState(false)
+  const [cambios, setCambios] = useState<Cambio[]>([])
+  const [historialCostos, setHistorialCostos] = useState<HistorialCostos[]>([])
+  const [mostrandoOpcionesPrecargar, setMostrandoOpcionesPrecargar] = useState(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -505,20 +590,88 @@ export default function PrtPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ table: 'informe_prt' }),
-    }).finally(() => {
-      supabase.from('informe_prt').select('*').eq('informe_id', id).single()
-        .then(({ data: d }) => {
-          if (!d) return
-          setForm({
-            descripcion_condicion: d.descripcion_condicion ?? '',
-            modalidad:             d.modalidad ?? [],
-            lugares:               d.lugares?.length ? d.lugares : [crearLugar()],
-            virtual:               d.virtual ?? crearLugar(),
-            fotos:                 d.fotos ?? [],
-          })
-        })
+    }).finally(async () => {
+      const { data: d } = await supabase.from('informe_prt').select('*').eq('informe_id', id).single()
+      if (!d) return
+
+      setForm({
+        descripcion_condicion: d.descripcion_condicion ?? '',
+        modalidad:             d.modalidad ?? [],
+        lugares:               d.lugares?.length ? d.lugares : [crearLugar()],
+        virtual:               d.virtual ?? crearLugar(),
+        fotos:                 d.fotos ?? [],
+      })
+
+      // Cargar cambios e historial de costos guardados
+      if (d.cambios) setCambios(d.cambios)
+      if (d.historial_costos) setHistorialCostos(d.historial_costos)
     })
   }, [id])
+
+  // Obtener info del informe actual para mes/año
+  const [infActual, setInfActual] = useState<any>(null)
+  useEffect(() => {
+    supabase.from('informes').select('periodo_mes, periodo_anio, escuela_id').eq('id', id).single()
+      .then(({ data }) => setInfActual(data))
+  }, [id])
+
+  // Precarga de mes anterior
+  async function precargarMesAnterior() {
+    if (!infActual) return
+
+    const mesAnterior = infActual.periodo_mes === 1 ? 12 : infActual.periodo_mes - 1
+    const anioAnterior = infActual.periodo_mes === 1 ? infActual.periodo_anio - 1 : infActual.periodo_anio
+
+    // Buscar informe del mes anterior
+    const { data: infAnterior } = await supabase
+      .from('informes')
+      .select('id')
+      .eq('escuela_id', infActual.escuela_id)
+      .eq('periodo_mes', mesAnterior)
+      .eq('periodo_anio', anioAnterior)
+      .single()
+
+    if (!infAnterior) {
+      alert('No hay informe del mes anterior para esta escuela')
+      return
+    }
+
+    const { data: prtAnterior } = await supabase
+      .from('informe_prt')
+      .select('*')
+      .eq('informe_id', infAnterior.id)
+      .single()
+
+    if (!prtAnterior) {
+      alert('No hay datos PRT en el informe anterior')
+      return
+    }
+
+    // Detectar cambios
+    const cambiosDetectados: Cambio[] = []
+
+    if (JSON.stringify(form.modalidad) !== JSON.stringify(prtAnterior.modalidad)) {
+      cambiosDetectados.push({
+        campo: 'Modalidad',
+        valorAnterior: prtAnterior.modalidad?.join(', '),
+        valorNuevo: form.modalidad.join(', '),
+        fecha: new Date().toISOString(),
+      })
+    }
+
+    // Precarga de datos
+    setForm({
+      descripcion_condicion: form.descripcion_condicion, // Mantener actual
+      modalidad:             prtAnterior.modalidad ?? [],
+      lugares:               prtAnterior.lugares?.length ? prtAnterior.lugares : [crearLugar()],
+      virtual:               prtAnterior.virtual ?? crearLugar(),
+      fotos:                 form.fotos, // Mantener actual
+    })
+
+    setCambios(cambiosDetectados)
+    setMostrandoOpcionesPrecargar(false)
+    alert('Información del mes anterior precargada')
+  }
 
   function set<K extends keyof typeof INIT>(f: K, v: (typeof INIT)[K]) {
     setForm(p => ({ ...p, [f]: v }))
@@ -549,6 +702,36 @@ export default function PrtPage() {
     const totalDocHombres = form.lugares.reduce((s, l) => s + (l.doc_hombres || 0), 0)
     const totalDocMujeres = form.lugares.reduce((s, l) => s + (l.doc_mujeres || 0), 0)
 
+    // Construir historial de costos actual
+    const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    const costosMesActual: HistorialCostos[] = []
+
+    form.lugares.forEach((lugar, sitioIdx) => {
+      const rubrosActivos = lugar.rubros.filter(r => r.activo && lugar.condicion_uso === 'Alquiler' && lugar.costos_incluidos !== 'Sí')
+      rubrosActivos.forEach(rubro => {
+        const total = (rubro.cantidad || 1) * (rubro.costo_unitario || 0)
+        const esCambio = historialCostos.some(h =>
+          h.sitio === `Sitio ${sitioIdx + 1}` &&
+          h.rubro === rubro.nombre &&
+          h.costo_unitario !== rubro.costo_unitario
+        )
+        costosMesActual.push({
+          mes: MESES[infActual?.periodo_mes - 1] || 'Actual',
+          anio: infActual?.periodo_anio || new Date().getFullYear(),
+          sitio: `Sitio ${sitioIdx + 1}`,
+          rubro: rubro.nombre,
+          unidad: rubro.unidad,
+          cantidad: rubro.cantidad || 1,
+          costo_unitario: rubro.costo_unitario || 0,
+          total: total,
+          esCambio: esCambio,
+        })
+      })
+    })
+
+    // Combinar historial anterior con costos actuales
+    const nuevoHistorial = [...historialCostos.filter(h => h.anio < infActual?.periodo_anio || (h.anio === infActual?.periodo_anio && h.mes !== MESES[infActual?.periodo_mes - 1])), ...costosMesActual]
+
     const payload: Record<string, any> = {
       informe_id:            id,
       descripcion_condicion: form.descripcion_condicion,
@@ -565,6 +748,8 @@ export default function PrtPage() {
       lugar_reubicacion:     form.lugares.map(l => l.direccion).filter(Boolean).join(' / '),
       tipo_uso:              [...new Set(form.lugares.map(l => l.condicion_uso).filter(Boolean))].join(', '),
       fotos:                 form.fotos,
+      cambios:               cambios.length > 0 ? cambios : null,
+      historial_costos:      nuevoHistorial.length > 0 ? nuevoHistorial : null,
     }
     const { error } = await supabase.from('informe_prt').upsert(payload, { onConflict: 'informe_id' })
     if (error) throw new Error(error.message)
@@ -815,6 +1000,42 @@ export default function PrtPage() {
 
         <EscuelaInfoHeader informeId={id} />
 
+        {/* Botón Precargar información */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setMostrandoOpcionesPrecargar(!mostrandoOpcionesPrecargar)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors">
+            ⤴️ Precargar información del mes anterior
+          </button>
+        </div>
+
+        {mostrandoOpcionesPrecargar && (
+          <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
+            <p className="text-sm text-indigo-900 mb-3">
+              Se cargará la información de sitios, adecuaciones y modalidad del mes anterior. Los costos se acumularán.
+            </p>
+            <button
+              type="button"
+              onClick={precargarMesAnterior}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700">
+              Confirmar precarga
+            </button>
+          </div>
+        )}
+
+        {/* Indicador de cambios detectados */}
+        {cambios.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <p className="text-sm font-semibold text-amber-900 mb-2">⚠️ {cambios.length} cambio(s) detectado(s):</p>
+            <ul className="text-sm text-amber-800 space-y-1">
+              {cambios.map((c, i) => (
+                <li key={i}>• <strong>{c.campo}:</strong> {c.valorAnterior} → {c.valorNuevo}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <DescripcionCondicion
           informeId={id} tabla="informe_prt"
           value={form.descripcion_condicion}
@@ -844,18 +1065,128 @@ export default function PrtPage() {
         </section>
 
         {/* ── Sección Virtual ────────────────────────────────── */}
+        {/* Mostrar sección de virtual si: es Virtual AND (no es multimodal OR no está guardado) */}
         {esVirtual && (
+          !esMultimodal ||  // Si es 100% Virtual
+          form.virtual.maestros_sitio_presencial === 'Sí' ||  // Si está en proceso de selección
+          form.virtual.maestros_sitio_presencial === 'No' ||  // Si maestros en virtual separado
+          !form.virtual.maestros_sitio_presencial ||  // Si no ha respondido aún
+          editandoVirtualMaestros  // Si está en modo edición
+        ) && (
           <section>
             <h3 className={sectionHdr}>Reubicación virtual</h3>
-            <TarjetaLugar
-              lugar={form.virtual}
-              index={0}
-              totalLugares={1}
-              titulo="Sitio de reubicación para maestros"
-              labelEstudiantes="Cantidad de estudiantes en virtualidad"
-              nota="Todos los datos generados se reportan para la modalidad virtual."
-              onChange={v => set('virtual', v)}
-              onDelete={() => {}} />
+
+            {/* Opción: Maestros en sitio presencial (si es multimodal) */}
+            {esMultimodal && (
+              <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-indigo-900 uppercase tracking-wide mb-3 block">
+                    ¿Los maestros en modalidad virtual ocupan uno de los sitios de reubicación presencial?
+                  </label>
+                  <div className="flex gap-3">
+                    {['Sí', 'No'].map(op => (
+                      <button key={op} type="button"
+                        onClick={() => set('virtual', {
+                          ...form.virtual,
+                          maestros_sitio_presencial: form.virtual.maestros_sitio_presencial === op ? '' : op
+                        })}
+                        className={`px-5 py-2.5 rounded-lg border-2 text-sm font-medium transition-all ${
+                          form.virtual.maestros_sitio_presencial === op
+                            ? 'border-indigo-500 bg-white text-indigo-700'
+                            : 'border-indigo-200 text-indigo-600 hover:border-indigo-300 bg-white'
+                        }`}>
+                        {op}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Selector de sitio si responde "Sí" */}
+                {form.virtual.maestros_sitio_presencial === 'Sí' && form.lugares.length > 0 && (
+                  <div>
+                    <label className="text-xs font-semibold text-indigo-900 uppercase tracking-wide mb-2 block">
+                      Seleccionar sitio presencial donde están los maestros
+                    </label>
+                    <select
+                      value={form.virtual.maestros_sitio_presencial || ''}
+                      onChange={e => { set('virtual', { ...form.virtual, maestros_sitio_presencial: e.target.value }); setEditandoVirtualMaestros(true); }}
+                      className="w-full max-w-md border border-indigo-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                      <option value="Sí">-- Seleccionar sitio --</option>
+                      {form.lugares.map((l, i) => (
+                        <option key={l.id} value={l.id}>
+                          {l.direccion ? `Sitio ${i + 1} — ${l.direccion}` : `Sitio ${i + 1}`}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Tarjeta resumen cuando sitio presencial está seleccionado Y está en edición */}
+                {editandoVirtualMaestros && form.virtual.maestros_sitio_presencial && form.virtual.maestros_sitio_presencial !== 'Sí' && form.virtual.maestros_sitio_presencial !== 'No' && (
+                  <div className="bg-white border border-indigo-300 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-sm font-semibold text-indigo-900">
+                          ✓ Maestros ubicados en:
+                        </p>
+                        <p className="text-sm text-indigo-700 mt-1">
+                          {form.lugares.find(l => l.id === form.virtual.maestros_sitio_presencial)?.direccion || `Sitio ${form.lugares.findIndex(l => l.id === form.virtual.maestros_sitio_presencial) + 1}`}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => set('virtual', { ...form.virtual, maestros_sitio_presencial: 'Sí' })}
+                          className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="Editar">
+                          <Edit size={16} />
+                        </button>
+                        <button type="button" onClick={() => { set('virtual', { ...form.virtual, maestros_sitio_presencial: '' }); setEditandoVirtualMaestros(false); }}
+                          className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                          title="Eliminar">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => { onSave(); setEditandoVirtualMaestros(false); }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors">
+                      <Save size={16} /> Guardar
+                    </button>
+                  </div>
+                )}
+
+                {form.virtual.maestros_sitio_presencial === 'No' && (
+                  <div className="flex items-center gap-2 bg-white border border-indigo-200 rounded-lg px-3 py-2">
+                    <span className="text-indigo-600">ℹ️</span>
+                    <p className="text-xs text-indigo-700 font-medium">Los maestros tendrán su propio sitio de reubicación virtual.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Tarjeta de reubicación virtual — Solo cuando es 100% virtual O cuando maestros tienen sitio virtual separado */}
+            {(!esMultimodal || form.virtual.maestros_sitio_presencial === 'No') && (
+              <TarjetaLugar
+                lugar={form.virtual}
+                index={0}
+                totalLugares={1}
+                titulo="Sitio de reubicación para maestros"
+                labelEstudiantes="Cantidad de estudiantes en virtualidad"
+                nota="Todos los datos generados se reportan para la modalidad virtual."
+                onChange={v => set('virtual', v)}
+                onDelete={() => {}}
+                onSave={onSave} />
+            )}
+
+            {/* Resumen si maestros están en sitio presencial */}
+            {form.virtual.maestros_sitio_presencial === 'Sí' && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                <p className="text-sm font-semibold text-green-900">
+                  ✓ Los maestros en modalidad virtual están ubicados en un sitio de reubicación presencial.
+                </p>
+                <p className="text-xs text-green-700 mt-2">
+                  No es necesario ingresar datos adicionales de ubicación para la modalidad virtual.
+                </p>
+              </div>
+            )}
           </section>
         )}
 
@@ -882,10 +1213,41 @@ export default function PrtPage() {
                       key={l.id} lugar={l} index={i}
                       totalLugares={form.lugares.length}
                       onChange={nl => updLugar(i, nl)}
-                      onDelete={() => delLugar(i)} />
+                      onDelete={() => delLugar(i)}
+                      onSave={onSave} />
                   ))}
                 </div>
               </div>
+
+              {/* Modalidad Virtual — Maestros en sitio presencial */}
+              {esMultimodal && form.virtual.maestros_sitio_presencial && form.virtual.maestros_sitio_presencial !== 'No' && form.virtual.maestros_sitio_presencial !== 'Sí' && (
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5 mb-3">
+                    <Monitor size={13} /> Modalidad Virtual
+                  </label>
+                  <div className="bg-white border border-slate-200 rounded-lg p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <MapPin size={16} className="text-indigo-600" />
+                      <div>
+                        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Maestros ubicados en</p>
+                        <p className="text-sm font-medium text-slate-800 mt-1">
+                          {form.lugares.find(l => l.id === form.virtual.maestros_sitio_presencial)?.direccion || `Sitio ${form.lugares.findIndex(l => l.id === form.virtual.maestros_sitio_presencial) + 1}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => setEditandoVirtualMaestros(true)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors">
+                        <Edit size={13} /> Editar
+                      </button>
+                      <button type="button" onClick={() => set('virtual', { ...form.virtual, maestros_sitio_presencial: '' })}
+                        className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
 
             </div>
           </section>

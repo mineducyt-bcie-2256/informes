@@ -57,7 +57,7 @@ const s = StyleSheet.create({
     borderWidth: 4, borderColor: '#22c55e',
   },
   coverLogoText: { color: '#ffffff', fontSize: 14, fontFamily: 'Helvetica-Bold' },
-  coverLabel: { color: MUTED, fontSize: 7.5, fontFamily: 'Helvetica-Bold', letterSpacing: 2, marginBottom: 10, textAlign: 'center' },
+  coverLabel: { color: MUTED, fontSize: 7.5, fontFamily: 'Helvetica-Bold', letterSpacing: 2, marginBottom: 4, textAlign: 'center' },
   coverTitle: { color: NAVY, fontSize: 17, fontFamily: 'Helvetica-Bold', textAlign: 'center', lineHeight: 1.35, marginBottom: 6 },
   coverSubtitle: { color: MUTED, fontSize: 9.5, textAlign: 'center', marginBottom: 20 },
   coverDivider: { width: 50, height: 3, backgroundColor: GOLD, marginBottom: 0 },
@@ -67,11 +67,11 @@ const s = StyleSheet.create({
     marginHorizontal: 55,
     marginTop: 24,
   },
-  coverInfoBlock: { marginBottom: 14 },
+  coverInfoBlock: { marginBottom: 6 },
   coverInfoLabel: { fontSize: 7, color: MUTED, fontFamily: 'Helvetica-Bold', letterSpacing: 0.8, marginBottom: 3 },
   coverInfoValue: { fontSize: 9, color: DARK, fontFamily: 'Helvetica-Bold' },
   coverInfoSub: { fontSize: 8.5, color: NAVY2, marginTop: 2 },
-  coverInfoRow: { flexDirection: 'row', marginBottom: 10, alignItems: 'flex-start' },
+  coverInfoRow: { flexDirection: 'row', marginBottom: 4, alignItems: 'flex-start' },
 
   coverBadge: {
     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
@@ -91,7 +91,7 @@ const s = StyleSheet.create({
   // ── Secciones ────────────────────────────────────────────────────
   sectionBanner: {
     backgroundColor: NAVY, paddingVertical: 7, paddingHorizontal: 12,
-    marginBottom: 10, marginTop: 16, flexDirection: 'row', alignItems: 'center',
+    marginBottom: 4, marginTop: 16, flexDirection: 'row', alignItems: 'center',
   },
   sectionNum: { color: GOLD, fontSize: 8, fontFamily: 'Helvetica-Bold', marginRight: 8, width: 20 },
   sectionTitle: { color: '#ffffff', fontSize: 10, fontFamily: 'Helvetica-Bold', flex: 1 },
@@ -99,8 +99,8 @@ const s = StyleSheet.create({
   sectionBadgeText: { fontSize: 7, fontFamily: 'Helvetica-Bold' },
 
   subBanner: {
-    backgroundColor: LIGHT, paddingVertical: 5, paddingHorizontal: 10,
-    marginBottom: 6, marginTop: 10,
+    backgroundColor: LIGHT, paddingVertical: 3, paddingHorizontal: 8,
+    marginBottom: 2, marginTop: 3,
     borderLeftWidth: 3, borderLeftColor: NAVY,
   },
   subTitle: { color: NAVY, fontSize: 8, fontFamily: 'Helvetica-Bold', letterSpacing: 0.5 },
@@ -113,16 +113,16 @@ const s = StyleSheet.create({
 
   // ── Párrafo de texto ──────────────────────────────────────────────
   textBlock: {
-    fontSize: 8.5, color: DARK, lineHeight: 1.6,
-    marginBottom: 6, textAlign: 'justify',
+    fontSize: 7.5, color: DARK, lineHeight: 1.4,
+    marginBottom: 1, textAlign: 'justify',
   },
   noData: { fontSize: 8, color: MUTED, fontStyle: 'italic', marginBottom: 4 },
 
   // ── Tabla ────────────────────────────────────────────────────────
-  table: { marginTop: 6, marginBottom: 6 },
-  tableHead: { flexDirection: 'row', backgroundColor: NAVY, paddingVertical: 5, paddingHorizontal: 6 },
+  table: { marginTop: 2, marginBottom: 2, pageBreakInside: 'avoid' as any },
+  tableHead: { flexDirection: 'row', backgroundColor: NAVY, paddingVertical: 2, paddingHorizontal: 4 },
   tableHeadCell: { color: '#ffffff', fontSize: 7.5, fontFamily: 'Helvetica-Bold', flex: 1 },
-  tableRow: { flexDirection: 'row', paddingVertical: 4, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: BORDER },
+  tableRow: { flexDirection: 'row', paddingVertical: 2, paddingHorizontal: 4, borderBottomWidth: 1, borderBottomColor: BORDER },
   tableRowAlt: { flexDirection: 'row', paddingVertical: 4, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: BORDER, backgroundColor: '#f8fafc' },
   tableCell: { fontSize: 7.5, color: DARK, flex: 1 },
   tableCellBold: { fontSize: 7.5, color: DARK, flex: 1, fontFamily: 'Helvetica-Bold' },
@@ -130,12 +130,12 @@ const s = StyleSheet.create({
   // ── Tarjeta ───────────────────────────────────────────────────────
   card: {
     borderWidth: 1, borderColor: BORDER, borderRadius: 6,
-    padding: 10, marginBottom: 8,
+    padding: 6, marginBottom: 0,
   },
   cardTitle: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 5 },
 
   // ── Indicadores ──────────────────────────────────────────────────
-  kpiRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  kpiRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
   kpiBox: {
     flex: 1, borderWidth: 1, borderColor: BORDER, borderRadius: 6,
     padding: 10, alignItems: 'center',
@@ -220,6 +220,36 @@ function EstadoBadge({ estado }: { estado: string }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// BLOQUE DE SECCIÓN CON ENCABEZADO — Evita cortes de página
+// ═══════════════════════════════════════════════════════════════════
+/**
+ * SubBannerWithPageBreak coloca un page break ANTES del encabezado para tablas/contenido grande
+ * Úsalo cuando sea probable que el contenido siguiente sea grande o se corra
+ */
+function SubBannerWithPageBreak({ title, forceBreak = true }: { title: string; forceBreak?: boolean }) {
+  return (
+    <>
+      {forceBreak && <View style={{ pageBreakBefore: 'always', marginBottom: 0 } as any} />}
+      <SubBanner title={title} />
+    </>
+  )
+}
+
+/**
+ * SectionBlock envuelve un encabezado + contenido y garantiza que NO SE CORTARÁN
+ * Si el bloque completo (encabezado + contenido) no cabe en la página actual,
+ * TODO el bloque se mueve a la siguiente página.
+ */
+function SectionBlock({ title, children, forceBreak = true }: { title: string; children: React.ReactNode; forceBreak?: boolean }) {
+  return (
+    <View style={{ pageBreakInside: 'avoid', marginBottom: 4 } as any}>
+      <SubBannerWithPageBreak title={title} forceBreak={forceBreak} />
+      {children}
+    </View>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // FOOTER (fijo en todas las páginas excepto portada)
 // ═══════════════════════════════════════════════════════════════════
 function Footer({ escuela, periodo }: { escuela: string; periodo: string }) {
@@ -261,7 +291,7 @@ function FotosGrid({ fotos }: { fotos: any[] }) {
       <SubBanner title="Registro Fotográfico" />
       {pares.map((par, ri) => (
         // Contenedor con altura fija y posicionamiento absoluto para las fotos
-        <View key={ri} style={{ width: 522, height: ROW_H, marginBottom: 8, position: 'relative' }}>
+        <View key={ri} style={{ width: 522, height: ROW_H, marginBottom: 3, position: 'relative' }}>
 
           {/* Foto izquierda — posición absoluta en x=0 */}
           <Image
@@ -353,7 +383,7 @@ function Portada({ data }: { data: any }) {
       <View style={s.coverInfo}>
 
         {/* 1. Nombre CE */}
-        <View style={[s.coverInfoBlock, { borderLeftWidth: 4, borderLeftColor: GOLD, paddingLeft: 12, marginBottom: 14 }]}>
+        <View style={[s.coverInfoBlock, { borderLeftWidth: 4, borderLeftColor: GOLD, paddingLeft: 12, marginBottom: 6 }]}>
           <Text style={[s.coverInfoValue, { fontSize: 14, marginBottom: 6 }]}>{val(esc?.nombre)}</Text>
           {esc?.codigo && (
             <Text style={{ fontSize: 8, color: MUTED, marginBottom: 3 }}>
@@ -367,10 +397,10 @@ function Portada({ data }: { data: any }) {
         </View>
 
         {/* Línea */}
-        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 12 }} />
+        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 2 }} />
 
         {/* 2. Datos fijos del proyecto */}
-        <View style={{ marginBottom: 14 }}>
+        <View style={{ marginBottom: 2 }}>
           <Text style={{ fontSize: 8.5, color: DARK, marginBottom: 3 }}>
             <Text style={{ fontFamily: 'Helvetica-Bold' }}>Proyecto: </Text>
             Préstamo BCIE No. 2256-SV
@@ -385,10 +415,10 @@ function Portada({ data }: { data: any }) {
         </View>
 
         {/* Línea */}
-        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 12 }} />
+        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 2 }} />
 
         {/* 3. Empresa de supervisión */}
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 20, marginBottom: 14 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 20, marginBottom: 2 }}>
           <View style={{ flex: 1 }}>
             <Text style={s.coverInfoLabel}>EMPRESA DE SUPERVISIÓN</Text>
             <Text style={[s.coverInfoValue, { marginTop: 3 }]}>{val(esc?.empresa_supervision)}</Text>
@@ -402,11 +432,11 @@ function Portada({ data }: { data: any }) {
         </View>
 
         {/* Línea */}
-        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 12 }} />
+        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 2 }} />
 
         {/* 4. Elaborado por */}
         {listaFinal.length > 0 && (
-          <View style={{ marginBottom: 14 }}>
+          <View style={{ marginBottom: 2 }}>
             <Text style={[s.coverInfoLabel, { marginBottom: 8 }]}>ELABORADO POR</Text>
             {listaFinal.map((esp, i) => (
               <View key={i} style={{
@@ -427,7 +457,7 @@ function Portada({ data }: { data: any }) {
         )}
 
         {/* Línea */}
-        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 12 }} />
+        <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 2 }} />
 
         {/* 5. Periodo / N° Informe / Estado */}
         <View style={{ flexDirection: 'row', gap: 24 }}>
@@ -506,7 +536,7 @@ function ResumenEjecutivo({ data }: { data: any }) {
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
 
       {/* Encabezado de sección */}
-      <View style={{ marginBottom: 14 }}>
+      <View style={{ marginBottom: 2 }}>
         <Text style={{ fontSize: 13, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 2 }}>
           Resumen Ejecutivo
         </Text>
@@ -543,7 +573,7 @@ function ResumenEjecutivo({ data }: { data: any }) {
       </View>
 
       {/* Progreso */}
-      <View style={{ marginBottom: 12 }}>
+      <View style={{ marginBottom: 2 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
           <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: DARK }}>
             Progreso del informe
@@ -706,6 +736,7 @@ function SeccionGenerales({ data }: { data: any }) {
       {/* Especialistas Contratista */}
       {espContratista.length > 0 && (
         <>
+          <View style={{ pageBreakBefore: 'always', marginBottom: 0 } as any} />
           <SubBanner title="6. Especialistas — Empresa Contratista (Condición 13)" />
           <View style={s.table}>
             <View style={s.tableHead}>
@@ -729,6 +760,7 @@ function SeccionGenerales({ data }: { data: any }) {
       {/* Especialistas Supervisión */}
       {espSupervision.length > 0 && (
         <>
+          <View style={{ pageBreakBefore: 'always', marginBottom: 0 } as any} />
           <SubBanner title="7. Especialistas — Empresa de Supervisión (Condición 17)" />
           <View style={s.table}>
             <View style={s.tableHead}>
@@ -960,7 +992,7 @@ function SeccionGARO({ data }: { data: any }) {
             <SubBanner title="Unidades sanitarias instaladas en el proyecto" />
 
             {/* Criterio de cumplimiento */}
-            <View style={[s.chip, cumple ? s.chipGreen : s.chipRed, { marginBottom: 6, flexDirection: 'row', gap: 16 }]}>
+            <View style={[s.chip, cumple ? s.chipGreen : s.chipRed, { marginBottom: 2, flexDirection: 'row', gap: 16 }]}>
               <Text style={[s.chipText, { color: cumple ? GREEN : RED, fontFamily: 'Helvetica-Bold' }]}>
                 {cumple ? '✓ CUMPLE con el criterio (1 unidad / 20 personas)' : '✗ NO CUMPLE con el criterio (1 unidad / 20 personas)'}
               </Text>
@@ -1119,7 +1151,7 @@ function TablaResiduos({ titulo, lista }: { titulo: string; lista: any[] }) {
         const s2 = r.sitio_recepcion?.trim()
         if (!g && !l && !s2) return null
         return (
-          <View key={`extra-${ri}`} style={{ marginBottom: 6, padding: 6, backgroundColor: '#f8fafc', borderRadius: 4 }}>
+          <View key={`extra-${ri}`} style={{ marginBottom: 2, padding: 6, backgroundColor: '#f8fafc', borderRadius: 4 }}>
             <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: '#334155', marginBottom: 4 }}>
               {r.categoria} — {r.tipo_residuo}
             </Text>
@@ -1221,8 +1253,8 @@ function ResumenPGR({ demolicion, construccion }: { demolicion: any[]; construcc
 
       {/* ── Distribución por categoría ── */}
       {sAll.totalKg > 0 && (
-        <View style={{ marginBottom: 10 }}>
-          <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 8, letterSpacing: 0.5 }}>
+        <View style={{ marginBottom: 4 }}>
+          <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 3, letterSpacing: 0.5 }}>
             DISTRIBUCIÓN TOTAL POR CATEGORÍA
           </Text>
           {CATS_PGR.map(cat => {
@@ -1260,7 +1292,7 @@ function ResumenPGR({ demolicion, construccion }: { demolicion: any[]; construcc
       {/* ── Comparativo por etapa ── */}
       {demolicion.length > 0 && construccion.length > 0 && (
         <>
-          <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 8, letterSpacing: 0.5 }}>
+          <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 3, letterSpacing: 0.5 }}>
             COMPARATIVO POR ETAPA
           </Text>
           <View style={s.cols2}>
@@ -1408,7 +1440,7 @@ function GaugeMCEAR({ label, value, unit, fn, max }: {
   const col = CLASIF_COL[c.color]
   const pct = Math.min(100, Math.max(2, Math.round((num / max) * 100)))
   return (
-    <View style={{ marginBottom: 8 }}>
+    <View style={{ marginBottom: 3 }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
         <Text style={{ fontSize: 7.5, color: MUTED }}>{label}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -1850,7 +1882,7 @@ function SeccionPPPI({ data }: { data: any }) {
 
       {/* 3. Socializaciones con alertas visuales */}
       <SubBanner title="Socializaciones con partes interesadas" />
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 3 }}>
         {([1, 2, 3] as const).map(n => {
           const fecha = pppi[`socializacion${n}_fecha`] as string | undefined
           const ok = !!fecha
@@ -1878,7 +1910,7 @@ function SeccionPPPI({ data }: { data: any }) {
       </View>
       {pppi.comentarios_socializacion && (
         <View style={{ backgroundColor: '#fef9c3', borderRadius: 4, padding: 8,
-          borderLeftWidth: 3, borderLeftColor: '#ca8a04', marginBottom: 8 }}>
+          borderLeftWidth: 3, borderLeftColor: '#ca8a04', marginBottom: 3 }}>
           <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#854d0e', marginBottom: 2 }}>Comentarios</Text>
           <Text style={{ fontSize: 8, color: DARK }}>{pppi.comentarios_socializacion}</Text>
         </View>
@@ -1893,14 +1925,14 @@ function SeccionPPPI({ data }: { data: any }) {
       {/* 6. Análisis de indicadores de impacto — fluye continuamente después de fotos */}
       {tieneIndicadores && (
         <>
-          <View style={[s.sectionBanner, { marginTop: 20 }]}>
+          <View style={[s.sectionBanner, { marginTop: 8 }]}>
             <Text style={s.sectionNum}>5</Text>
             <Text style={s.sectionTitle}>Análisis de indicadores de impacto</Text>
           </View>
 
           {/* KPIs resumen */}
           {(matriculaTotal > 0 || mesesOrdenados.length > 0 || ipe !== null || diasEsc.length > 0) && (
-            <View style={[s.kpiRow, { marginBottom: 10 }]}>
+            <View style={[s.kpiRow, { marginBottom: 4 }]}>
               {matriculaTotal > 0 && (
                 <View style={s.kpiBox}>
                   <Text style={s.kpiNum}>{matriculaTotal}</Text>
@@ -1976,7 +2008,7 @@ function SeccionPPPI({ data }: { data: any }) {
                   <View style={s.card}>
                     <Text style={[s.cardTitle, { marginBottom: 6 }]}>Distribución por género</Text>
                     {[...matriculas].sort((a: any, b: any) => a.anio - b.anio).map((m: any, i: number) => (
-                      <View key={i} style={{ marginBottom: 8 }}>
+                      <View key={i} style={{ marginBottom: 3 }}>
                         <Text style={{ fontSize: 6.5, color: MUTED, marginBottom: 2 }}>{m.anio}</Text>
                         <BarraGenero hombres={m.ninos} mujeres={m.ninas} height={10} />
                         <LeyendaGenero hombres={m.ninos} mujeres={m.ninas} />
@@ -2124,7 +2156,7 @@ function SeccionPPPI({ data }: { data: any }) {
 
               {/* Resultado IPE */}
               <View style={{ backgroundColor: ipe <= 0.25 ? '#dcfce7' : ipe <= 0.5 ? '#fef9c3' : ipe <= 0.75 ? '#ffedd5' : '#fee2e2',
-                borderRadius: 6, padding: 10, marginTop: 6, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                borderRadius: 6, padding: 10, marginTop: 6, marginBottom: 3, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
                 <View style={{ alignItems: 'center', minWidth: 50 }}>
                   <Text style={{ fontSize: 24, fontFamily: 'Helvetica-Bold', color: ipeColor }}>{ipe.toFixed(2)}</Text>
                   <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: ipeColor, textAlign: 'center' }}>{ipeLabel}</Text>
@@ -2205,7 +2237,7 @@ function SeccionPPPI({ data }: { data: any }) {
 
               {/* Semáforo de riesgo — tarjetas */}
               <SubBanner title="Semáforo de riesgo — Condiciones de infraestructura" />
-              <View style={{ flexDirection: 'row', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+              <View style={{ flexDirection: 'row', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
                 <SemaforoCard label="Agua potable"
                   valor={infra.agua_potable || ''}
                   ok={infra.agua_potable ? infra.agua_potable === 'Sí' : null} />
@@ -2259,7 +2291,7 @@ function SeccionPPPI({ data }: { data: any }) {
           {diasEsc.length > 0 && (
             <>
               <SubBanner title="Días escolares efectivos" />
-              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row', gap: 10, marginBottom: 4 }}>
                 {[...diasEsc].sort((a: any, b: any) => a.anio - b.anio).map((d: any, i: number) => (
                   <View key={i} style={{ flex: 1, backgroundColor: '#f0f4ff', borderRadius: 8,
                     padding: 16, alignItems: 'center',
@@ -2399,11 +2431,11 @@ function SeccionPPPI({ data }: { data: any }) {
           {/* Resumen ejecutivo */}
           <SubBanner title="Resumen ejecutivo de indicadores de impacto" />
           <View style={{ backgroundColor: '#f0f4ff', borderRadius: 8, padding: 12, marginTop: 4 }}>
-            <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 8 }}>Síntesis de indicadores sociales del proyecto</Text>
+            <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 3 }}>Síntesis de indicadores sociales del proyecto</Text>
             <View style={s.cols2}>
               <View>
                 {matriculaTotal > 0 && (
-                  <View style={{ marginBottom: 6 }}>
+                  <View style={{ marginBottom: 2 }}>
                     <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: DARK, marginBottom: 2 }}>Indicadores escolares</Text>
                     <Text style={{ fontSize: 7, color: DARK, lineHeight: 1.5 }}>
                       {'• Matrícula: ' + matriculaTotal + ' alumnos' + (matActual ? ` (${matActual.anio})` : '') + '\n'}
@@ -2414,7 +2446,7 @@ function SeccionPPPI({ data }: { data: any }) {
                   </View>
                 )}
                 {(infra.agua_potable || infra.estado_estructural) && (
-                  <View style={{ marginBottom: 6 }}>
+                  <View style={{ marginBottom: 2 }}>
                     <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: DARK, marginBottom: 2 }}>Infraestructura</Text>
                     <Text style={{ fontSize: 7, color: DARK, lineHeight: 1.5 }}>
                       {infra.agua_potable ? `• Agua potable: ${infra.agua_potable}\n` : ''}
@@ -2426,7 +2458,7 @@ function SeccionPPPI({ data }: { data: any }) {
               </View>
               <View>
                 {(emplDir.length > 0 || emplInd.length > 0) && (
-                  <View style={{ marginBottom: 6 }}>
+                  <View style={{ marginBottom: 2 }}>
                     <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: DARK, marginBottom: 2 }}>Impacto en empleo</Text>
                     {emplDir.length > 0 && <Text style={{ fontSize: 7, color: DARK, lineHeight: 1.5 }}>{'• Empleos directos: ' + (totDirH + totDirM) + ` (H: ${totDirH} / M: ${totDirM})\n`}</Text>}
                     {emplInd.length > 0 && <Text style={{ fontSize: 7, color: DARK, lineHeight: 1.5 }}>{'• Empleos indirectos: ' + (totIndH + totIndM) + ` (H: ${totIndH} / M: ${totIndM})\n`}</Text>}
@@ -2465,7 +2497,7 @@ function SeccionMAQR({ data }: { data: any }) {
   if (!maqr) return null
 
   const medios: any  = maqr.medios_recepcion ?? {}
-  const quejas: any[] = Array.isArray(maqr.quejas) ? maqr.quejas : Object.values(maqr.quejas || {})
+  const quejas: any[] = maqr.quejas ?? []
 
   const mediosActivos = [
     medios.buzon?.activo    && { nombre: 'Buzón',       detalle: `${medios.buzon.direccion ?? ''} — Resp: ${medios.buzon.responsable_llave ?? ''}` },
@@ -2475,209 +2507,290 @@ function SeccionMAQR({ data }: { data: any }) {
     medios.whatsapp?.activo && { nombre: 'WhatsApp',    detalle: `${medios.whatsapp.numero ?? ''} — Resp: ${medios.whatsapp.responsable ?? ''}` },
   ].filter(Boolean) as { nombre: string; detalle: string }[]
 
-  // Estadísticas
-  const total = quejas.length
-  const resueltas = quejas.filter((q: any) => q.estado === 'Resuelto' || q.estado === 'Cerrado').length
-  const abiertas = total - resueltas
-
-  function contarPor(campo: string): Record<string, number> {
-    const mapa: Record<string, number> = {}
-    quejas.forEach((q: any) => {
-      const val = (q[campo] as string) || 'Sin especificar'
-      mapa[val] = (mapa[val] || 0) + 1
-    })
-    return mapa
-  }
-
-  const ESTADO_COLORES: Record<string, string> = {
-    'En proceso':       BLUE,
-    'En investigación': AMBER,
-    'Resuelto':         GREEN,
-    'Cerrado':          MUTED,
-  }
-  const NIVEL_COLORES: Record<string, string> = {
-    'Nivel 1 (Bajo)':  GREEN,
-    'Nivel 2 (Medio)': AMBER,
-    'Nivel 3 (Alto)':  RED,
-  }
-
   return (
-    <>
-      {/* PÁGINA 1: INFORMACIÓN GENERAL */}
-      <Page size="LETTER" style={s.page}>
-        <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
-        <View style={s.sectionBanner}>
-          <Text style={s.sectionNum}>6</Text>
-          <Text style={s.sectionTitle}>Condición 6 — Mecanismo de Atención de Quejas y Reclamos (MAQR)</Text>
-        </View>
+    <Page size="LETTER" style={s.page}>
+      <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
+      <View style={s.sectionBanner}>
+        <Text style={s.sectionNum}>6</Text>
+        <Text style={s.sectionTitle}>Condición 6 — Mecanismo de Atención de Quejas y Reclamos (MAQR)</Text>
+      </View>
 
-        {maqr.descripcion_condicion && (
-          <><SubBanner title="Descripción de la condición" /><TextBlock text={maqr.descripcion_condicion} /></>
-        )}
+      {maqr.descripcion_condicion && (
+        <><SubBanner title="Descripción de la condición" /><TextBlock text={maqr.descripcion_condicion} /></>
+      )}
 
-        {/* Medios de recepción */}
-        {mediosActivos.length > 0 && (
-          <>
-            <SubBanner title="Medios de recepción activos" />
-            <View style={s.table}>
-              <View style={s.tableHead}>
-                <Text style={[s.tableHeadCell, { flex: 1 }]}>Canal</Text>
-                <Text style={[s.tableHeadCell, { flex: 3 }]}>Detalle</Text>
-              </View>
-              {mediosActivos.map((m, i) => (
-                <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-                  <Text style={[s.tableCell, { flex: 1, fontFamily: 'Helvetica-Bold' }]}>{m.nombre}</Text>
-                  <Text style={[s.tableCell, { flex: 3 }]}>{m.detalle}</Text>
-                </View>
-              ))}
-            </View>
-          </>
-        )}
-
-        {/* Estadísticas de quejas - Página 1 */}
-        {quejas.length > 0 && (
-          <>
-            <SubBanner title="Estadísticas de Quejas y Reclamos" />
-
-            {/* Tarjetas principales */}
-            <View style={{ marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-                {/* Total quejas */}
-                <View style={{ flex: 1, backgroundColor: BLUE, padding: 10, borderRadius: 4 }}>
-                  <Text style={{ fontSize: 7, color: '#ffffff', opacity: 0.8, marginBottom: 4 }}>TOTAL QUEJAS DE ESTE PERÍODO</Text>
-                  <Text style={{ fontSize: 24, fontFamily: 'Helvetica-Bold', color: '#ffffff', marginBottom: 4 }}>{total}</Text>
-                  <Text style={{ fontSize: 6, color: '#ffffff' }}>Acumulado total: {total}</Text>
-                </View>
-                {/* Abiertas */}
-                <View style={{ flex: 0.9, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 10, borderRadius: 4 }}>
-                  <Text style={{ fontSize: 6, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 3 }}>ABIERTAS</Text>
-                  <Text style={{ fontSize: 18, fontFamily: 'Helvetica-Bold', color: abiertas > 0 ? AMBER : MUTED, marginBottom: 4 }}>{abiertas}</Text>
-                  <View style={{ height: 3, backgroundColor: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
-                    <View style={{ height: 3, backgroundColor: AMBER, width: `${total > 0 ? (abiertas / total) * 100 : 0}%` }} />
-                  </View>
-                </View>
-                {/* Resueltas */}
-                <View style={{ flex: 0.9, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 10, borderRadius: 4 }}>
-                  <Text style={{ fontSize: 6, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 3 }}>RESUELTAS</Text>
-                  <Text style={{ fontSize: 18, fontFamily: 'Helvetica-Bold', color: resueltas > 0 ? GREEN : MUTED, marginBottom: 4 }}>{resueltas}</Text>
-                  <View style={{ height: 3, backgroundColor: '#f1f5f9', borderRadius: 2, overflow: 'hidden' }}>
-                    <View style={{ height: 3, backgroundColor: GREEN, width: `${total > 0 ? (resueltas / total) * 100 : 0}%` }} />
-                  </View>
-                </View>
-              </View>
-            </View>
-
-            {/* Gráficos por categoría */}
-            <View style={{ marginBottom: 12 }}>
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-                {/* Por Estado */}
-                <View style={{ flex: 1, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 8, borderRadius: 4 }}>
-                  <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: MUTED, marginBottom: 6, textTransform: 'uppercase' }}>POR ESTADO</Text>
-                  {Object.entries(contarPor('estado')).map(([estado, count]) => (
-                    <View key={estado} style={{ marginBottom: 4 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
-                        <Text style={{ fontSize: 5.5, color: DARK }}>{estado}</Text>
-                        <Text style={{ fontSize: 5.5, fontFamily: 'Helvetica-Bold', color: DARK }}>{count}</Text>
-                      </View>
-                      <View style={{ height: 1.5, backgroundColor: '#e2e8f0', borderRadius: 1, overflow: 'hidden' }}>
-                        <View style={{ height: 1.5, backgroundColor: ESTADO_COLORES[estado] || MUTED, width: `${(count / total) * 100}%` }} />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-
-                {/* Por Nivel */}
-                <View style={{ flex: 1, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 8, borderRadius: 4 }}>
-                  <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: MUTED, marginBottom: 6, textTransform: 'uppercase' }}>POR NIVEL</Text>
-                  {Object.entries(contarPor('nivel_gravedad')).map(([nivel, count]) => (
-                    <View key={nivel} style={{ marginBottom: 4 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
-                        <Text style={{ fontSize: 5.5, color: DARK }}>{nivel}</Text>
-                        <Text style={{ fontSize: 5.5, fontFamily: 'Helvetica-Bold', color: DARK }}>{count}</Text>
-                      </View>
-                      <View style={{ height: 1.5, backgroundColor: '#e2e8f0', borderRadius: 1, overflow: 'hidden' }}>
-                        <View style={{ height: 1.5, backgroundColor: NIVEL_COLORES[nivel] || MUTED, width: `${(count / total) * 100}%` }} />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                {/* Por Medio */}
-                <View style={{ flex: 1, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 8, borderRadius: 4 }}>
-                  <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: MUTED, marginBottom: 6, textTransform: 'uppercase' }}>POR MEDIO</Text>
-                  {Object.entries(contarPor('medio')).map(([medio, count]) => (
-                    <View key={medio} style={{ marginBottom: 4 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
-                        <Text style={{ fontSize: 5.5, color: DARK }}>{medio}</Text>
-                        <Text style={{ fontSize: 5.5, fontFamily: 'Helvetica-Bold', color: DARK }}>{count}</Text>
-                      </View>
-                      <View style={{ height: 1.5, backgroundColor: '#e2e8f0', borderRadius: 1, overflow: 'hidden' }}>
-                        <View style={{ height: 1.5, backgroundColor: BLUE, width: `${(count / total) * 100}%` }} />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-
-                {/* Por Tipo */}
-                <View style={{ flex: 1, backgroundColor: '#ffffff', border: `1px solid ${BORDER}`, padding: 8, borderRadius: 4 }}>
-                  <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: MUTED, marginBottom: 6, textTransform: 'uppercase' }}>POR TIPO</Text>
-                  {Object.entries(contarPor('tipo_queja')).map(([tipo, count]) => (
-                    <View key={tipo} style={{ marginBottom: 4 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
-                        <Text style={{ fontSize: 5.5, color: DARK }}>{tipo}</Text>
-                        <Text style={{ fontSize: 5.5, fontFamily: 'Helvetica-Bold', color: DARK }}>{count}</Text>
-                      </View>
-                      <View style={{ height: 1.5, backgroundColor: '#e2e8f0', borderRadius: 1, overflow: 'hidden' }}>
-                        <View style={{ height: 1.5, backgroundColor: '#a855f7', width: `${(count / total) * 100}%` }} />
-                      </View>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            </View>
-          </>
-        )}
-
-        <FotosGrid fotos={maqr.fotos ?? []} />
-      </Page>
-
-      {/* PÁGINA 2: DETALLE DE QUEJAS */}
-      {quejas.length > 0 && (
-        <Page size="LETTER" style={s.page}>
-          <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
-          <View style={s.sectionBanner}>
-            <Text style={s.sectionNum}>6</Text>
-            <Text style={s.sectionTitle}>Detalle de Quejas y Reclamos</Text>
-          </View>
-
-          <SubBanner title="Registro de quejas y reclamos" />
+      {/* Medios de recepción */}
+      {mediosActivos.length > 0 && (
+        <>
+          <SubBanner title="Medios de recepción activos" />
           <View style={s.table}>
             <View style={s.tableHead}>
-              <Text style={s.tableHeadCell}>N.°</Text>
-              <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Medio</Text>
-              <Text style={[s.tableHeadCell, { flex: 1 }]}>Fecha recep.</Text>
-              <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Tipo</Text>
-              <Text style={[s.tableHeadCell, { flex: 0.8 }]}>Nivel</Text>
-              <Text style={[s.tableHeadCell, { flex: 1.8 }]}>Descripción</Text>
-              <Text style={[s.tableHeadCell, { flex: 1 }]}>Estado</Text>
+              <Text style={[s.tableHeadCell, { flex: 1 }]}>Canal</Text>
+              <Text style={[s.tableHeadCell, { flex: 3 }]}>Detalle</Text>
             </View>
-            {quejas.map((q: any, i: number) => (
+            {mediosActivos.map((m, i) => (
               <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-                <Text style={s.tableCell}>{q.numero_queja ?? i + 1}{q.arrastrada ? '*' : ''}</Text>
-                <Text style={[s.tableCell, { flex: 1.2 }]}>{val(q.medio === 'Otro' ? q.medio_otro : q.medio)}</Text>
-                <Text style={[s.tableCell, { flex: 1 }]}>{val(q.fecha_recepcion)}</Text>
-                <Text style={[s.tableCell, { flex: 1.2 }]}>{val(q.tipo_queja === 'Otro' ? q.tipo_queja_otro : q.tipo_queja)}</Text>
-                <Text style={[s.tableCell, { flex: 0.8, fontSize: 6 }]}>{val(q.nivel_gravedad)}</Text>
-                <Text style={[s.tableCell, { flex: 1.8, fontSize: 6 }]}>{val(q.descripcion)}</Text>
-                <Text style={[s.tableCell, { flex: 1 }]}>{val(q.estado)}</Text>
+                <Text style={[s.tableCell, { flex: 1, fontFamily: 'Helvetica-Bold' }]}>{m.nombre}</Text>
+                <Text style={[s.tableCell, { flex: 3 }]}>{m.detalle}</Text>
               </View>
             ))}
           </View>
-        </Page>
+        </>
       )}
-    </>
+
+      {/* Resumen quejas */}
+      <SubBanner title="Registro de quejas y reclamos" />
+
+      {/* Análisis de quejas */}
+      {(() => {
+        const totalQuejas = quejas.length
+        const cerradas = quejas.filter((q: any) => q.estado === 'Cerrado' || q.estado === 'Resuelto').length
+        const pendientes = totalQuejas - cerradas
+
+        // Desglose por tipo
+        const porTipo: any = {}
+        quejas.forEach((q: any) => {
+          const tipo = q.tipo_queja === 'Otro' ? q.tipo_queja_otro : q.tipo_queja || '—'
+          porTipo[tipo] = (porTipo[tipo] || 0) + 1
+        })
+        const tiposTop = Object.entries(porTipo).sort((a: any, b: any) => b[1] - a[1])
+
+        // Desglose por origen
+        const porOrigen: any = {}
+        quejas.forEach((q: any) => {
+          const origen = q.origen === 'Otro' ? q.origen_otro : q.origen || '—'
+          porOrigen[origen] = (porOrigen[origen] || 0) + 1
+        })
+        const origenesTop = Object.entries(porOrigen).sort((a: any, b: any) => b[1] - a[1])
+
+        // Desglose por nivel
+        const porNivel: any = {}
+        quejas.forEach((q: any) => {
+          const nivel = q.nivel_gravedad || '—'
+          porNivel[nivel] = (porNivel[nivel] || 0) + 1
+        })
+        const nivelesTop = Object.entries(porNivel).sort((a: any, b: any) => b[1] - a[1])
+
+        // Desglose por estado
+        const porEstado: any = {}
+        quejas.forEach((q: any) => {
+          const estado = q.estado || '—'
+          porEstado[estado] = (porEstado[estado] || 0) + 1
+        })
+        const estadosTop = Object.entries(porEstado).sort((a: any, b: any) => b[1] - a[1])
+
+        // Función para calcular porcentaje y color
+        const getPercentage = (count: number) => (count / totalQuejas) * 100
+
+        const getColorForTipo = (tipo: string) => {
+          const idx = tiposTop.findIndex((t: any) => t[0] === tipo)
+          const colors = ['#7c3aed', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b']
+          return colors[idx % colors.length]
+        }
+
+        const getColorForOrigen = (origen: string) => {
+          const idx = origenesTop.findIndex((t: any) => t[0] === origen)
+          const colors = ['#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+          return colors[idx % colors.length]
+        }
+
+        const getColorForNivel = (nivel: string) => {
+          if (String(nivel).toLowerCase().includes('crítico')) return '#dc2626'
+          if (String(nivel).toLowerCase().includes('alto')) return '#f97316'
+          if (String(nivel).toLowerCase().includes('medio')) return '#eab308'
+          return '#16a34a'
+        }
+
+        const getColorForEstado = (estado: string) => {
+          if (String(estado).toLowerCase().includes('cerrado') || String(estado).toLowerCase().includes('resuelto')) return '#16a34a'
+          if (String(estado).toLowerCase().includes('pendiente')) return '#ea580c'
+          return '#3b82f6'
+        }
+
+        return (
+          <>
+            {/* KPI PRINCIPALES */}
+            <View style={s.kpiRow}>
+              <View style={[s.kpiBox, { backgroundColor: '#1e40af' }]}>
+                <Text style={[s.kpiNum, { color: '#ffffff' }]}>{totalQuejas}</Text>
+                <Text style={[s.kpiLabel, { color: '#ffffff', marginTop: 2 }]}>Total quejas de este período</Text>
+                <Text style={{ fontSize: 6, color: '#bfdbfe', marginTop: 2 }}>Acumulado total: {totalQuejas}</Text>
+              </View>
+              <View style={s.kpiBox}>
+                <Text style={[s.kpiNum, { color: '#ea580c' }]}>{pendientes}</Text>
+                <Text style={[s.kpiLabel, { color: '#1f2937' }]}>Abiertas</Text>
+                <Text style={{ fontSize: 6, color: '#9ca3af', marginTop: 2 }}>Acumulado: {pendientes}</Text>
+              </View>
+              <View style={s.kpiBox}>
+                <Text style={[s.kpiNum, { color: '#9ca3af' }]}>{cerradas}</Text>
+                <Text style={[s.kpiLabel, { color: '#9ca3af' }]}>Resueltas</Text>
+                <Text style={{ fontSize: 6, color: '#d1d5db', marginTop: 2 }}>Acumulado: {cerradas}</Text>
+              </View>
+            </View>
+
+            {totalQuejas > 0 && (
+              <View style={{ marginTop: 6 }}>
+                {/* FILA 1: POR TIPO Y POR ORIGEN */}
+                <View style={{ flexDirection: 'row', gap: 6, marginBottom: 2 }}>
+                  {/* BLOQUE 1: POR TIPO */}
+                  {tiposTop.length > 0 && (
+                    <View style={{ flex: 1, border: '0.5px solid #e5e7eb', borderRadius: 3, padding: 6, backgroundColor: '#fafafa' }}>
+                      <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#4b5563', marginBottom: 4 }}>POR TIPO</Text>
+                      {tiposTop.map((item: any, idx: number) => {
+                        const pct = getPercentage(item[1])
+                        const color = getColorForTipo(item[0])
+                        return (
+                          <View key={idx} style={{ marginBottom: idx < tiposTop.length - 1 ? 4 : 0 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2, alignItems: 'flex-start' }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <Text style={{ fontSize: 8, color: color, fontFamily: 'Helvetica-Bold', marginRight: 2 }}>●</Text>
+                                <Text style={{ fontSize: 6.5, color: '#4b5563', fontFamily: 'Helvetica' }}>{String(item[0]).slice(0, 16)}</Text>
+                              </View>
+                              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 1 }}>
+                                <Text style={{ fontSize: 10, color: color, fontFamily: 'Helvetica-Bold' }}>{item[1]}</Text>
+                                <Text style={{ fontSize: 6, color: '#9ca3af', fontFamily: 'Helvetica-Bold' }}>{Math.round(pct)}%</Text>
+                              </View>
+                            </View>
+                            <View style={{ height: 3, backgroundColor: '#e5e7eb', borderRadius: 1, overflow: 'hidden' }}>
+                              <View style={{ height: '100%', width: `${pct}%`, backgroundColor: color }} />
+                            </View>
+                          </View>
+                        )
+                      })}
+                    </View>
+                  )}
+
+                  {/* BLOQUE 2: POR ORIGEN */}
+                  {origenesTop.length > 0 && (
+                    <View style={{ flex: 1, border: '0.5px solid #e5e7eb', borderRadius: 3, padding: 6, backgroundColor: '#fafafa' }}>
+                      <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#4b5563', marginBottom: 4 }}>POR ORIGEN</Text>
+                      {origenesTop.map((item: any, idx: number) => {
+                        const pct = getPercentage(item[1])
+                        const color = getColorForOrigen(item[0])
+                        return (
+                          <View key={idx} style={{ marginBottom: idx < origenesTop.length - 1 ? 4 : 0 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2, alignItems: 'flex-start' }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <Text style={{ fontSize: 8, color: color, fontFamily: 'Helvetica-Bold', marginRight: 2 }}>●</Text>
+                                <Text style={{ fontSize: 6.5, color: '#4b5563', fontFamily: 'Helvetica' }}>{String(item[0]).slice(0, 16)}</Text>
+                              </View>
+                              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 1 }}>
+                                <Text style={{ fontSize: 10, color: color, fontFamily: 'Helvetica-Bold' }}>{item[1]}</Text>
+                                <Text style={{ fontSize: 6, color: '#9ca3af', fontFamily: 'Helvetica-Bold' }}>{Math.round(pct)}%</Text>
+                              </View>
+                            </View>
+                            <View style={{ height: 3, backgroundColor: '#e5e7eb', borderRadius: 1, overflow: 'hidden' }}>
+                              <View style={{ height: '100%', width: `${pct}%`, backgroundColor: color }} />
+                            </View>
+                          </View>
+                        )
+                      })}
+                    </View>
+                  )}
+                </View>
+
+                {/* FILA 2: POR NIVEL Y POR ESTADO */}
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {/* BLOQUE 3: POR NIVEL */}
+                  {nivelesTop.length > 0 && (
+                    <View style={{ flex: 1, border: '0.5px solid #e5e7eb', borderRadius: 3, padding: 6, backgroundColor: '#fafafa' }}>
+                      <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#4b5563', marginBottom: 4 }}>POR NIVEL</Text>
+                      {nivelesTop.map((item: any, idx: number) => {
+                        const pct = getPercentage(item[1])
+                        const color = getColorForNivel(item[0])
+                        return (
+                          <View key={idx} style={{ marginBottom: idx < nivelesTop.length - 1 ? 4 : 0 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2, alignItems: 'flex-start' }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <Text style={{ fontSize: 8, color: color, fontFamily: 'Helvetica-Bold', marginRight: 2 }}>●</Text>
+                                <Text style={{ fontSize: 6.5, color: '#4b5563', fontFamily: 'Helvetica' }}>{String(item[0]).slice(0, 16)}</Text>
+                              </View>
+                              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 1 }}>
+                                <Text style={{ fontSize: 10, color: color, fontFamily: 'Helvetica-Bold' }}>{item[1]}</Text>
+                                <Text style={{ fontSize: 6, color: '#9ca3af', fontFamily: 'Helvetica-Bold' }}>{Math.round(pct)}%</Text>
+                              </View>
+                            </View>
+                            <View style={{ height: 3, backgroundColor: '#e5e7eb', borderRadius: 1, overflow: 'hidden' }}>
+                              <View style={{ height: '100%', width: `${pct}%`, backgroundColor: color }} />
+                            </View>
+                          </View>
+                        )
+                      })}
+                    </View>
+                  )}
+
+                  {/* BLOQUE 4: POR ESTADO */}
+                  {estadosTop.length > 0 && (
+                    <View style={{ flex: 1, border: '0.5px solid #e5e7eb', borderRadius: 3, padding: 6, backgroundColor: '#fafafa' }}>
+                      <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#4b5563', marginBottom: 4 }}>POR ESTADO</Text>
+                      {estadosTop.map((item: any, idx: number) => {
+                        const pct = getPercentage(item[1])
+                        const color = getColorForEstado(item[0])
+                        return (
+                          <View key={idx} style={{ marginBottom: idx < estadosTop.length - 1 ? 4 : 0 }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2, alignItems: 'flex-start' }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                                <Text style={{ fontSize: 8, color: color, fontFamily: 'Helvetica-Bold', marginRight: 2 }}>●</Text>
+                                <Text style={{ fontSize: 6.5, color: '#4b5563', fontFamily: 'Helvetica' }}>{String(item[0]).slice(0, 16)}</Text>
+                              </View>
+                              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 1 }}>
+                                <Text style={{ fontSize: 10, color: color, fontFamily: 'Helvetica-Bold' }}>{item[1]}</Text>
+                                <Text style={{ fontSize: 6, color: '#9ca3af', fontFamily: 'Helvetica-Bold' }}>{Math.round(pct)}%</Text>
+                              </View>
+                            </View>
+                            <View style={{ height: 3, backgroundColor: '#e5e7eb', borderRadius: 1, overflow: 'hidden' }}>
+                              <View style={{ height: '100%', width: `${pct}%`, backgroundColor: color }} />
+                            </View>
+                          </View>
+                        )
+                      })}
+                    </View>
+                  )}
+                </View>
+              </View>
+            )}
+          </>
+        )
+      })()}
+
+      {quejas.length > 0 && (
+        <>
+          {/* TABLA COMPACTA - ANÁLISIS COMPARATIVO */}
+          <SubBanner title="Tabla Comparativa de Quejas" />
+          <View style={s.table}>
+            <View style={s.tableHead}>
+              <Text style={[s.tableHeadCell, { flex: 0.6 }]}>N.°</Text>
+              <Text style={[s.tableHeadCell, { flex: 1 }]}>Fecha recep.</Text>
+              <Text style={[s.tableHeadCell, { flex: 1 }]}>Fecha resolución</Text>
+              <Text style={[s.tableHeadCell, { flex: 0.7 }]}>Días</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Tipo</Text>
+              <Text style={[s.tableHeadCell, { flex: 1 }]}>Origen</Text>
+              <Text style={[s.tableHeadCell, { flex: 0.8 }]}>Nivel</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Estado</Text>
+            </View>
+            {quejas.map((q: any, i: number) => {
+              const diasProceso = q.fecha_recepcion && q.fecha_resolucion
+                ? Math.floor((new Date(q.fecha_resolucion).getTime() - new Date(q.fecha_recepcion).getTime()) / (1000 * 60 * 60 * 24))
+                : '—'
+              return (
+                <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                  <Text style={[s.tableCell, { flex: 0.6, fontSize: 7 }]}>{q.numero_queja ?? i + 1}</Text>
+                  <Text style={[s.tableCell, { flex: 1, fontSize: 6 }]}>{val(q.fecha_recepcion)}</Text>
+                  <Text style={[s.tableCell, { flex: 1, fontSize: 6 }]}>{val(q.fecha_resolucion)}</Text>
+                  <Text style={[s.tableCell, { flex: 0.7, fontSize: 7, textAlign: 'center' }]}>{diasProceso}</Text>
+                  <Text style={[s.tableCell, { flex: 1.2, fontSize: 6 }]}>{val(q.tipo_queja === 'Otro' ? q.tipo_queja_otro : q.tipo_queja)}</Text>
+                  <Text style={[s.tableCell, { flex: 1, fontSize: 6 }]}>{val(q.origen === 'Otro' ? q.origen_otro : q.origen)}</Text>
+                  <Text style={[s.tableCell, { flex: 0.8, fontSize: 6 }]}>{val(q.nivel_gravedad)}</Text>
+                  <Text style={[s.tableCell, { flex: 1.2, fontSize: 6 }]}>{val(q.estado)}</Text>
+                </View>
+              )
+            })}
+          </View>
+        </>
+      )}
+
+      <FotosGrid fotos={maqr.fotos ?? []} />
+    </Page>
   )
 }
 
@@ -2689,7 +2802,25 @@ function SeccionPRT({ data }: { data: any }) {
   if (!prt) return null
 
   const lugares: any[] = prt.lugares ?? []
+  const virtual: any = prt.virtual ?? {}
   const modalidad: string[] = prt.modalidad ?? []
+  const esPresencial = modalidad.includes('Presencial')
+  const esVirtual = modalidad.includes('Virtual')
+  const esMultimodal = esPresencial && esVirtual
+  const tienePresencialSitios = esPresencial && lugares.length > 0
+  // Virtual sitio se muestra SOLO si:
+  // 1. Es 100% virtual (esVirtual && !esMultimodal), O
+  // 2. Es multimodal pero maestros están en sitio virtual separado (virtual.maestros_sitio_presencial === 'No')
+  const debeShowVirtualSitio = esVirtual && (!esMultimodal || virtual.maestros_sitio_presencial === 'No')
+  const tieneVirtualSitio = debeShowVirtualSitio && (virtual.est_ninos || virtual.est_ninas || virtual.doc_hombres || virtual.doc_mujeres)
+  // Detectar si maestros en modalidad virtual están ubicados en un sitio presencial
+  const maestrosEnSitioPresencial = esMultimodal && virtual.maestros_sitio_presencial && virtual.maestros_sitio_presencial !== 'No'
+
+  // Determinar tipo de modalidad
+  let tipoModalidad = ''
+  if (esMultimodal) tipoModalidad = 'MULTIMODAL (Presencial y Virtual)'
+  else if (esVirtual) tipoModalidad = 'VIRTUAL'
+  else if (esPresencial) tipoModalidad = 'PRESENCIAL'
 
   return (
     <Page size="LETTER" style={s.page}>
@@ -2703,106 +2834,558 @@ function SeccionPRT({ data }: { data: any }) {
         <><SubBanner title="Descripción de la condición" /><TextBlock text={prt.descripcion_condicion} /></>
       )}
 
-      {/* Modalidad */}
-      {modalidad.length > 0 && (
-        <Field label="Modalidad de continuidad educativa" value={modalidad.join(', ')} />
+      {/* Tipo de Modalidad — Banner principal */}
+      {tipoModalidad && (
+        <View style={{
+          backgroundColor: esMultimodal ? '#fef3c7' : esVirtual ? '#e0e7ff' : '#dbeafe',
+          borderLeft: `4px solid ${esMultimodal ? '#f59e0b' : esVirtual ? '#6366f1' : '#3b82f6'}`,
+          borderRadius: 4,
+          padding: 10,
+          marginBottom: 4
+        }}>
+          <Text style={{
+            fontSize: 8,
+            fontFamily: 'Helvetica-Bold',
+            color: esMultimodal ? '#92400e' : esVirtual ? '#3730a3' : '#1e40af'
+          }}>
+            Tipo de modalidad: {tipoModalidad}
+          </Text>
+          {esMultimodal && (
+            <Text style={{ fontSize: 7, color: '#92400e', marginTop: 4, lineHeight: 1.3 }}>
+              🔀 La reubicación para este centro escolar es MULTIMODAL. Los estudiantes y docentes tienen opciones de continuidad educativa presencial y virtual.
+            </Text>
+          )}
+        </View>
       )}
 
-      {/* Lugares presenciales */}
-      {lugares.length > 0 && (
-        <>
-          <SubBanner title="Lugares de reubicación" />
-          {lugares.map((l: any, li: number) => {
-            const estTotal  = (l.est_ninos ?? 0) + (l.est_ninas ?? 0)
-            const docTotal  = (l.doc_hombres ?? 0) + (l.doc_mujeres ?? 0)
-            const condicion = l.condicion_uso === 'Otros' ? l.condicion_otros : l.condicion_uso
-            const rubrosActivos = (l.rubros ?? []).filter((r: any) => r.activo)
-            const costoTotal = rubrosActivos.reduce((sum: number, r: any) => sum + ((r.cantidad ?? 1) * (r.costo_unitario ?? 0)), 0)
-            const adecs = Object.entries(l.adecuaciones ?? {}).filter(([, v]: any) => v.activa)
+      {/* Indicador: Maestros en sitio presencial (reutilizan ubicación, sin duplicar costos) */}
+      {maestrosEnSitioPresencial && (
+        <View style={{ backgroundColor: '#ecfdf5', border: `1px solid #86efac`, borderRadius: 6, padding: 8, marginBottom: 2 }}>
+          <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#166534', marginBottom: 2 }}>
+            ✓ Docentes en Modalidad Virtual — Ubicados en Sitio Presencial
+          </Text>
+          <Text style={{ fontSize: 6.5, color: '#166534', lineHeight: 1.4 }}>
+            Los maestros virtuales utilizan uno de los sitios presenciales. Los costos ya están incluidos en ese sitio (sin duplicación).
+          </Text>
+        </View>
+      )}
 
-            return (
-              <View key={li} style={{ marginBottom: 10 }}>
-                {/* Encabezado lugar */}
-                <View style={{ backgroundColor: '#f1f5f9', borderRadius: 4, padding: 6, marginBottom: 4 }}>
-                  <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: NAVY }}>
-                    Lugar #{li + 1} — {val(l.direccion)}
+      {/* Indicador: Maestros tendrán sitio virtual separado */}
+      {esMultimodal && virtual.maestros_sitio_presencial === 'No' && (
+        <View style={{ backgroundColor: '#e0f2fe', border: `1px solid #0284c7`, borderRadius: 6, padding: 8, marginBottom: 2 }}>
+          <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#0c4a6e', marginBottom: 2 }}>
+            ℹ️ Docentes en Modalidad Virtual — Sitio Separado
+          </Text>
+          <Text style={{ fontSize: 6.5, color: '#0c4a6e', lineHeight: 1.4 }}>
+            Los maestros en modalidad virtual tienen su propio sitio de reubicación virtual con costos independientes.
+          </Text>
+        </View>
+      )}
+
+      {/* Indicador: Solo virtual (sin multimodal) */}
+      {esVirtual && !esMultimodal && (
+        <View style={{ backgroundColor: '#e0e7ff', border: `1px solid #6366f1`, borderRadius: 6, padding: 8, marginBottom: 2 }}>
+          <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#3730a3', marginBottom: 2 }}>
+            📱 Modalidad 100% Virtual
+          </Text>
+          <Text style={{ fontSize: 6.5, color: '#3730a3', lineHeight: 1.4 }}>
+            La continuidad educativa es 100% virtual. Todos los estudiantes y docentes participan en línea.
+          </Text>
+        </View>
+      )}
+
+      {/* SECCIÓN: GENERALES DE LA REUBICACIÓN */}
+      {(tienePresencialSitios || debeShowVirtualSitio) && (
+        <>
+          <SubBanner title="Generales de la reubicación" />
+
+          {/* 1. SITIOS DE REUBICACIÓN (Presencial) */}
+          {tienePresencialSitios && (
+            <View style={{ marginBottom: 3 }}>
+              <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 3, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' }}>
+                1. Sitios de Reubicación
+              </Text>
+              {lugares.map((l: any, li: number) => {
+                const estTotal  = (l.est_ninos ?? 0) + (l.est_ninas ?? 0)
+                const docTotal  = (l.doc_hombres ?? 0) + (l.doc_mujeres ?? 0)
+                const condicion = l.condicion_uso === 'Otros' ? l.condicion_otros : l.condicion_uso
+                const rubrosActivos = (l.rubros ?? []).filter((r: any) => r.activo)
+                const costoTotal = rubrosActivos.reduce((sum: number, r: any) => sum + ((r.cantidad ?? 1) * (r.costo_unitario ?? 0)), 0)
+                const adecs = Object.entries(l.adecuaciones ?? {}).filter(([, v]: any) => v.activa)
+                const tieneAlquiler = l.condicion_uso === 'Alquiler'
+                const costosIncluidos = tieneAlquiler && l.costos_incluidos === 'Sí'
+
+                return (
+                  <View key={li} style={{ marginBottom: 2 }}>
+                    {/* Encabezado lugar */}
+                    <View style={{ backgroundColor: '#f1f5f9', borderRadius: 4, padding: 6, marginBottom: 4, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: NAVY }}>
+                        Sitio #{li + 1} — {val(l.direccion)}
+                      </Text>
+                      {costosIncluidos && (
+                        <View style={{ backgroundColor: '#fed7aa', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3 }}>
+                          <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#92400e' }}>Costos incluidos</Text>
+                        </View>
+                      )}
+                    </View>
+                    {/* KPIs */}
+                    <View style={s.kpiRow}>
+                      <View style={s.kpiBox}>
+                        <Text style={s.kpiNum}>{l.est_ninos ?? 0}</Text>
+                        <Text style={s.kpiLabel}>Alumnos</Text>
+                      </View>
+                      <View style={s.kpiBox}>
+                        <Text style={s.kpiNum}>{l.est_ninas ?? 0}</Text>
+                        <Text style={s.kpiLabel}>Alumnas</Text>
+                      </View>
+                      <View style={[s.kpiBox, { borderColor: NAVY, borderWidth: 1 }]}>
+                        <Text style={[s.kpiNum, { color: NAVY }]}>{estTotal}</Text>
+                        <Text style={s.kpiLabel}>Total alumnos</Text>
+                      </View>
+                      <View style={s.kpiBox}>
+                        <Text style={s.kpiNum}>{l.doc_hombres ?? 0}</Text>
+                        <Text style={s.kpiLabel}>Doc. hombres</Text>
+                      </View>
+                      <View style={s.kpiBox}>
+                        <Text style={s.kpiNum}>{l.doc_mujeres ?? 0}</Text>
+                        <Text style={s.kpiLabel}>Doc. mujeres</Text>
+                      </View>
+                      <View style={[s.kpiBox, { borderColor: NAVY, borderWidth: 1 }]}>
+                        <Text style={[s.kpiNum, { color: NAVY }]}>{docTotal}</Text>
+                        <Text style={s.kpiLabel}>Total docentes</Text>
+                      </View>
+                    </View>
+
+                    <Field label="Condición de uso" value={condicion} />
+
+                    {/* Rubros de costo */}
+                    {rubrosActivos.length > 0 && (
+                      <View style={[s.table, { marginTop: 4 }]}>
+                        <View style={s.tableHead}>
+                          <Text style={[s.tableHeadCell, { flex: 2 }]}>Rubro</Text>
+                          <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Modalidad</Text>
+                          <Text style={s.tableHeadCell}>Cant.</Text>
+                          <Text style={s.tableHeadCell}>Costo unit.</Text>
+                          <Text style={s.tableHeadCell}>Subtotal</Text>
+                        </View>
+                        {rubrosActivos.map((r: any, ri: number) => (
+                          <View key={ri} style={ri % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                            <Text style={[s.tableCell, { flex: 2 }]}>{val(r.nombre)}</Text>
+                            <Text style={[s.tableCell, { flex: 1.5 }]}>{val(r.unidad)}</Text>
+                            <Text style={s.tableCell}>{r.cantidad ?? 1}</Text>
+                            <Text style={s.tableCell}>${r.costo_unitario ?? 0}</Text>
+                            <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold' }]}>${(r.cantidad ?? 1) * (r.costo_unitario ?? 0)}</Text>
+                          </View>
+                        ))}
+                        <View style={[s.tableRow, { backgroundColor: costosIncluidos ? '#fed7aa' : '#e2e8f0' }]}>
+                          <Text style={[s.tableCell, { flex: 2, fontFamily: 'Helvetica-Bold', color: costosIncluidos ? '#92400e' : NAVY }]}>
+                            {costosIncluidos ? 'INCLUIDO EN OTRO SITIO' : 'TOTAL MENSUAL'}
+                          </Text>
+                          <Text style={[s.tableCell, { flex: 1.5 }]}> </Text>
+                          <Text style={s.tableCell}> </Text>
+                          <Text style={s.tableCell}> </Text>
+                          <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold', color: costosIncluidos ? '#92400e' : NAVY }]}>
+                            {costosIncluidos ? '—' : `$${costoTotal}`}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Adecuaciones */}
+                    {adecs.length > 0 && (
+                      <View style={{ marginTop: 4 }}>
+                        <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: MUTED, marginBottom: 2 }}>Adecuaciones realizadas:</Text>
+                        {adecs.map(([key, v]: any, ai: number) => (
+                          <View key={ai} style={{ flexDirection: 'row', marginBottom: 1 }}>
+                            <Text style={{ fontSize: 7, color: GREEN, marginRight: 4 }}>✓</Text>
+                            <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: DARK, marginRight: 4 }}>{key}:</Text>
+                            <Text style={{ fontSize: 7, color: DARK, flex: 1 }}>{v.descripcion || '—'}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )
+              })}
+            </View>
+          )}
+
+          {/* 2. CONDICIONES DE VIRTUALIDAD */}
+          {(maestrosEnSitioPresencial || tieneVirtualSitio) && (
+            <View style={{ marginBottom: 3, pageBreakInside: 'avoid' } as any}>
+              <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#3730a3', marginBottom: 3, paddingBottom: 4, borderBottomWidth: 1, borderBottomColor: '#e0e7ff' }}>
+                2. Condiciones de Virtualidad
+              </Text>
+
+              {/* Maestros en sitio presencial */}
+              {maestrosEnSitioPresencial && (
+                <View style={{ marginBottom: 4, backgroundColor: '#ecfdf5', borderRadius: 4, padding: 8, border: '1px solid #86efac' }}>
+                  <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#166534', marginBottom: 2 }}>
+                    ✓ Maestros en Modalidad Virtual — Ubicados en Sitio Presencial
+                  </Text>
+                  <Text style={{ fontSize: 6.5, color: '#166534', lineHeight: 1.4, marginBottom: 4 }}>
+                    Los maestros virtuales utilizan uno de los sitios de reubicación presencial. Los costos ya están incluidos en ese sitio (sin duplicación).
+                  </Text>
+                  <Text style={{ fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: '#166534' }}>
+                    Sitio: {lugares.find(l => l.id === virtual.maestros_sitio_presencial)?.direccion || `Sitio ${lugares.findIndex(l => l.id === virtual.maestros_sitio_presencial) + 1}`}
                   </Text>
                 </View>
-                {/* KPIs */}
-                <View style={s.kpiRow}>
-                  <View style={s.kpiBox}>
-                    <Text style={s.kpiNum}>{l.est_ninos ?? 0}</Text>
-                    <Text style={s.kpiLabel}>Alumnos</Text>
+              )}
+
+              {/* Sitio virtual para docentes */}
+              {tieneVirtualSitio && (
+                <View style={{ marginBottom: 4 }}>
+                  {/* Encabezado */}
+                  <View style={{ backgroundColor: '#f3f4f6', borderRadius: 4, padding: 6, marginBottom: 4 }}>
+                    <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#374151' }}>
+                      Sitio Virtual para Docentes
+                    </Text>
                   </View>
-                  <View style={s.kpiBox}>
-                    <Text style={s.kpiNum}>{l.est_ninas ?? 0}</Text>
-                    <Text style={s.kpiLabel}>Alumnas</Text>
-                  </View>
-                  <View style={[s.kpiBox, { borderColor: NAVY, borderWidth: 1 }]}>
-                    <Text style={[s.kpiNum, { color: NAVY }]}>{estTotal}</Text>
-                    <Text style={s.kpiLabel}>Total alumnos</Text>
-                  </View>
-                  <View style={s.kpiBox}>
-                    <Text style={s.kpiNum}>{l.doc_hombres ?? 0}</Text>
-                    <Text style={s.kpiLabel}>Doc. hombres</Text>
-                  </View>
-                  <View style={s.kpiBox}>
-                    <Text style={s.kpiNum}>{l.doc_mujeres ?? 0}</Text>
-                    <Text style={s.kpiLabel}>Doc. mujeres</Text>
-                  </View>
-                  <View style={[s.kpiBox, { borderColor: NAVY, borderWidth: 1 }]}>
-                    <Text style={[s.kpiNum, { color: NAVY }]}>{docTotal}</Text>
-                    <Text style={s.kpiLabel}>Total docentes</Text>
+                  {/* KPIs */}
+                  <View style={s.kpiRow}>
+                    <View style={s.kpiBox}>
+                      <Text style={s.kpiNum}>{virtual.est_ninos ?? 0}</Text>
+                      <Text style={s.kpiLabel}>Alumnos</Text>
+                    </View>
+                    <View style={s.kpiBox}>
+                      <Text style={s.kpiNum}>{virtual.est_ninas ?? 0}</Text>
+                      <Text style={s.kpiLabel}>Alumnas</Text>
+                    </View>
+                    <View style={[s.kpiBox, { borderColor: '#6366f1', borderWidth: 1 }]}>
+                      <Text style={[s.kpiNum, { color: '#3730a3' }]}>{(virtual.est_ninos ?? 0) + (virtual.est_ninas ?? 0)}</Text>
+                      <Text style={s.kpiLabel}>Total alumnos</Text>
+                    </View>
+                    <View style={s.kpiBox}>
+                      <Text style={s.kpiNum}>{virtual.doc_hombres ?? 0}</Text>
+                      <Text style={s.kpiLabel}>Doc. hombres</Text>
+                    </View>
+                    <View style={s.kpiBox}>
+                      <Text style={s.kpiNum}>{virtual.doc_mujeres ?? 0}</Text>
+                      <Text style={s.kpiLabel}>Doc. mujeres</Text>
+                    </View>
+                    <View style={[s.kpiBox, { borderColor: '#6366f1', borderWidth: 1 }]}>
+                      <Text style={[s.kpiNum, { color: '#3730a3' }]}>{(virtual.doc_hombres ?? 0) + (virtual.doc_mujeres ?? 0)}</Text>
+                      <Text style={s.kpiLabel}>Total docentes</Text>
+                    </View>
                   </View>
                 </View>
+              )}
+            </View>
+          )}
+        </>
+      )}
 
-                <Field label="Condición de uso" value={condicion} />
+      {/* ANÁLISIS Y CONSOLIDADO DE LA REUBICACIÓN — Mostrar si hay datos de población o costos */}
+      {(tienePresencialSitios || tieneVirtualSitio) && (
+        <>
+          <View style={{ pageBreakBefore: 'always', marginBottom: 0 } as any} />
+          <SubBanner title="Análisis y consolidado de la reubicación" />
 
-                {/* Rubros de costo */}
-                {rubrosActivos.length > 0 && (
-                  <View style={[s.table, { marginTop: 4 }]}>
-                    <View style={s.tableHead}>
-                      <Text style={[s.tableHeadCell, { flex: 2 }]}>Rubro</Text>
-                      <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Modalidad</Text>
-                      <Text style={s.tableHeadCell}>Cant.</Text>
-                      <Text style={s.tableHeadCell}>Costo unit.</Text>
-                      <Text style={s.tableHeadCell}>Subtotal</Text>
-                    </View>
-                    {rubrosActivos.map((r: any, ri: number) => (
-                      <View key={ri} style={ri % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-                        <Text style={[s.tableCell, { flex: 2 }]}>{val(r.nombre)}</Text>
-                        <Text style={[s.tableCell, { flex: 1.5 }]}>{val(r.unidad)}</Text>
-                        <Text style={s.tableCell}>{r.cantidad ?? 1}</Text>
-                        <Text style={s.tableCell}>${r.costo_unitario ?? 0}</Text>
-                        <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold' }]}>${(r.cantidad ?? 1) * (r.costo_unitario ?? 0)}</Text>
-                      </View>
-                    ))}
-                    <View style={[s.tableRow, { backgroundColor: '#e2e8f0' }]}>
-                      <Text style={[s.tableCell, { flex: 2, fontFamily: 'Helvetica-Bold' }]}>TOTAL MENSUAL</Text>
-                      <Text style={[s.tableCell, { flex: 1.5 }]}> </Text>
-                      <Text style={s.tableCell}> </Text>
-                      <Text style={s.tableCell}> </Text>
-                      <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold', color: NAVY }]}>${costoTotal}</Text>
-                    </View>
+          {/* TARJETAS KPI RESUMEN - 4 columnas — COMPACTAS para evitar cortes */}
+          {(() => {
+            const totNinos = lugares.reduce((s: number, l: any) => s + (l.est_ninos ?? 0), 0) + (tieneVirtualSitio ? virtual.est_ninos ?? 0 : 0)
+            const totNinas = lugares.reduce((s: number, l: any) => s + (l.est_ninas ?? 0), 0) + (tieneVirtualSitio ? virtual.est_ninas ?? 0 : 0)
+            const totEst = totNinos + totNinas
+            const totHDoc = lugares.reduce((s: number, l: any) => s + (l.doc_hombres ?? 0), 0) + (tieneVirtualSitio ? virtual.doc_hombres ?? 0 : 0)
+            const totMDoc = lugares.reduce((s: number, l: any) => s + (l.doc_mujeres ?? 0), 0) + (tieneVirtualSitio ? virtual.doc_mujeres ?? 0 : 0)
+            const totDoc = totHDoc + totMDoc
+            const totalCostos = lugares.reduce((sum: number, l: any) => {
+              if (l.condicion_uso !== 'Alquiler' || l.costos_incluidos === 'Sí') return sum
+              const rubrosActivos = (l.rubros ?? []).filter((r: any) => r.activo)
+              return sum + rubrosActivos.reduce((s: number, r: any) => s + ((r.cantidad ?? 1) * (r.costo_unitario ?? 0)), 0)
+            }, 0)
+            const kpiWidth = 23.5 // 4 tarjetas en 100% ancho
+            return (
+              <View style={{ marginBottom: 1, pageBreakInside: 'avoid' } as any}>
+                {/* Fila 1 — Tarjetas KPI ULTRA COMPACTAS */}
+                <View style={{ flexDirection: 'row' }}>
+                  {/* Tarjeta 1: Total Estudiantes */}
+                  <View style={{ width: `${kpiWidth}%`, marginRight: '2%', backgroundColor: '#2563eb', borderRadius: 3, padding: 4, marginBottom: 0 }}>
+                    <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: 'white', lineHeight: 1 }}>TOTAL EST.</Text>
+                    <Text style={{ fontSize: 14, fontFamily: 'Helvetica-Bold', color: 'white', marginTop: 1 }}>{totEst}</Text>
+                    <Text style={{ fontSize: 5, color: 'white', marginTop: 0.5, lineHeight: 1 }}>{totNinos}n/{totNinas}a</Text>
                   </View>
-                )}
 
-                {/* Adecuaciones */}
-                {adecs.length > 0 && (
-                  <View style={{ marginTop: 4 }}>
-                    <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: MUTED, marginBottom: 2 }}>Adecuaciones realizadas:</Text>
-                    {adecs.map(([key, v]: any, ai: number) => (
-                      <View key={ai} style={{ flexDirection: 'row', marginBottom: 1 }}>
-                        <Text style={{ fontSize: 7, color: GREEN, marginRight: 4 }}>✓</Text>
-                        <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: DARK, marginRight: 4 }}>{key}:</Text>
-                        <Text style={{ fontSize: 7, color: DARK, flex: 1 }}>{v.descripcion || '—'}</Text>
-                      </View>
-                    ))}
+                  {/* Tarjeta 2: Total Docentes */}
+                  <View style={{ width: `${kpiWidth}%`, marginRight: '2%', backgroundColor: 'white', borderRadius: 3, padding: 3, marginBottom: 0, borderWidth: 1, borderColor: '#d1d5db' }}>
+                    <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#6b7280', lineHeight: 1 }}>TOTAL DOC.</Text>
+                    <Text style={{ fontSize: 14, fontFamily: 'Helvetica-Bold', color: '#1f2937', marginTop: 1 }}>{totDoc}</Text>
+                    <Text style={{ fontSize: 5, color: '#9ca3af', marginTop: 0.5, lineHeight: 1 }}>{totHDoc}h/{totMDoc}m</Text>
                   </View>
-                )}
+
+                  {/* Tarjeta 3: Sitios Presenciales */}
+                  {tienePresencialSitios && (
+                    <View style={{ width: `${kpiWidth}%`, marginRight: '2%', backgroundColor: 'white', borderRadius: 3, padding: 3, marginBottom: 0, borderWidth: 1, borderColor: '#d1d5db' }}>
+                      <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#6b7280', lineHeight: 1 }}>SITIOS</Text>
+                      <Text style={{ fontSize: 14, fontFamily: 'Helvetica-Bold', color: '#1f2937', marginTop: 1 }}>{lugares.length}</Text>
+                      <Text style={{ fontSize: 5, color: '#9ca3af', marginTop: 0.5, lineHeight: 1 }}>+{lugares.filter((l: any) => l.condicion_uso === 'Alquiler').length}</Text>
+                    </View>
+                  )}
+
+                  {/* Tarjeta 4: Costo Total Estimado */}
+                  <View style={{ width: `${kpiWidth}%`, backgroundColor: 'white', borderRadius: 3, padding: 3, marginBottom: 0, borderWidth: 1, borderColor: '#d1d5db' }}>
+                    <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#6b7280', lineHeight: 1 }}>COSTO MES</Text>
+                    <Text style={{ fontSize: 12, fontFamily: 'Helvetica-Bold', color: '#16a34a', marginTop: 1 }}>
+                      ${totalCostos.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </Text>
+                    <Text style={{ fontSize: 5, color: '#9ca3af', marginTop: 0.5, lineHeight: 1 }}>est.</Text>
+                  </View>
+                </View>
               </View>
             )
-          })}
+          })()}
+
+          {/* TABLA DE POBLACIÓN POR SITIO */}
+          <View style={{ marginBottom: 3 }}>
+            <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#1f2937', marginBottom: 2 }}>POBLACIÓN POR SITIO</Text>
+            <View style={s.table}>
+              {/* Encabezado */}
+              <View style={[s.tableHead, { backgroundColor: '#f3f4f6' }]}>
+                <Text style={[s.tableHeadCell, { width: '35%', textAlign: 'left' }]}>SITIO / MODALIDAD</Text>
+                <Text style={[s.tableHeadCell, { width: '10%', textAlign: 'center' }]}>NIÑOS</Text>
+                <Text style={[s.tableHeadCell, { width: '10%', textAlign: 'center' }]}>NIÑAS</Text>
+                <Text style={[s.tableHeadCell, { width: '10%', textAlign: 'center' }]}>EST. TOTAL</Text>
+                <Text style={[s.tableHeadCell, { width: '9%', textAlign: 'center' }]}>DOC. H</Text>
+                <Text style={[s.tableHeadCell, { width: '9%', textAlign: 'center' }]}>DOC. M</Text>
+                <Text style={[s.tableHeadCell, { width: '10%', textAlign: 'center' }]}>DOC. TOTAL</Text>
+              </View>
+
+              {/* Filas de datos */}
+              {lugares.map((l: any, li: number) => {
+                const estTotal = (l.est_ninos ?? 0) + (l.est_ninas ?? 0)
+                const docTotal = (l.doc_hombres ?? 0) + (l.doc_mujeres ?? 0)
+                const bgColor = li % 2 === 0 ? '#f9fafb' : 'white'
+                return (
+                  <View key={li} style={{ backgroundColor: bgColor, borderBottomWidth: 1, borderBottomColor: '#e5e7eb', flexDirection: 'row' }}>
+                    <View style={{ width: '35%', paddingVertical: 6, paddingHorizontal: 6, flexDirection: 'row', alignItems: 'center' }}>
+                      <View style={{ backgroundColor: '#dbeafe', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3, marginRight: 8 }}>
+                        <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#1e40af' }}>Presencial</Text>
+                      </View>
+                      <Text style={{ fontSize: 6.5, color: '#1f2937', flex: 1 }}>Sitio {li + 1} — {l.direccion ? l.direccion.substring(0, 25) : '...'}</Text>
+                    </View>
+                    <Text style={{ width: '10%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, color: '#1f2937' }}>{l.est_ninos ?? 0}</Text>
+                    <Text style={{ width: '10%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, color: '#1f2937' }}>{l.est_ninas ?? 0}</Text>
+                    <Text style={{ width: '10%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: '#1f2937' }}>{estTotal}</Text>
+                    <Text style={{ width: '9%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, color: '#1f2937' }}>{l.doc_hombres ?? 0}</Text>
+                    <Text style={{ width: '9%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, color: '#1f2937' }}>{l.doc_mujeres ?? 0}</Text>
+                    <Text style={{ width: '10%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: '#1f2937' }}>{docTotal}</Text>
+                  </View>
+                )
+              })}
+
+              {/* Fila Virtual si existe */}
+              {tieneVirtualSitio && (
+                <View style={{ backgroundColor: lugares.length % 2 === 0 ? 'white' : '#f9fafb', borderBottomWidth: 1, borderBottomColor: '#e5e7eb', flexDirection: 'row' }}>
+                  <View style={{ width: '35%', paddingVertical: 6, paddingHorizontal: 6, flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ backgroundColor: '#e0e7ff', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3, marginRight: 8 }}>
+                      <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#6366f1' }}>Virtual</Text>
+                    </View>
+                    <Text style={{ fontSize: 6.5, color: '#1f2937' }}>Reubicación virtual (maestr...</Text>
+                  </View>
+                  <Text style={{ width: '10%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, color: '#1f2937' }}>{virtual.est_ninos ?? 0}</Text>
+                  <Text style={{ width: '10%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, color: '#1f2937' }}>{virtual.est_ninas ?? 0}</Text>
+                  <Text style={{ width: '10%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: '#1f2937' }}>
+                    {(virtual.est_ninos ?? 0) + (virtual.est_ninas ?? 0)}
+                  </Text>
+                  <Text style={{ width: '9%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, color: '#1f2937' }}>{virtual.doc_hombres ?? 0}</Text>
+                  <Text style={{ width: '9%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, color: '#1f2937' }}>{virtual.doc_mujeres ?? 0}</Text>
+                  <Text style={{ width: '10%', paddingVertical: 6, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: '#1f2937' }}>
+                    {(virtual.doc_hombres ?? 0) + (virtual.doc_mujeres ?? 0)}
+                  </Text>
+                </View>
+              )}
+
+              {/* Total General */}
+              <View style={{ backgroundColor: '#dbeafe', flexDirection: 'row', borderTopWidth: 2, borderTopColor: '#bfdbfe' }}>
+                <View style={{ width: '35%', paddingVertical: 8, paddingHorizontal: 6 }}>
+                  <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#1e40af' }}>TOTAL GENERAL</Text>
+                </View>
+                <Text style={{ width: '10%', paddingVertical: 8, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: '#1e40af' }}>
+                  {lugares.reduce((s: number, l: any) => s + (l.est_ninos ?? 0), 0) + (tieneVirtualSitio ? virtual.est_ninos ?? 0 : 0)}
+                </Text>
+                <Text style={{ width: '10%', paddingVertical: 8, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: '#1e40af' }}>
+                  {lugares.reduce((s: number, l: any) => s + (l.est_ninas ?? 0), 0) + (tieneVirtualSitio ? virtual.est_ninas ?? 0 : 0)}
+                </Text>
+                <Text style={{ width: '10%', paddingVertical: 8, paddingHorizontal: 4, textAlign: 'center', fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#1e40af' }}>
+                  {lugares.reduce((s: number, l: any) => s + ((l.est_ninos ?? 0) + (l.est_ninas ?? 0)), 0) + (tieneVirtualSitio ? ((virtual.est_ninos ?? 0) + (virtual.est_ninas ?? 0)) : 0)}
+                </Text>
+                <Text style={{ width: '9%', paddingVertical: 8, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: '#1e40af' }}>
+                  {lugares.reduce((s: number, l: any) => s + (l.doc_hombres ?? 0), 0) + (tieneVirtualSitio ? virtual.doc_hombres ?? 0 : 0)}
+                </Text>
+                <Text style={{ width: '9%', paddingVertical: 8, paddingHorizontal: 4, textAlign: 'center', fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: '#1e40af' }}>
+                  {lugares.reduce((s: number, l: any) => s + (l.doc_mujeres ?? 0), 0) + (tieneVirtualSitio ? virtual.doc_mujeres ?? 0 : 0)}
+                </Text>
+                <Text style={{ width: '10%', paddingVertical: 8, paddingHorizontal: 4, textAlign: 'center', fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#1e40af' }}>
+                  {lugares.reduce((s: number, l: any) => s + ((l.doc_hombres ?? 0) + (l.doc_mujeres ?? 0)), 0) + (tieneVirtualSitio ? ((virtual.doc_hombres ?? 0) + (virtual.doc_mujeres ?? 0)) : 0)}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* TABLA DE COSTOS CONSOLIDADOS */}
+          {lugares.some((l: any) => l.condicion_uso === 'Alquiler') && (
+            <View style={{ marginBottom: 4 }}>
+              <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 4 }}>Consolidado de costos de reubicación</Text>
+              <View style={s.table}>
+                <View style={s.tableHead}>
+                  <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Sitio</Text>
+                  <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Rubro</Text>
+                  <Text style={[s.tableHeadCell, { flex: 1 }]}>Unidad</Text>
+                  <Text style={[s.tableHeadCell, { flex: 0.7, textAlign: 'right' }]}>Cant.</Text>
+                  <Text style={[s.tableHeadCell, { flex: 1, textAlign: 'right' }]}>Costo unit.</Text>
+                  <Text style={[s.tableHeadCell, { flex: 1, textAlign: 'right' }]}>Total</Text>
+                </View>
+                {lugares.map((l: any, li: number) => {
+                  const rubrosActivos = (l.rubros ?? []).filter((r: any) => r.activo && l.condicion_uso === 'Alquiler' && l.costos_incluidos !== 'Sí')
+                  if (!rubrosActivos.length) return null
+                  return rubrosActivos.map((r: any, ri: number) => (
+                    <View key={`${li}-${ri}`} style={((li + ri) % 2 === 0) ? s.tableRow : s.tableRowAlt}>
+                      <Text style={[s.tableCell, { flex: 1.5, fontSize: 6.5 }]}>{ri === 0 ? `Sitio ${li + 1}` : ''}</Text>
+                      <Text style={[s.tableCell, { flex: 1.5, fontSize: 6.5 }]}>{r.nombre}</Text>
+                      <Text style={[s.tableCell, { flex: 1, fontSize: 6.5 }]}>{r.unidad}</Text>
+                      <Text style={[s.tableCell, { flex: 0.7, textAlign: 'right', fontSize: 6.5 }]}>{r.cantidad ?? 1}</Text>
+                      <Text style={[s.tableCell, { flex: 1, textAlign: 'right', fontSize: 6.5 }]}>${(r.costo_unitario ?? 0).toFixed(2)}</Text>
+                      <Text style={[s.tableCell, { flex: 1, textAlign: 'right', fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: NAVY }]}>
+                        ${((r.cantidad ?? 1) * (r.costo_unitario ?? 0)).toFixed(2)}
+                      </Text>
+                    </View>
+                  ))
+                })}
+                {/* Total general */}
+                <View style={[s.tableRow, { backgroundColor: '#dcfce7' }]}>
+                  <Text style={[s.tableCell, { flex: 5.2, fontFamily: 'Helvetica-Bold', fontSize: 7, color: '#166534' }]}>
+                    Total mensual estimado
+                  </Text>
+                  <Text style={[s.tableCell, { flex: 0.7 }]}> </Text>
+                  <Text style={[s.tableCell, { flex: 1, textAlign: 'right', fontFamily: 'Helvetica-Bold', fontSize: 7, color: '#166534' }]}>
+                    ${lugares.reduce((sum: number, l: any) => {
+                      if (l.condicion_uso !== 'Alquiler' || l.costos_incluidos === 'Sí') return sum
+                      const rubrosActivos = (l.rubros ?? []).filter((r: any) => r.activo)
+                      return sum + rubrosActivos.reduce((s: number, r: any) => s + ((r.cantidad ?? 1) * (r.costo_unitario ?? 0)), 0)
+                    }, 0).toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* TABLA DE RESUMEN DE ADECUACIONES */}
+          {(() => {
+            const filasAdec: any[] = []
+            lugares.forEach((l: any, i: number) => {
+              if (!l.adec_tiene) return
+              const items = Object.entries(l.adecuaciones ?? {})
+                .filter(([, v]: any) => v.activa)
+                .map(([k]) => k)
+              filasAdec.push({
+                sitio: `Sitio ${i + 1}`,
+                tiene: l.adec_tiene,
+                costo: l.adec_tiene === 'Sí' && l.adec_costo ? `$${parseFloat(l.adec_costo).toFixed(2)}` : '—',
+                items: items
+              })
+            })
+            if (filasAdec.length === 0) return null
+            return (
+              <View>
+                <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 4 }}>Resumen de adecuaciones por sitio</Text>
+                <View style={s.table}>
+                  <View style={s.tableHead}>
+                    <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Sitio</Text>
+                    <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Adecuaciones</Text>
+                    <Text style={[s.tableHeadCell, { flex: 0.8, textAlign: 'right' }]}>Costo</Text>
+                    <Text style={[s.tableHeadCell, { flex: 2.5 }]}>Ítems realizados</Text>
+                  </View>
+                  {filasAdec.map((f: any, fi: number) => (
+                    <View key={fi} style={fi % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                      <Text style={[s.tableCell, { flex: 1.2, fontSize: 6.5 }]}>{f.sitio}</Text>
+                      <Text style={[s.tableCell, { flex: 1.2, fontSize: 6.5 }]}>
+                        <Text style={{
+                          backgroundColor: f.tiene === 'Sí' ? '#dcfce7' : '#f1f5f9',
+                          color: f.tiene === 'Sí' ? '#166534' : MUTED,
+                          padding: '1 3',
+                          borderRadius: 2,
+                          fontSize: 6
+                        }}>
+                          {f.tiene}
+                        </Text>
+                      </Text>
+                      <Text style={[s.tableCell, { flex: 0.8, textAlign: 'right', fontSize: 6.5, color: '#166534', fontFamily: 'Helvetica-Bold' }]}>{f.costo}</Text>
+                      <Text style={[s.tableCell, { flex: 2.5, fontSize: 6 }]}>
+                        {f.items.length > 0
+                          ? f.items.join(', ')
+                          : '—'
+                        }
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )
+          })()}
+        </>
+      )}
+
+      {/* REGISTRO DE CAMBIOS */}
+      {prt.cambios && prt.cambios.length > 0 && (
+        <>
+          <SubBanner title="Registro de cambios" />
+          <View style={{ backgroundColor: '#fef3c7', border: '1px solid #fcd34d', borderRadius: 6, padding: 8, marginBottom: 4 }}>
+            <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#92400e', marginBottom: 2 }}>
+              ⚠️ Cambios detectados en esta reubicación:
+            </Text>
+            {prt.cambios.map((cambio: any, ci: number) => (
+              <View key={ci} style={{ marginBottom: 4, paddingLeft: 8, borderLeftWidth: 2, borderLeftColor: '#f59e0b' }}>
+                <Text style={{ fontSize: 6.5, fontFamily: 'Helvetica-Bold', color: '#92400e' }}>
+                  {cambio.campo}
+                </Text>
+                <Text style={{ fontSize: 6, color: '#92400e', marginTop: 1 }}>
+                  {cambio.valorAnterior} → {cambio.valorNuevo}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+
+      {/* HISTORIAL ACUMULATIVO DE COSTOS */}
+      {prt.historial_costos && prt.historial_costos.length > 0 && (
+        <>
+          <SubBanner title="Historial acumulativo de costos" />
+          <View style={s.table}>
+            <View style={s.tableHead}>
+              <Text style={[s.tableHeadCell, { flex: 1 }]}>Mes</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Sitio</Text>
+              <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Rubro</Text>
+              <Text style={[s.tableHeadCell, { flex: 0.8 }]}>Unidad</Text>
+              <Text style={[s.tableHeadCell, { flex: 0.6, textAlign: 'center' }]}>Cant.</Text>
+              <Text style={[s.tableHeadCell, { flex: 0.9, textAlign: 'right' }]}>Costo unit.</Text>
+              <Text style={[s.tableHeadCell, { flex: 0.9, textAlign: 'right' }]}>Total</Text>
+            </View>
+            {prt.historial_costos.map((h: any, hi: number) => (
+              <View key={hi} style={hi % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                <Text style={[s.tableCell, { flex: 1, fontSize: 6.5, fontFamily: h.esCambio ? 'Helvetica-Bold' : 'Helvetica' }]}>
+                  {h.mes} {h.anio}
+                </Text>
+                <Text style={[s.tableCell, { flex: 1.2, fontSize: 6.5 }]}>{h.sitio}</Text>
+                <Text style={[s.tableCell, { flex: 1.5, fontSize: 6.5 }]}>{h.rubro}</Text>
+                <Text style={[s.tableCell, { flex: 0.8, fontSize: 6.5 }]}>{h.unidad}</Text>
+                <Text style={[s.tableCell, { flex: 0.6, textAlign: 'center', fontSize: 6.5 }]}>{h.cantidad}</Text>
+                <Text style={[s.tableCell, { flex: 0.9, textAlign: 'right', fontSize: 6.5 }]}>${h.costo_unitario.toFixed(2)}</Text>
+                <Text style={[s.tableCell, { flex: 0.9, textAlign: 'right', fontSize: 6.5, fontFamily: h.esCambio ? 'Helvetica-Bold' : 'Helvetica', color: h.esCambio ? '#dc2626' : DARK }]}>
+                  ${h.total.toFixed(2)}
+                </Text>
+              </View>
+            ))}
+            {/* Total acumulado */}
+            <View style={[s.tableRow, { backgroundColor: '#dcfce7' }]}>
+              <Text style={[s.tableCell, { flex: 5.9, fontFamily: 'Helvetica-Bold', fontSize: 7, color: '#166534' }]}>
+                TOTAL ACUMULADO
+              </Text>
+              <Text style={[s.tableCell, { flex: 0.9, textAlign: 'right', fontFamily: 'Helvetica-Bold', fontSize: 7, color: '#166534' }]}>
+                ${prt.historial_costos.reduce((sum: number, h: any) => sum + h.total, 0).toFixed(2)}
+              </Text>
+            </View>
+          </View>
         </>
       )}
 
@@ -2833,7 +3416,7 @@ function SeccionCCT({ data }: { data: any }) {
             <Text style={s.sectionNum}>8</Text>
             <Text style={s.sectionTitle}>Condición 8 — Código de Conducta de Trabajadores</Text>
           </View>
-          <Text style={{ fontSize: 9, color: MUTED, marginTop: 20 }}>Sin datos registrados</Text>
+          <Text style={{ fontSize: 9, color: MUTED, marginTop: 8 }}>Sin datos registrados</Text>
         </Page>
       )
     }
@@ -2856,7 +3439,7 @@ function SeccionCCT({ data }: { data: any }) {
 
   return (
     <>
-      {/* PÁGINA 1: VERIFICACIÓN */}
+      {/* PÁGINA ÚNICA: VERIFICACIÓN → FOTOS → ANÁLISIS (flujo continuo) */}
       <Page size="LETTER" style={s.page}>
         <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
         <View style={s.sectionBanner}>
@@ -2879,7 +3462,7 @@ function SeccionCCT({ data }: { data: any }) {
               // Convertir items a array si es un objeto
               const items = Array.isArray(seccion.items) ? seccion.items : Object.values(seccion.items || {})
               return (
-              <View key={secIdx} style={{ marginBottom: 12 }}>
+              <View key={secIdx} style={{ marginBottom: 2 }}>
                 <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 4, backgroundColor: '#f1f5f9', padding: 4 }}>
                   {seccion.titulo}
                 </Text>
@@ -2944,8 +3527,8 @@ function SeccionCCT({ data }: { data: any }) {
           <>
             <SubBanner title="Capacitaciones Realizadas" />
             {(Array.isArray(capacitaciones) ? capacitaciones : Object.values(capacitaciones || {})).map((cap: any, capIdx: number) => (
-              <View key={capIdx} style={{ marginBottom: 10, border: `1px solid ${BORDER}`, borderRadius: 4, padding: 8, backgroundColor: '#f9fafb' }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+              <View key={capIdx} style={{ marginBottom: 4, border: `1px solid ${BORDER}`, borderRadius: 4, padding: 8, backgroundColor: '#f9fafb' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
                   <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: NAVY }}>#{capIdx + 1} — {cap.tematica}</Text>
                   <Text style={{ fontSize: 7, color: MUTED }}>{cap.fecha ? new Date(cap.fecha).toLocaleDateString('es-ES') : '—'}</Text>
                 </View>
@@ -2966,19 +3549,15 @@ function SeccionCCT({ data }: { data: any }) {
           </>
         )}
 
+        {/* Registro Fotográfico */}
         <FotosGrid fotos={fotos} />
-      </Page>
 
-      {/* PÁGINA 2: ANÁLISIS */}
-      <Page size="LETTER" style={s.page}>
-        <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
-        <View style={s.sectionBanner}>
-          <Text style={s.sectionNum}>8</Text>
-          <Text style={s.sectionTitle}>Análisis de Cumplimiento CCT</Text>
-        </View>
+        {/* Análisis de Cumplimiento — Fuerza page break ANTES para evitar cortes */}
+        <View style={{ pageBreakBefore: 'always', marginBottom: 0 } as any} />
+        <SubBanner title="Análisis de Cumplimiento" />
 
         {/* Nivel Global */}
-        <View style={{ backgroundColor: colorNivel[analisis.nivelGlobal], padding: 12, marginBottom: 12, borderRadius: 4 }}>
+        <View style={{ backgroundColor: colorNivel[analisis.nivelGlobal], padding: 12, marginBottom: 2, borderRadius: 4 }}>
           <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#ffffff', marginBottom: 4 }}>
             Nivel Global: {analisis.nivelGlobal.toUpperCase()}
           </Text>
@@ -3010,9 +3589,9 @@ function SeccionCCT({ data }: { data: any }) {
                 : 'se requiere plan de mejora'
 
               return (
-                <View key={nivel} style={{ marginBottom: 14 }}>
+                <View key={nivel} style={{ marginBottom: 2, pageBreakInside: 'avoid' } as any}>
                   {/* Recuadro con color del nivel */}
-                  <View style={{ backgroundColor: colorNivel[nivel], padding: 10, borderRadius: 4, marginBottom: 8 }}>
+                  <View style={{ backgroundColor: colorNivel[nivel], padding: 10, borderRadius: 4, marginBottom: 3 }}>
                     <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#ffffff', marginBottom: 3 }}>
                       {emojiNivel} Nivel: {labelNivel.toUpperCase()}
                     </Text>
@@ -3025,7 +3604,7 @@ function SeccionCCT({ data }: { data: any }) {
                   </View>
 
                   {/* Tabla de hallazgos del nivel */}
-                  <View style={s.table}>
+                  <View style={[s.table, { pageBreakInside: 'avoid' } as any]}>
                     <View style={s.tableHead}>
                       <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Hallazgo</Text>
                       <Text style={[s.tableHeadCell, { flex: 1.2 }]}>Categoría</Text>

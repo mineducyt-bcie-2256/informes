@@ -14,7 +14,30 @@
       "Bash(npm run *)",
       "Bash(xargs grep *)",
       "Read(//i/Mi unidad/BCIE 2025/Formatos y seguimiento/**)",
-      "Bash(pandoc \"Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\" -o -)"
+      "Bash(pandoc \"Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\" -o -)",
+      "Bash(pandoc \"Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\" -t plain)",
+      "Bash(python scripts/office/unpack.py \"Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\" unpacked_analysis/)",
+      "Bash(unzip -q \"Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\" -d docx_extracted)",
+      "Bash(python3 -m xml.dom.minidom)",
+      "PowerShell($docPath = \"I:\\\\Mi unidad\\\\BCIE 2025\\\\Formatos y seguimiento\\\\Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\"; $extractPath = \"I:\\\\Mi unidad\\\\BCIE 2025\\\\Formatos y seguimiento\\\\docx_analysis\"; if \\(!\\(Test-Path $extractPath\\)\\) { New-Item -ItemType Directory -Path $extractPath -Force | Out-Null }; Expand-Archive -Path $docPath -DestinationPath $extractPath -Force; \"Extraction complete\")",
+      "PowerShell($docPath = \"I:\\\\Mi unidad\\\\BCIE 2025\\\\Formatos y seguimiento\\\\Plantilla de Informe de final BCIE - Ejecucion Empresas.docx\"; $zipPath = \"$docPath.zip\"; Copy-Item -Path $docPath -Destination $zipPath; Expand-Archive -Path $zipPath -DestinationPath \"I:\\\\Mi unidad\\\\BCIE 2025\\\\Formatos y seguimiento\\\\docx_analysis\" -Force; \"Extraction complete\"; Remove-Item $zipPath)",
+      "PowerShell($docPath = \"I:\\\\Mi unidad\\\\BCIE 2025\\\\Formatos y seguimiento\\\\docx_analysis\\\\word\\\\document.xml\"; $content = [xml]\\(Get-Content $docPath\\); $texts = $content.Document.body.InnerText; $lines = $texts -split '\\\\n' | Where-Object {$_.Trim\\(\\) -ne \"\"} | Select-Object -First 200; $lines -join \"`n\")",
+      "Bash(curl -s http://localhost:3000/health)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(taskkill /PID 39484 /F)",
+      "Bash(curl -s http://localhost:3000/)",
+      "Bash(psql \"postgresql://postgres:postgres@localhost:5432/bcie\" -c \"SELECT id, codigo FROM informes LIMIT 1;\")",
+      "mcp__Claude_in_Chrome__switch_browser",
+      "Bash(layout\")",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(cd C:\\\\\\\\informe-bcie)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(rm -rf .next .turbo node_modules\\\\.cache)",
+      "Bash(taskkill /PID 304 /F)",
+      "Bash(curl -s -I http://localhost:3000)",
+      "PowerShell(Stop-Process -Id 304 -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)"
     ]
   }
 }

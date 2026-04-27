@@ -60,6 +60,11 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
   const esc = informe.escuelas as any
   const periodo = `${MESES[informe.periodo_mes - 1]} ${informe.periodo_anio}`
 
+  console.log('=== MAQR Data ===')
+  console.log('maqr object:', maqr)
+  console.log('maqrQuejas:', maqrQuejas)
+  console.log('maqr.id:', maqr?.id)
+
   console.log('=== CCT Data ===')
   console.log('cct object:', cct)
   if (cct?.secciones) {

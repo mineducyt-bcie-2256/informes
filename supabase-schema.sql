@@ -385,6 +385,50 @@ CREATE TABLE informe_c1317 (
 -- ALTER TABLE informe_c1317 ADD COLUMN IF NOT EXISTS dot_observaciones TEXT;
 
 -- ============================================================
+-- CCT - Código de Conducta de Trabajadores
+-- ============================================================
+CREATE TABLE informe_cct (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  informe_id UUID REFERENCES informes(id) ON DELETE CASCADE UNIQUE NOT NULL,
+  descripcion_condicion TEXT,
+  secciones JSONB,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
+-- CUMPLIMIENTO AMBIENTAL - Riesgos Críticos
+-- ============================================================
+CREATE TABLE informe_cumplimiento_ambiental (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  informe_id UUID REFERENCES informes(id) ON DELETE CASCADE UNIQUE NOT NULL,
+  descripcion_condicion TEXT,
+  -- Tala de Árboles
+  tala_se_realizara BOOLEAN,
+  tala_tiene_permiso BOOLEAN,
+  tala_tipo_permiso TEXT,
+  tala_tiene_plan_compensacion BOOLEAN,
+  tala_alerta_critica BOOLEAN DEFAULT false,
+  -- Asbesto Cemento
+  asbesto_presencia_msac BOOLEAN,
+  asbesto_tiene_plan BOOLEAN,
+  asbesto_alerta_critica BOOLEAN DEFAULT false,
+  asbesto_metros_cuadrados DECIMAL,
+  -- Biodiversidad
+  biodiversidad_tiene_danos BOOLEAN,
+  biodiversidad_descripcion TEXT,
+  -- Reubicación Involuntaria
+  reubicacion_involuntaria BOOLEAN,
+  reubicacion_tiene_pri BOOLEAN,
+  reubicacion_alerta_critica BOOLEAN DEFAULT false,
+  reubicacion_sitio_pri TEXT,
+  reubicacion_condiciones TEXT,
+  reubicacion_estado TEXT,
+  -- Metadatos
+  fotos JSONB,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
 ALTER TABLE informe_portada ENABLE ROW LEVEL SECURITY;
@@ -400,6 +444,8 @@ ALTER TABLE informe_maqr ENABLE ROW LEVEL SECURITY;
 ALTER TABLE informe_maqr_quejas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE informe_prt ENABLE ROW LEVEL SECURITY;
 ALTER TABLE informe_c1317 ENABLE ROW LEVEL SECURITY;
+ALTER TABLE informe_cct ENABLE ROW LEVEL SECURITY;
+ALTER TABLE informe_cumplimiento_ambiental ENABLE ROW LEVEL SECURITY;
 
 -- Política: usuarios autenticados pueden leer/escribir
 CREATE POLICY "auth_all" ON informe_portada FOR ALL TO authenticated USING (true) WITH CHECK (true);
@@ -416,3 +462,5 @@ CREATE POLICY "auth_all" ON informe_maqr FOR ALL TO authenticated USING (true) W
 CREATE POLICY "auth_all" ON informe_maqr_quejas FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth_all" ON informe_prt FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "auth_all" ON informe_c1317 FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON informe_cct FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all" ON informe_cumplimiento_ambiental FOR ALL TO authenticated USING (true) WITH CHECK (true);

@@ -247,8 +247,8 @@ export default function SeccionCCT() {
 
   return (
     <FormWrapper title="Condición 8 - Código de Conducta de Trabajadores" short="CCT" informeId={informeId} onSave={handleSave}>
-      <EscuelaInfoHeader />
-      <DescripcionCondicion value={data.descripcion_condicion} onChange={val => setData(prev => ({ ...prev, descripcion_condicion: val }))} />
+      <EscuelaInfoHeader informeId={informeId} />
+      <DescripcionCondicion informeId={informeId} tabla="informe_cct" value={data.descripcion_condicion} onChange={val => setData(prev => ({ ...prev, descripcion_condicion: val }))} />
 
       {/* Secciones de Verificación */}
       {data.secciones.map((seccion, secIdx) => (
