@@ -26,6 +26,7 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
     { data: maqr },
     { data: prt },
     { data: cct },
+    { data: cumplimientoAmbiental },
   ] = await Promise.all([
     supabase.from('informe_portada').select('*').eq('informe_id', id).single(),
     supabase.from('informe_c1317').select('*').eq('informe_id', id).single(),
@@ -37,6 +38,7 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
     supabase.from('informe_maqr').select('*').eq('informe_id', id).single(),
     supabase.from('informe_prt').select('*').eq('informe_id', id).single(),
     supabase.from('informe_cct').select('*').eq('informe_id', id).single(),
+    supabase.from('informe_cumplimiento_ambiental').select('*').eq('informe_id', id).single(),
   ])
 
   // Cargar quejas de MAQR si existe
@@ -76,7 +78,7 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
   const reportData = {
     informe, esc, periodo,
     portada: { ...portada, elaborado_por_nombre: elaboradoPorNombre },
-    c1317, hsso, garo, pgr, mcear, pppi, maqr: maqr ? { ...maqr, quejas: maqrQuejas } : null, prt, cct,
+    c1317, hsso, garo, pgr, mcear, pppi, maqr: maqr ? { ...maqr, quejas: maqrQuejas } : null, prt, cct, cumplimientoAmbiental,
   }
 
   return (

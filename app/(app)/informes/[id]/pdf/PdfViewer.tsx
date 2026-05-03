@@ -3677,7 +3677,272 @@ function InformePDF({ data }: { data: any }) {
       <SeccionMAQR data={data} />
       <SeccionPRT data={data} />
       <SeccionCCT data={data} />
+      <SeccionCumplimientoAmbiental data={data} />
     </Document>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECCIÓN 9 — CUMPLIMIENTO AMBIENTAL
+// ═══════════════════════════════════════════════════════════════════
+function SeccionCumplimientoAmbiental({ data }: { data: any }) {
+  const { esc, periodo, cumplimientoAmbiental: ca } = data
+
+  if (!ca) {
+    return (
+      <Page size="LETTER" style={s.page}>
+        <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
+        <View style={s.sectionBanner}>
+          <Text style={s.sectionNum}>9</Text>
+          <Text style={s.sectionTitle}>Condición 9 — Cumplimiento Ambiental</Text>
+        </View>
+        <Text style={{ fontSize: 9, color: MUTED, marginTop: 8 }}>Sin datos registrados</Text>
+      </Page>
+    )
+  }
+
+  const SI = '✓ Sí'
+  const NO = '✗ No'
+  const NA = '—'
+  const bool = (v: any) => v === true ? SI : v === false ? NO : NA
+
+  return (
+    <>
+      <Page size="LETTER" style={s.page}>
+        <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
+        <View style={s.sectionBanner}>
+          <Text style={s.sectionNum}>9</Text>
+          <Text style={s.sectionTitle}>Condición 9 — Cumplimiento Ambiental</Text>
+        </View>
+
+        {ca.descripcion_condicion && (
+          <>
+            <SubBanner title="Descripción de la Condición" />
+            <TextBlock text={ca.descripcion_condicion} />
+          </>
+        )}
+
+        {/* TALA DE ÁRBOLES */}
+        <SubBanner title="1. Tala de Árboles" />
+        <View style={{ marginBottom: 6 }}>
+          <Field label="¿Se realizará tala?" value={bool(ca.tala_se_realizara)} />
+          {ca.tala_se_realizara === true && (
+            <>
+              <Field label="¿Tiene permiso de tala?" value={bool(ca.tala_tiene_permiso)} />
+              {ca.tala_tiene_permiso === true && (
+                <>
+                  <Field label="Institución que emite" value={ca.tala_tipo_permiso || NA} />
+                  <Field label="Número de documento" value={ca.tala_numero_documento || NA} />
+                  <Field label="Fecha de emisión" value={ca.tala_fecha_emision || NA} />
+                  <Field label="Fecha de caducidad" value={ca.tala_fecha_caducidad || NA} />
+                </>
+              )}
+              {ca.tala_tiene_permiso === false && (
+                <Field label="¿Tiene plan de compensación?" value={bool(ca.tala_tiene_plan_compensacion)} />
+              )}
+              {ca.tala_alerta_critica && (
+                <View style={{ backgroundColor: '#fee2e2', borderLeftWidth: 3, borderLeftColor: RED, padding: 6, marginTop: 4, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 8, color: RED, fontFamily: 'Helvetica-Bold' }}>⚠ SITUACIÓN CRÍTICA — Presentar plan de compensación de forma inmediata</Text>
+                </View>
+              )}
+              {ca.tala_cantidad_arboles && (
+                <>
+                  <Field label="Cantidad de árboles a talar" value={String(ca.tala_cantidad_arboles)} />
+                  <Field label="Especies de compensación" value={ca.tala_especies_compensacion ? String(ca.tala_especies_compensacion) : NA} />
+                  {ca.tala_mecanismo_compensacion && <Field label="Mecanismo de compensación" value={ca.tala_mecanismo_compensacion} />}
+                  {ca.tala_sitios_compensacion && <Field label="Sitios de compensación" value={ca.tala_sitios_compensacion} />}
+                </>
+              )}
+            </>
+          )}
+          {ca.tala_se_realizara === false && (
+            <View style={{ backgroundColor: '#f0fdf4', borderLeftWidth: 3, borderLeftColor: GREEN, padding: 6, marginTop: 4 }}>
+              <Text style={{ fontSize: 8, color: GREEN }}>No se realizará tala de árboles en este centro educativo</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Tabla de impacto de tala */}
+        {ca.tala_impacto && ca.tala_cantidad_arboles > 0 && (
+          <>
+            <SubBanner title="Identificación del impacto — Tala" />
+            <View style={{ borderWidth: 1, borderColor: BORDER, marginBottom: 8 }}>
+              <View style={{ flexDirection: 'row', backgroundColor: NAVY, padding: 4 }}>
+                <Text style={{ width: 20, fontSize: 7, color: '#fff', fontFamily: 'Helvetica-Bold', textAlign: 'center' }}>No</Text>
+                <Text style={{ flex: 3, fontSize: 7, color: '#fff', fontFamily: 'Helvetica-Bold' }}>Condición</Text>
+                <Text style={{ width: 45, fontSize: 7, color: '#fff', fontFamily: 'Helvetica-Bold', textAlign: 'center' }}>Afectación</Text>
+                <Text style={{ flex: 2, fontSize: 7, color: '#fff', fontFamily: 'Helvetica-Bold' }}>Análisis</Text>
+              </View>
+              {ca.tala_impacto.map((row: any, idx: number) => (
+                <View key={row.id} style={{ flexDirection: 'row', backgroundColor: idx % 2 === 0 ? '#ffffff' : LIGHT, padding: 4, borderTopWidth: 1, borderTopColor: BORDER }}>
+                  <Text style={{ width: 20, fontSize: 7, textAlign: 'center' }}>{row.id}</Text>
+                  <Text style={{ flex: 3, fontSize: 7 }}>{row.condicion}</Text>
+                  <Text style={{ width: 45, fontSize: 7, textAlign: 'center', color: row.afectacion === true ? RED : row.afectacion === false ? GREEN : MUTED }}>
+                    {bool(row.afectacion)}
+                  </Text>
+                  <Text style={{ flex: 2, fontSize: 7 }}>{row.analisis || '—'}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* ASBESTO CEMENTO */}
+        <SubBanner title="2. Asbesto Cemento (MSAC)" />
+        <View style={{ marginBottom: 6 }}>
+          <Field label="¿Hay presencia de MSAC?" value={bool(ca.asbesto_presencia_msac)} />
+          {ca.asbesto_presencia_msac === true && (
+            <>
+              <Field label="¿Tiene plan de manejo?" value={bool(ca.asbesto_tiene_plan)} />
+              {ca.asbesto_alerta_critica && (
+                <View style={{ backgroundColor: '#fee2e2', borderLeftWidth: 3, borderLeftColor: RED, padding: 6, marginTop: 4, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 8, color: RED, fontFamily: 'Helvetica-Bold' }}>⚠ ALERTA INMEDIATA — Presentar plan de manejo de MSAC de forma inmediata</Text>
+                </View>
+              )}
+              {ca.asbesto_tiene_plan === true && (
+                <>
+                  <Field label="Metros cuadrados" value={ca.asbesto_metros_cuadrados ? `${ca.asbesto_metros_cuadrados} m²` : NA} />
+                  <Field label="Tratamiento" value={ca.asbesto_tratamiento === 'confinamiento' ? 'Confinamiento interno' : ca.asbesto_tratamiento === 'disposicion' ? 'Disposición final en sitio autorizado' : NA} />
+                  {ca.asbesto_tratamiento === 'confinamiento' && ca.asbesto_sitio_confinamiento && (
+                    <Field label="Sitio de confinamiento" value={ca.asbesto_sitio_confinamiento} />
+                  )}
+                  {ca.asbesto_tratamiento === 'disposicion' && (
+                    <>
+                      <Field label="Empresa tratamiento" value={ca.asbesto_nombre_empresa || NA} />
+                      <Field label="¿Tiene permiso de institución competente?" value={bool(ca.asbesto_tiene_permiso)} />
+                      {ca.asbesto_tiene_permiso === true && ca.asbesto_documentos_permiso && (
+                        <Field label="Documentos de respaldo" value={ca.asbesto_documentos_permiso} />
+                      )}
+                      {ca.asbesto_tiene_permiso === false && ca.asbesto_procedimiento && (
+                        <Field label="Procedimiento a seguir" value={ca.asbesto_procedimiento} />
+                      )}
+                    </>
+                  )}
+                  {(() => {
+                    const etapasBase = [
+                      { id: 1, nombre: 'Preparación de condiciones' },
+                      { id: 2, nombre: 'Desmontaje de láminas de AC' },
+                      { id: 3, nombre: 'Embalado de láminas' },
+                    ].concat(
+                      ca.asbesto_tratamiento === 'confinamiento'
+                        ? [{ id: 4, nombre: 'Preparación de sitio de confinamiento' }, { id: 5, nombre: 'Confinamiento y cierre' }]
+                        : [{ id: 4, nombre: 'Gestiones para disposición final' }, { id: 5, nombre: 'Traslado de MSAC' }, { id: 6, nombre: 'Disposición final' }]
+                    )
+                    const guardadas: any[] = ca.asbesto_etapas ?? []
+                    const etapas = etapasBase.map((e: any) => {
+                      const g = guardadas.find((x: any) => x.id === e.id)
+                      return { ...e, avance: g?.avance ?? '', cumplimiento: g?.cumplimiento ?? '' }
+                    })
+                    return (
+                      <>
+                        <SubBanner title="Seguimiento de Etapas" />
+                        <View style={{ borderWidth: 1, borderColor: BORDER, marginBottom: 8 }}>
+                          <View style={{ flexDirection: 'row', backgroundColor: NAVY, padding: 4 }}>
+                            <Text style={{ flex: 2, fontSize: 7, color: '#fff', fontFamily: 'Helvetica-Bold' }}>Etapa</Text>
+                            <Text style={{ width: 50, fontSize: 7, color: '#fff', fontFamily: 'Helvetica-Bold' }}>Avance</Text>
+                            <Text style={{ flex: 3, fontSize: 7, color: '#fff', fontFamily: 'Helvetica-Bold' }}>Pasos o Cumplimiento</Text>
+                          </View>
+                          {etapas.map((etapa: any, idx: number) => (
+                            <View key={etapa.id} style={{ flexDirection: 'row', backgroundColor: idx % 2 === 0 ? '#ffffff' : LIGHT, padding: 4, borderTopWidth: 1, borderTopColor: BORDER }}>
+                              <Text style={{ flex: 2, fontSize: 7 }}>{etapa.nombre}</Text>
+                              <Text style={{ width: 50, fontSize: 7 }}>{etapa.avance || '—'}</Text>
+                              <Text style={{ flex: 3, fontSize: 7 }}>{etapa.cumplimiento || '—'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </>
+                    )
+                  })()}
+                  {ca.asbesto_resumen_impactos && (
+                    <Field label="Resumen de impactos" value={ca.asbesto_resumen_impactos} />
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </View>
+
+        {/* BIODIVERSIDAD */}
+        <SubBanner title="3. Daños a la Biodiversidad" />
+        <View style={{ marginBottom: 6 }}>
+          <Field label="¿Hay daños a la biodiversidad?" value={bool(ca.biodiversidad_tiene_danos)} />
+          {ca.biodiversidad_tiene_danos === true && ca.biodiversidad_descripcion && (
+            <Field label="Descripción de daños" value={ca.biodiversidad_descripcion} />
+          )}
+          {ca.biodiversidad_tiene_danos === false && (
+            <View style={{ backgroundColor: '#f0fdf4', borderLeftWidth: 3, borderLeftColor: GREEN, padding: 6, marginTop: 4 }}>
+              <Text style={{ fontSize: 8, color: GREEN }}>El proyecto no ha causado daños a la biodiversidad.</Text>
+            </View>
+          )}
+        </View>
+
+        {/* REUBICACIÓN INVOLUNTARIA */}
+        <SubBanner title="4. Reubicación Involuntaria" />
+        <View style={{ marginBottom: 6 }}>
+          <Field label="¿Hay reubicación involuntaria?" value={bool(ca.reubicacion_involuntaria)} />
+          {ca.reubicacion_involuntaria === false && (
+            <View style={{ backgroundColor: '#f0fdf4', borderLeftWidth: 3, borderLeftColor: GREEN, padding: 6, marginTop: 4 }}>
+              <Text style={{ fontSize: 8, color: GREEN }}>No aplica gestión de reubicación involuntaria en este centro educativo</Text>
+            </View>
+          )}
+          {ca.reubicacion_involuntaria === true && (
+            <>
+              <Field label="¿Tiene Plan de Reubicación Involuntaria (PRI)?" value={bool(ca.reubicacion_tiene_pri)} />
+              {ca.reubicacion_alerta_critica && (
+                <View style={{ backgroundColor: '#fee2e2', borderLeftWidth: 3, borderLeftColor: RED, padding: 6, marginTop: 4, marginBottom: 4 }}>
+                  <Text style={{ fontSize: 8, color: RED, fontFamily: 'Helvetica-Bold' }}>⚠ ELABORACIÓN INMEDIATA — Elaborar Plan de Reubicación Involuntaria</Text>
+                </View>
+              )}
+              {ca.reubicacion_tiene_pri === true && (
+                <>
+                  <SubBanner title="Documentos del PRI" />
+                  {[
+                    { key: 'reubicacion_doc_censo', label: 'Censo socioeconómico de reasentamiento' },
+                    { key: 'reubicacion_doc_informe_visita', label: 'Informe de visita (empresa)' },
+                    { key: 'reubicacion_doc_condicion_social', label: 'Resumen de condición social' },
+                    { key: 'reubicacion_doc_autorizacion', label: 'Constancia de autorización y consentimiento' },
+                    { key: 'reubicacion_doc_sitio', label: 'Constancia de sitio de reasentamiento' },
+                    { key: 'reubicacion_doc_valuo', label: 'Valuó de vivienda actual' },
+                    { key: 'reubicacion_doc_inventario', label: 'Inventario de activos' },
+                    { key: 'reubicacion_doc_entrega', label: 'Acta de entrega de compensación' },
+                    { key: 'reubicacion_doc_partes', label: 'Informe de partes interesadas' },
+                  ].map(doc => (
+                    <View key={doc.key} style={{ flexDirection: 'row', paddingVertical: 2, paddingHorizontal: 4 }}>
+                      <Text style={{ fontSize: 8, color: ca[doc.key] ? GREEN : RED, width: 16 }}>{ca[doc.key] ? '✓' : '✗'}</Text>
+                      <Text style={{ fontSize: 8, color: DARK }}>{doc.label}</Text>
+                    </View>
+                  ))}
+
+                  {ca.reubicacion_etapas && (
+                    <>
+                      <SubBanner title="Etapas del Plan de Reubicación" />
+                      <View style={{ borderWidth: 1, borderColor: BORDER, marginBottom: 8 }}>
+                        <View style={{ flexDirection: 'row', backgroundColor: NAVY, padding: 4 }}>
+                          <Text style={{ flex: 1, fontSize: 7, color: '#fff', fontFamily: 'Helvetica-Bold' }}>Condición</Text>
+                          <Text style={{ width: 70, fontSize: 7, color: '#fff', fontFamily: 'Helvetica-Bold' }}>Estado</Text>
+                          <Text style={{ flex: 2, fontSize: 7, color: '#fff', fontFamily: 'Helvetica-Bold' }}>Descripción</Text>
+                        </View>
+                        {ca.reubicacion_etapas.map((etapa: any, idx: number) => (
+                          <View key={etapa.id} style={{ flexDirection: 'row', backgroundColor: idx % 2 === 0 ? '#ffffff' : LIGHT, padding: 4, borderTopWidth: 1, borderTopColor: BORDER }}>
+                            <Text style={{ flex: 1, fontSize: 7 }}>{etapa.condicion}</Text>
+                            <Text style={{ width: 70, fontSize: 7 }}>{etapa.estado || '—'}</Text>
+                            <Text style={{ flex: 2, fontSize: 7 }}>{etapa.descripcion || '—'}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </>
+                  )}
+
+                  {ca.reubicacion_resumen_impactos && (
+                    <Field label="Resumen de impactos" value={ca.reubicacion_resumen_impactos} />
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </View>
+      </Page>
+    </>
   )
 }
 
@@ -3725,6 +3990,7 @@ export default function PdfViewer({ data }: { data: any }) {
             { label: 'PPPI',            ok: !!data.pppi },
             { label: 'MAQR',            ok: !!data.maqr },
             { label: 'PRT',             ok: !!data.prt },
+            { label: 'CUMPL.AMB',       ok: !!data.cumplimientoAmbiental },
           ].map(({ label, ok }) => (
             <div key={label} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${
               ok ? 'bg-green-50 text-green-700' : 'bg-slate-50 text-slate-400'

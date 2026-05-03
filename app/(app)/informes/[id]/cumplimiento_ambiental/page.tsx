@@ -110,7 +110,14 @@ export default function CumplimientoAmbientalPage() {
       }
 
       if (existingData) {
-        setData(existingData)
+        setData((prev: any) => ({
+          ...prev,
+          ...existingData,
+          reubicacion_resumen_impactos: existingData.reubicacion_resumen_impactos ?? '',
+          asbesto_resumen_impactos: existingData.asbesto_resumen_impactos ?? '',
+          reubicacion_etapas: existingData.reubicacion_etapas ?? prev.reubicacion_etapas,
+          tala_impacto: existingData.tala_impacto ?? prev.tala_impacto,
+        }))
       }
     } catch (error) {
       console.warn('Error loading cumplimiento ambiental data:', error)
@@ -135,7 +142,9 @@ export default function CumplimientoAmbientalPage() {
       if (cleanData.tala_mecanismo_compensacion === '') cleanData.tala_mecanismo_compensacion = null
       if (cleanData.tala_sitios_compensacion === '') cleanData.tala_sitios_compensacion = null
 
-      const payload = { informe_id: informeId, ...cleanData }
+      // Eliminar campos que no existen como columnas en la tabla
+      const { reubicacion_documentos_alerta, ...cleanDataSinEtapas } = cleanData
+      const payload = { informe_id: informeId, ...cleanDataSinEtapas }
 
       if (existingData) {
         const { error } = await supabase
@@ -512,7 +521,9 @@ export default function CumplimientoAmbientalPage() {
                 </div>
               </div>
             )}
-        <SectionFooter section="tala" />
+            <SectionFooter section="tala" />
+          </>
+        )}
           </>
         )}
       </div>
@@ -706,59 +717,77 @@ export default function CumplimientoAmbientalPage() {
                 </div>
 
                 {/* Tabla de ETAPAS (se activa en cualquier caso) */}
-                {data.asbesto_tratamiento && (
-                  <div className="p-4 bg-green-50 rounded border border-green-300 space-y-4">
-                    <h4 className="font-bold text-slate-800">Seguimiento de Etapas</h4>
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse text-xs">
-                        <thead>
-                          <tr className="bg-green-200">
-                            <th className="border border-green-300 px-2 py-2 text-left font-semibold w-40">Etapa</th>
-                            <th className="border border-green-300 px-2 py-2 text-left font-semibold w-20">Avance</th>
-                            <th className="border border-green-300 px-2 py-2 text-left font-semibold">Pasos o Cumplimiento</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {/* Etapas base (siempre) */}
-                          {[
-                            { id: 1, nombre: 'Preparación de condiciones' },
-                            { id: 2, nombre: 'Desmontaje de láminas de AC' },
-                            { id: 3, nombre: 'Embalado de láminas' },
-                          ].concat(
-                            data.asbesto_tratamiento === 'confinamiento'
-                              ? [
-                                  { id: 4, nombre: 'Preparación de sitio de confinamiento' },
-                                  { id: 5, nombre: 'Confinamiento y cierre' },
-                                ]
-                              : [
-                                  { id: 4, nombre: 'Gestiones para disposición final' },
-                                  { id: 5, nombre: 'Traslado de MSAC' },
-                                  { id: 6, nombre: 'Disposición final' },
-                                ]
-                          ).map((etapa: any, idx: number) => (
-                            <tr key={etapa.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-green-50'}>
-                              <td className="border border-green-300 px-2 py-2 font-semibold">{etapa.nombre}</td>
-                              <td className="border border-green-300 px-2 py-2">
-                                <input
-                                  type="text"
-                                  placeholder="0%"
-                                  className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
-                                />
-                              </td>
-                              <td className="border border-green-300 px-2 py-2">
-                                <textarea
-                                  placeholder="Descripción"
-                                  className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
-                                  rows={2}
-                                />
-                              </td>
+                {data.asbesto_tratamiento && (() => {
+                  const etapasBase = [
+                    { id: 1, nombre: 'Preparación de condiciones' },
+                    { id: 2, nombre: 'Desmontaje de láminas de AC' },
+                    { id: 3, nombre: 'Embalado de láminas' },
+                  ].concat(
+                    data.asbesto_tratamiento === 'confinamiento'
+                      ? [
+                          { id: 4, nombre: 'Preparación de sitio de confinamiento' },
+                          { id: 5, nombre: 'Confinamiento y cierre' },
+                        ]
+                      : [
+                          { id: 4, nombre: 'Gestiones para disposición final' },
+                          { id: 5, nombre: 'Traslado de MSAC' },
+                          { id: 6, nombre: 'Disposición final' },
+                        ]
+                  )
+                  // Sincronizar etapas si cambia el tratamiento
+                  const etapasGuardadas: any[] = data.asbesto_etapas ?? []
+                  const etapas = etapasBase.map((e: any) => {
+                    const guardada = etapasGuardadas.find((g: any) => g.id === e.id)
+                    return guardada ?? { ...e, avance: '', cumplimiento: '' }
+                  })
+
+                  const updateEtapa = (id: number, field: string, value: string) => {
+                    const nuevas = etapas.map((e: any) => e.id === id ? { ...e, [field]: value } : e)
+                    setData((p: any) => ({ ...p, asbesto_etapas: nuevas }))
+                  }
+
+                  return (
+                    <div className="p-4 bg-green-50 rounded border border-green-300 space-y-4">
+                      <h4 className="font-bold text-slate-800">Seguimiento de Etapas</h4>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse text-xs">
+                          <thead>
+                            <tr className="bg-green-200">
+                              <th className="border border-green-300 px-2 py-2 text-left font-semibold w-40">Etapa</th>
+                              <th className="border border-green-300 px-2 py-2 text-left font-semibold w-20">Avance</th>
+                              <th className="border border-green-300 px-2 py-2 text-left font-semibold">Pasos o Cumplimiento</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {etapas.map((etapa: any, idx: number) => (
+                              <tr key={etapa.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-green-50'}>
+                                <td className="border border-green-300 px-2 py-2 font-semibold">{etapa.nombre}</td>
+                                <td className="border border-green-300 px-2 py-2">
+                                  <input
+                                    type="text"
+                                    value={etapa.avance}
+                                    onChange={e => updateEtapa(etapa.id, 'avance', e.target.value)}
+                                    placeholder="0%"
+                                    className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                                  />
+                                </td>
+                                <td className="border border-green-300 px-2 py-2">
+                                  <textarea
+                                    value={etapa.cumplimiento}
+                                    onChange={e => updateEtapa(etapa.id, 'cumplimiento', e.target.value)}
+                                    placeholder="Descripción"
+                                    className="w-full px-2 py-1 border border-slate-300 rounded text-xs"
+                                    rows={2}
+                                  />
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )
+                })()}
 
                 {/* Resumen de impactos */}
                 {data.asbesto_tratamiento && (
@@ -775,6 +804,8 @@ export default function CumplimientoAmbientalPage() {
                 )}
               </>
             )}
+          </div>
+        )}
         <SectionFooter section="asbesto" />
           </>
         )}
@@ -796,16 +827,30 @@ export default function CumplimientoAmbientalPage() {
         {/* Contenido expandible */}
         {(!savedSections.has('biodiversidad') || expandedSection === 'biodiversidad') && (
           <>
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <label className="flex items-center gap-3 font-semibold text-slate-700">
-            <input
-              type="checkbox"
-              checked={data.biodiversidad_tiene_danos === true}
-              onChange={e => setData((p: any) => ({ ...p, biodiversidad_tiene_danos: e.target.checked ? true : null }))}
-              className="w-5 h-5"
-            />
-            ¿Hay daños a la biodiversidad y ecosistemas?
-          </label>
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200 space-y-3">
+          <p className="font-semibold text-slate-700">¿Hay daños a la biodiversidad y ecosistemas?</p>
+          <div className="space-y-2">
+            <label className="flex items-center gap-3">
+              <input
+                type="radio"
+                name="biodiversidad_tiene_danos"
+                checked={data.biodiversidad_tiene_danos === true}
+                onChange={() => setData((p: any) => ({ ...p, biodiversidad_tiene_danos: true }))}
+                className="w-4 h-4"
+              />
+              <span className="text-slate-700">Sí</span>
+            </label>
+            <label className="flex items-center gap-3">
+              <input
+                type="radio"
+                name="biodiversidad_tiene_danos"
+                checked={data.biodiversidad_tiene_danos === false}
+                onChange={() => setData((p: any) => ({ ...p, biodiversidad_tiene_danos: false, biodiversidad_descripcion: '' }))}
+                className="w-4 h-4"
+              />
+              <span className="text-slate-700">No</span>
+            </label>
+          </div>
         </div>
 
         {data.biodiversidad_tiene_danos === true && (
@@ -816,6 +861,12 @@ export default function CumplimientoAmbientalPage() {
             rows={4}
             placeholder="Descripción de daños..."
           />
+        )}
+
+        {data.biodiversidad_tiene_danos === false && (
+          <div className="p-4 bg-green-50 rounded-lg border border-green-300">
+            <p className="text-green-700 font-semibold">✓ El proyecto no ha causado daños a la biodiversidad.</p>
+          </div>
         )}
         <SectionFooter section="biodiversidad" />
           </>
@@ -1028,7 +1079,9 @@ export default function CumplimientoAmbientalPage() {
                 </div>
               </div>
             )}
-        <SectionFooter section="reubicacion" />
+          <SectionFooter section="reubicacion" />
+          </>
+        )}
           </>
         )}
       </div>
