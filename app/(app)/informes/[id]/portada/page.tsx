@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
-import { FileText, Building2, User, Briefcase, Hash, Upload, X, ImageIcon } from 'lucide-react'
+import { FileText, Building2, User, Briefcase, Hash, Upload, X, ImageIcon, Plus, Trash2 } from 'lucide-react'
 import { MESES } from '@/types'
 
 // ── Tipos ─────────────────────────────────────────────────────────
@@ -24,6 +24,13 @@ interface Especialista {
   rol: string
 }
 
+interface Colaborador {
+  id:       string
+  nombre:   string
+  cargo:    string
+  firma_url: string
+}
+
 const INIT = {
   numero_informe:              '' as string | number,
   nombre_proyecto:             '',
@@ -32,6 +39,7 @@ const INIT = {
   elaborado_por_cargo:         '',
   firma_url:                   '' as string,
   sello_url:                   '' as string,
+  colaboradores:               [] as Colaborador[],
 }
 
 const inputCls  = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -235,6 +243,7 @@ export default function PortadaPage() {
           elaborado_por_cargo:         portada.elaborado_por_cargo ?? '',
           firma_url:                   portada.firma_url ?? '',
           sello_url:                   portada.sello_url ?? '',
+          colaboradores:               portada.colaboradores ?? [],
         })
       } else {
         // 4. Número correlativo
@@ -287,11 +296,46 @@ export default function PortadaPage() {
       elaborado_por_cargo:         form.elaborado_por_cargo          || null,
       firma_url:                   form.firma_url                    || null,
       sello_url:                   form.sello_url                    || null,
+      colaboradores:               form.colaboradores.length > 0 ? form.colaboradores : null,
     }
     const { error } = await supabase
       .from('informe_portada')
       .upsert(payload, { onConflict: 'informe_id' })
     if (error) throw new Error(error.message)
+  }
+
+  // ── Colaboradores ─────────────────────────────────────────────
+  function agregarColaborador() {
+    setForm(p => ({ ...p, colaboradores: [...p.colaboradores, { id: '', nombre: '', cargo: '', firma_url: '' }] }))
+  }
+
+  function quitarColaborador(idx: number) {
+    setForm(p => ({ ...p, colaboradores: p.colaboradores.filter((_, i) => i !== idx) }))
+  }
+
+  function seleccionarColaborador(idx: number, eid: string) {
+    const esp = especialistas.find(e => e.id === eid)
+    setForm(p => {
+      const cols = [...p.colaboradores]
+      cols[idx] = { ...cols[idx], id: eid, nombre: esp?.nombre ?? '', cargo: esp?.cargo ?? '' }
+      return { ...p, colaboradores: cols }
+    })
+  }
+
+  function setCargoCola(idx: number, cargo: string) {
+    setForm(p => {
+      const cols = [...p.colaboradores]
+      cols[idx] = { ...cols[idx], cargo }
+      return { ...p, colaboradores: cols }
+    })
+  }
+
+  function setFirmaColaborador(idx: number, url: string) {
+    setForm(p => {
+      const cols = [...p.colaboradores]
+      cols[idx] = { ...cols[idx], firma_url: url }
+      return { ...p, colaboradores: cols }
+    })
   }
 
   const espSeleccionado = especialistas.find(e => e.id === form.elaborado_por_id)
@@ -393,66 +437,151 @@ export default function PortadaPage() {
           <h3 className={sectionHdr}>
             <span className="flex items-center gap-2"><User size={14} /> Elaborado por</span>
           </h3>
-          <div className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Especialista */}
-              <div>
-                <label className={labelCls}>Especialista</label>
-                <select
-                  value={form.elaborado_por_id}
-                  onChange={e => seleccionarEspecialista(e.target.value)}
-                  className={inputCls}>
-                  <option value="">Seleccionar especialista...</option>
-                  {especialistas.map(e => (
-                    <option key={e.id} value={e.id}>{e.nombre}</option>
-                  ))}
-                </select>
+          <div className="space-y-4">
+
+            {/* ── Especialista principal ───────────────────────── */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Especialista</label>
+                  <select
+                    value={form.elaborado_por_id}
+                    onChange={e => seleccionarEspecialista(e.target.value)}
+                    className={inputCls}>
+                    <option value="">Seleccionar especialista...</option>
+                    {especialistas.map(e => (
+                      <option key={e.id} value={e.id}>{e.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>
+                    Cargo
+                    {form.elaborado_por_id && <span className="ml-2 text-xs text-blue-500 font-normal normal-case">automático</span>}
+                  </label>
+                  <input
+                    value={form.elaborado_por_cargo}
+                    onChange={e => set('elaborado_por_cargo', e.target.value)}
+                    placeholder="Se llena automáticamente al seleccionar especialista..."
+                    className={form.elaborado_por_id ? autoCls : inputCls}
+                    readOnly={!!form.elaborado_por_id && !!espSeleccionado?.cargo}
+                  />
+                </div>
               </div>
-              {/* Cargo */}
-              <div>
-                <label className={labelCls}>
-                  Cargo
-                  {form.elaborado_por_id && <span className="ml-2 text-xs text-blue-500 font-normal normal-case">automático</span>}
-                </label>
-                <input
-                  value={form.elaborado_por_cargo}
-                  onChange={e => set('elaborado_por_cargo', e.target.value)}
-                  placeholder="Se llena automáticamente al seleccionar especialista..."
-                  className={form.elaborado_por_id ? autoCls : inputCls}
-                  readOnly={!!form.elaborado_por_id && !!espSeleccionado?.cargo}
-                />
+              {/* Firma principal */}
+              <div className="border-t border-slate-200 pt-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4 text-center">Firma</p>
+                <div className="max-w-xs mx-auto">
+                  <ImageUploader
+                    label={espSeleccionado?.nombre ?? 'Especialista'}
+                    sublabel={form.elaborado_por_cargo || 'Firma del especialista'}
+                    value={form.firma_url}
+                    onChange={v => set('firma_url', v)}
+                    shape="rect"
+                    informeId={id}
+                    slot="firma"
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Firma y sello con carga de imagen */}
+            {/* ── Especialistas adicionales ────────────────────── */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Especialista</span>
+                <button
+                  type="button"
+                  onClick={agregarColaborador}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Plus size={13} /> Agregar
+                </button>
+              </div>
+
+              {form.colaboradores.length === 0 && (
+                <p className="text-xs text-slate-400 italic">Usa el botón Agregar para incluir otro especialista en la portada.</p>
+              )}
+
+              <div className="space-y-3">
+                {form.colaboradores.map((col, idx) => {
+                  const espCol = especialistas.find(e => e.id === col.id)
+                  return (
+                    <div key={idx} className="p-4 bg-slate-50 border border-slate-200 rounded-lg relative space-y-4">
+                      <button
+                        type="button"
+                        onClick={() => quitarColaborador(idx)}
+                        className="absolute top-2 right-2 text-red-400 hover:text-red-600 transition-colors"
+                        title="Quitar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                      {/* Especialista + Cargo */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pr-6">
+                        <div>
+                          <label className={labelCls}>Especialista</label>
+                          <select
+                            value={col.id}
+                            onChange={e => seleccionarColaborador(idx, e.target.value)}
+                            className={inputCls}>
+                            <option value="">Seleccionar especialista...</option>
+                            {especialistas.map(e => (
+                              <option key={e.id} value={e.id}>{e.nombre}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelCls}>
+                            Cargo
+                            {col.id && <span className="ml-2 text-xs text-blue-500 font-normal normal-case">automático</span>}
+                          </label>
+                          <input
+                            value={col.cargo}
+                            onChange={e => setCargoCola(idx, e.target.value)}
+                            placeholder="Cargo del especialista..."
+                            className={col.id && espCol?.cargo ? autoCls : inputCls}
+                            readOnly={!!col.id && !!espCol?.cargo}
+                          />
+                        </div>
+                      </div>
+                      {/* Firma */}
+                      <div className="border-t border-slate-200 pt-4">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4 text-center">Firma</p>
+                        <div className="max-w-xs mx-auto">
+                          <ImageUploader
+                            label={col.nombre || 'Especialista'}
+                            sublabel={col.cargo || 'Firma del especialista'}
+                            value={col.firma_url}
+                            onChange={url => setFirmaColaborador(idx, url)}
+                            shape="rect"
+                            informeId={id}
+                            slot={`firma-cola-${idx}`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Logo de la empresa */}
             <div className="border-2 border-dashed border-slate-200 rounded-xl p-6">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-5 text-center">
-                Firma y Sello
+                Logo de la empresa
               </p>
-              <div className="grid grid-cols-2 gap-8">
-                {/* Firma */}
-                <ImageUploader
-                  label={espSeleccionado?.nombre ?? 'Especialista'}
-                  sublabel={form.elaborado_por_cargo || 'Firma del especialista'}
-                  value={form.firma_url}
-                  onChange={v => set('firma_url', v)}
-                  shape="rect"
-                  informeId={id}
-                  slot="firma"
-                />
-                {/* Sello */}
+              <div className="max-w-xs mx-auto">
                 <ImageUploader
                   label={escuela?.empresa_supervision ?? 'Empresa de supervisión'}
-                  sublabel="Sello de la empresa"
+                  sublabel="Logo de la empresa"
                   value={form.sello_url}
                   onChange={v => set('sello_url', v)}
-                  shape="circle"
+                  shape="rect"
                   informeId={id}
                   slot="sello"
                 />
               </div>
               <p className="text-xs text-slate-400 text-center mt-4">
-                Formatos aceptados: PNG, JPG, WEBP · Fondo transparente recomendado para firma
+                Formatos aceptados: PNG, JPG, WEBP · Fondo transparente recomendado
               </p>
             </div>
           </div>

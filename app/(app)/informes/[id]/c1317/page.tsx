@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useId } from 'react'
+import { useState, useEffect, useId, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
@@ -251,6 +251,9 @@ export default function C1317Page() {
   const [marnObs,                    setMarnObs]                    = useState('')
   const [escuela,                    setEscuela]                    = useState<EscuelaGeo | null>(null)
   const [cargandoTextos,             setCargandoTextos]             = useState(false)
+  const [sinCambiosJust,             setSinCambiosJust]             = useState('')
+  const preloadSnapshot = useRef<string | null>(null)
+  const isPreloaded = useRef(false)
 
   // ── Carga inicial ──────────────────────────────────────────────
   useEffect(() => {
@@ -319,7 +322,41 @@ export default function C1317Page() {
   }, [id])
 
   // ── Guardado ───────────────────────────────────────────────────
-  async function onSave() {
+  function getSnapshotData() {
+    return { introduccion, objetivo, alcance, espContratista, espSupervision, marnNumero, marnFechaEmision, marnFechaVencimiento, marnObs }
+  }
+
+  function isModified() {
+    if (!isPreloaded.current || preloadSnapshot.current === null) return true
+    return JSON.stringify(getSnapshotData()) !== preloadSnapshot.current
+  }
+
+  async function handlePreload() {
+    const { data: inf } = await supabase.from('informes').select('escuela_id, periodo_mes, periodo_anio').eq('id', id).single()
+    if (!inf) throw new Error('No se encontró el informe actual')
+    let mes = inf.periodo_mes - 1, anio = inf.periodo_anio
+    if (mes === 0) { mes = 12; anio -= 1 }
+    const { data: prevInf } = await supabase.from('informes').select('id').eq('escuela_id', inf.escuela_id).eq('periodo_mes', mes).eq('periodo_anio', anio).single()
+    if (!prevInf) throw new Error(`No existe informe del mes anterior (${mes}/${anio})`)
+    const { data: prev } = await supabase.from('informe_c1317').select('*').eq('informe_id', prevInf.id).single()
+    if (!prev) throw new Error('El informe del mes anterior no tiene datos C1317')
+    setIntroduccion(prev.introduccion ?? '')
+    setObjetivo(prev.objetivo ?? '')
+    setAlcance(prev.alcance ?? '')
+    setEspContratista(prev.especialistas_contratista ?? [])
+    setEspSupervision(prev.especialistas_supervision ?? [])
+    setMarnNumero(prev.marn_numero_permiso ?? '')
+    setMarnFechaEmision(prev.marn_fecha_emision ?? '')
+    setMarnFechaVencimiento(prev.marn_fecha_vencimiento ?? '')
+    setMarnObs(prev.marn_observaciones ?? '')
+    setSinCambiosJust('')
+    isPreloaded.current = true
+    preloadSnapshot.current = JSON.stringify({ introduccion: prev.introduccion ?? '', objetivo: prev.objetivo ?? '', alcance: prev.alcance ?? '', espContratista: prev.especialistas_contratista ?? [], espSupervision: prev.especialistas_supervision ?? [], marnNumero: prev.marn_numero_permiso ?? '', marnFechaEmision: prev.marn_fecha_emision ?? '', marnFechaVencimiento: prev.marn_fecha_vencimiento ?? '', marnObs: prev.marn_observaciones ?? '' })
+  }
+
+  async function onSave(justificacion?: string) {
+    const just = justificacion ?? sinCambiosJust ?? ''
+    if (justificacion) setSinCambiosJust(justificacion)
     const payload = {
       informe_id:                  id,
       introduccion,
@@ -331,10 +368,9 @@ export default function C1317Page() {
       marn_fecha_emision:          marnFechaEmision   || null,
       marn_fecha_vencimiento:      marnFechaVencimiento   || null,
       marn_observaciones:          marnObs      || null,
+      sin_cambios_justificacion:   just,
     }
-    const { error } = await supabase
-      .from('informe_c1317')
-      .upsert(payload, { onConflict: 'informe_id' })
+    const { error } = await supabase.from('informe_c1317').upsert(payload, { onConflict: 'informe_id' })
     if (error) throw new Error(error.message)
   }
 
@@ -376,8 +412,14 @@ export default function C1317Page() {
 
   // ── JSX ────────────────────────────────────────────────────────
   return (
-    <FormWrapper title="Generales del Informe de Supervisión" short="C13-17" informeId={id} onSave={onSave}>
+    <FormWrapper title="Generales del Informe de Supervisión" short="C13-17" informeId={id} onSave={onSave} onPreload={handlePreload} isModified={isModified}>
       <div className="space-y-8">
+
+        {sinCambiosJust && (
+          <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 text-sm text-amber-800">
+            <span className="font-semibold">ℹ Sin modificaciones — </span>{sinCambiosJust}
+          </div>
+        )}
 
         {/* ── 1. Introducción ──────────────────────────────────── */}
         <section>

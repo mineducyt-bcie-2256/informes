@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
@@ -50,6 +50,7 @@ const INIT = {
   indicadores_impacto: INDICADORES_INIT as IndicadoresImpacto,
   observaciones: '',
   fotos: [] as Foto[],
+  sin_cambios_justificacion: '',
 }
 
 const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -171,6 +172,8 @@ export default function PppiPage() {
   const [data, setData] = useState(INIT)
   const [avancePct, setAvancePct] = useState<number>(0)
   const [autoLoaded, setAutoLoaded] = useState(false)
+  const preloadSnapshot = useRef<string | null>(null)
+  const isPreloaded = useRef(false)
   const [periodoMes, setPeriodoMes]   = useState<number>(new Date().getMonth() + 1)
   const [periodoAnio, setPeriodoAnio] = useState<number>(new Date().getFullYear())
   const [hssoHombres, setHssoHombres] = useState<number>(0)
@@ -252,8 +255,29 @@ export default function PppiPage() {
 
   function set(f: string, v: any) { setData(p => ({ ...p, [f]: v })) }
 
-  async function onSave() {
-    const payload = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, v === '' ? null : v]))
+  function isModified() {
+    if (!isPreloaded.current || preloadSnapshot.current === null) return true
+    return JSON.stringify({ ...data, sin_cambios_justificacion: '' }) !== preloadSnapshot.current
+  }
+
+  async function handlePreload() {
+    const { data: inf } = await supabase.from('informes').select('escuela_id, periodo_mes, periodo_anio').eq('id', id).single()
+    if (!inf) throw new Error('No se encontró el informe actual')
+    let mes = inf.periodo_mes - 1, anio = inf.periodo_anio
+    if (mes === 0) { mes = 12; anio -= 1 }
+    const { data: prevInf } = await supabase.from('informes').select('id').eq('escuela_id', inf.escuela_id).eq('periodo_mes', mes).eq('periodo_anio', anio).single()
+    if (!prevInf) throw new Error(`No existe informe del mes anterior (${mes}/${anio})`)
+    const { data: prev } = await supabase.from('informe_pppi').select('*').eq('informe_id', prevInf.id).single()
+    if (!prev) throw new Error('El informe del mes anterior no tiene datos PPPI')
+    const { id: _id, informe_id, fotos, sin_cambios_justificacion, ...campos } = prev
+    const dp = { ...INIT, ...campos, partes_interesadas: campos.partes_interesadas ?? PARTES_INIT, indicadores_impacto: campos.indicadores_impacto ?? INDICADORES_INIT, fotos: [], sin_cambios_justificacion: '' }
+    setData(dp)
+    isPreloaded.current = true
+    preloadSnapshot.current = JSON.stringify({ ...dp, sin_cambios_justificacion: '' })
+  }
+
+  async function onSave(justificacion?: string) {
+    const payload = Object.fromEntries(Object.entries({ ...data, sin_cambios_justificacion: justificacion ?? data.sin_cambios_justificacion ?? '' }).map(([k, v]) => [k, v === '' ? null : v]))
     const { error } = await supabase.from('informe_pppi').upsert({ ...payload, informe_id: id }, { onConflict: 'informe_id' })
     if (error) throw new Error(error.message)
   }
@@ -264,10 +288,16 @@ export default function PppiPage() {
   )
 
   return (
-    <FormWrapper title="Condición 5 - Partes Interesadas y Código de Conducta" short="PPPI" informeId={id} onSave={onSave}>
+    <FormWrapper title="Condición 5 - Partes Interesadas y Código de Conducta" short="PPPI" informeId={id} onSave={onSave} onPreload={handlePreload} isModified={isModified}>
       <div className="space-y-8">
 
         <EscuelaInfoHeader informeId={id} />
+
+        {data.sin_cambios_justificacion && (
+          <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 text-sm text-amber-800">
+            <span className="font-semibold">ℹ Sin modificaciones — </span>{data.sin_cambios_justificacion}
+          </div>
+        )}
 
         {autoLoaded && (
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">

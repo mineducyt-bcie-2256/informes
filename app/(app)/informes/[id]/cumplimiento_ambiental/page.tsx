@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useParams } from 'next/navigation'
 import FormWrapper from '@/components/forms/FormWrapper'
@@ -87,7 +87,11 @@ export default function CumplimientoAmbientalPage() {
     ],
     // Resumen
     reubicacion_resumen_impactos: '',
+    sin_cambios_justificacion: '',
   })
+
+  const preloadSnapshot = useRef<string | null>(null)
+  const isPreloaded = useRef(false)
 
   const supabase = createClient()
 
@@ -126,7 +130,7 @@ export default function CumplimientoAmbientalPage() {
     }
   }
 
-  async function handleSave() {
+  async function handleSave(justificacion?: string) {
     try {
       const { data: existingData } = await supabase
         .from('informe_cumplimiento_ambiental')
@@ -135,7 +139,7 @@ export default function CumplimientoAmbientalPage() {
         .single()
 
       // Limpiar valores vacíos y convertir a null
-      const cleanData = { ...data }
+      const cleanData = { ...data, sin_cambios_justificacion: justificacion ?? data.sin_cambios_justificacion ?? '' }
       if (cleanData.tala_fecha_emision === '') cleanData.tala_fecha_emision = null
       if (cleanData.tala_fecha_caducidad === '') cleanData.tala_fecha_caducidad = null
       if (cleanData.tala_numero_documento === '') cleanData.tala_numero_documento = null
@@ -158,10 +162,49 @@ export default function CumplimientoAmbientalPage() {
           .insert([payload])
         if (error) throw error
       }
+      if (justificacion) setData((prev: any) => ({ ...prev, sin_cambios_justificacion: justificacion }))
     } catch (error: any) {
       console.error('Error saving cumplimiento ambiental:', error)
       throw error
     }
+  }
+
+  function isModified() {
+    if (!isPreloaded.current || preloadSnapshot.current === null) return true
+    const { sin_cambios_justificacion: _j, fotos: _f, ...rest } = data
+    return JSON.stringify(rest) !== preloadSnapshot.current
+  }
+
+  async function handlePreload() {
+    // Obtener escuela del informe actual
+    const { data: informe } = await supabase
+      .from('informes').select('escuela_id, mes, anio').eq('id', informeId).single()
+    if (!informe) throw new Error('No se encontró el informe')
+
+    // Buscar informe del mes anterior
+    let prevMes = informe.mes - 1
+    let prevAnio = informe.anio
+    if (prevMes < 1) { prevMes = 12; prevAnio-- }
+
+    const { data: prevInforme } = await supabase
+      .from('informes').select('id')
+      .eq('escuela_id', informe.escuela_id)
+      .eq('mes', prevMes).eq('anio', prevAnio).single()
+
+    if (!prevInforme) throw new Error('No hay informe del mes anterior')
+
+    const { data: prevData } = await supabase
+      .from('informe_cumplimiento_ambiental').select('*')
+      .eq('informe_id', prevInforme.id).single()
+
+    if (!prevData) throw new Error('No hay datos de Cumplimiento Ambiental en el mes anterior')
+
+    const { id: _id, informe_id: _inf, sin_cambios_justificacion: _j, ...campos } = prevData
+    setData((prev: any) => ({ ...prev, ...campos, sin_cambios_justificacion: '' }))
+
+    const { sin_cambios_justificacion: __j, fotos: _f, ...snap } = { ...campos }
+    preloadSnapshot.current = JSON.stringify(snap)
+    isPreloaded.current = true
   }
 
   // Funciones para compactar/expandir secciones
@@ -214,8 +257,17 @@ export default function CumplimientoAmbientalPage() {
       short="CUMPL.AMB"
       informeId={informeId}
       onSave={handleSave}
+      onPreload={handlePreload}
+      isModified={isModified}
     >
       <EscuelaInfoHeader informeId={informeId} />
+
+      {data.sin_cambios_justificacion && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+          <p className="text-sm font-semibold text-amber-800 mb-1">Justificación (sin cambios respecto al mes anterior):</p>
+          <p className="text-sm text-amber-900">{data.sin_cambios_justificacion}</p>
+        </div>
+      )}
       <DescripcionCondicion
         informeId={informeId}
         tabla="informe_cumplimiento_ambiental"

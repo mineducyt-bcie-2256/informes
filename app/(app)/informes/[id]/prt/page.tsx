@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
@@ -583,6 +583,9 @@ export default function PrtPage() {
   const [cambios, setCambios] = useState<Cambio[]>([])
   const [historialCostos, setHistorialCostos] = useState<HistorialCostos[]>([])
   const [mostrandoOpcionesPrecargar, setMostrandoOpcionesPrecargar] = useState(false)
+  const [sinCambiosJust, setSinCambiosJust] = useState('')
+  const preloadSnapshot = useRef<string | null>(null)
+  const isPreloaded = useRef(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -670,7 +673,18 @@ export default function PrtPage() {
 
     setCambios(cambiosDetectados)
     setMostrandoOpcionesPrecargar(false)
-    alert('Información del mes anterior precargada')
+    setSinCambiosJust('')
+    isPreloaded.current = true
+    preloadSnapshot.current = JSON.stringify({ modalidad: prtAnterior.modalidad ?? [], lugares: prtAnterior.lugares ?? [], virtual: prtAnterior.virtual ?? {} })
+  }
+
+  function isModified() {
+    if (!isPreloaded.current || preloadSnapshot.current === null) return true
+    return JSON.stringify({ modalidad: form.modalidad, lugares: form.lugares, virtual: form.virtual }) !== preloadSnapshot.current
+  }
+
+  async function handlePreload() {
+    await precargarMesAnterior()
   }
 
   function set<K extends keyof typeof INIT>(f: K, v: (typeof INIT)[K]) {
@@ -750,7 +764,9 @@ export default function PrtPage() {
       fotos:                 form.fotos,
       cambios:               cambios.length > 0 ? cambios : null,
       historial_costos:      nuevoHistorial.length > 0 ? nuevoHistorial : null,
+      sin_cambios_justificacion: arguments[0] ?? sinCambiosJust ?? '',
     }
+    if (arguments[0]) setSinCambiosJust(arguments[0])
     const { error } = await supabase.from('informe_prt').upsert(payload, { onConflict: 'informe_id' })
     if (error) throw new Error(error.message)
   }
@@ -995,10 +1011,17 @@ export default function PrtPage() {
 
   // ── Render ────────────────────────────────────────────────────
   return (
-    <FormWrapper title="Condición 7 - Plan de Reubicación Temporal" short="PRT" informeId={id} onSave={onSave}>
+    <FormWrapper title="Condición 7 - Plan de Reubicación Temporal" short="PRT" informeId={id} onSave={onSave} onPreload={handlePreload} isModified={isModified}>
       <div className="space-y-8">
 
         <EscuelaInfoHeader informeId={id} />
+
+        {sinCambiosJust && (
+          <div className="bg-amber-50 border border-amber-300 rounded-lg p-4">
+            <p className="text-sm font-semibold text-amber-800 mb-1">Justificación (sin cambios respecto al mes anterior):</p>
+            <p className="text-sm text-amber-900">{sinCambiosJust}</p>
+          </div>
+        )}
 
         {/* Botón Precargar información */}
         <div className="flex items-center gap-3">

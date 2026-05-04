@@ -337,24 +337,41 @@ function Portada({ data }: { data: any }) {
   // Elaboradores visibles en portada
   const elaVisibles = elaboradores.filter((e: any) => e.aparece_portada !== false)
 
-  // Si no hay elaboradores en informe, usar el de portada como fallback
-  const listaFinal: { nombre: string; cargo: string }[] =
+  // Especialista principal desde portada
+  const espPrincipal: { nombre: string; cargo: string; firma_url?: string }[] = portada?.elaborado_por_nombre
+    ? [{ nombre: portada.elaborado_por_nombre, cargo: portada.elaborado_por_cargo ?? '', firma_url: portada.firma_url ?? '' }]
+    : []
+
+  // Colaboradores adicionales guardados en portada
+  const colaboradoresPDF: { nombre: string; cargo: string; firma_url?: string }[] =
+    (portada?.colaboradores ?? [])
+      .filter((c: any) => c.nombre)
+      .map((c: any) => ({ nombre: c.nombre, cargo: c.cargo ?? '', firma_url: c.firma_url ?? '' }))
+
+  // Si no hay elaboradores en informe, usar el de portada como fallback + colaboradores
+  const listaFinal: { nombre: string; cargo: string; firma_url?: string }[] =
     elaVisibles.length > 0
-      ? elaVisibles.map((e: any) => ({ nombre: val(e.nombre), cargo: val(e.cargo, '') }))
-      : portada?.elaborado_por_nombre
-        ? [{ nombre: portada.elaborado_por_nombre, cargo: portada.elaborado_por_cargo ?? '' }]
-        : []
+      ? [...elaVisibles.map((e: any) => ({ nombre: val(e.nombre), cargo: val(e.cargo, ''), firma_url: '' })), ...colaboradoresPDF]
+      : [...espPrincipal, ...colaboradoresPDF]
 
   return (
     <Page size="LETTER" style={s.coverPage}>
 
       {/* ── Encabezado centrado ── */}
       <View style={s.coverTop}>
-        <View style={s.coverLogoArea}>
-          <Text style={s.coverLogoText}>BCIE</Text>
-        </View>
+        {/* Logo de la empresa: imagen si está subida, fallback BCIE */}
+        {portada?.sello_url ? (
+          <Image
+            src={portada.sello_url}
+            style={{ width: 100, height: 100, objectFit: 'contain', marginBottom: 18 }}
+          />
+        ) : (
+          <View style={s.coverLogoArea}>
+            <Text style={s.coverLogoText}>BCIE</Text>
+          </View>
+        )}
 
-        <Text style={s.coverLabel}>PROGRAMA DE INFRAESTRUCTURA ESCOLAR</Text>
+        <Text style={s.coverLabel}>PROGRAMA MI NUEVA ESCUELA</Text>
 
         <Text style={s.coverTitle}>INFORME MENSUAL DE SUPERVISIÓN</Text>
 
@@ -417,6 +434,17 @@ function Portada({ data }: { data: any }) {
         {/* Línea */}
         <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 2 }} />
 
+        {/* Nombre del proyecto */}
+        {portada?.nombre_proyecto && (
+          <>
+            <View style={{ marginBottom: 2 }}>
+              <Text style={s.coverInfoLabel}>NOMBRE DEL PROYECTO</Text>
+              <Text style={[s.coverInfoValue, { marginTop: 3 }]}>{portada.nombre_proyecto}</Text>
+            </View>
+            <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginBottom: 2 }} />
+          </>
+        )}
+
         {/* 3. Empresa de supervisión */}
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 20, marginBottom: 2 }}>
           <View style={{ flex: 1 }}>
@@ -438,21 +466,28 @@ function Portada({ data }: { data: any }) {
         {listaFinal.length > 0 && (
           <View style={{ marginBottom: 2 }}>
             <Text style={[s.coverInfoLabel, { marginBottom: 8 }]}>ELABORADO POR</Text>
-            {listaFinal.map((esp, i) => (
-              <View key={i} style={{
-                marginBottom: i < listaFinal.length - 1 ? 8 : 0,
-                paddingBottom: i < listaFinal.length - 1 ? 8 : 0,
-                borderBottomWidth: i < listaFinal.length - 1 ? 1 : 0,
-                borderBottomColor: BORDER,
-              }}>
-                <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: DARK, marginBottom: 2 }}>
-                  {esp.nombre}
-                </Text>
-                {esp.cargo ? (
-                  <Text style={{ fontSize: 8, color: MUTED }}>{esp.cargo}</Text>
-                ) : null}
-              </View>
-            ))}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+              {listaFinal.map((esp, i) => (
+                <View key={i} style={{ flex: 1, minWidth: 100, alignItems: 'center' }}>
+                  {/* Firma */}
+                  {esp.firma_url ? (
+                    <Image
+                      src={esp.firma_url}
+                      style={{ width: 90, height: 40, objectFit: 'contain', marginBottom: 4 }}
+                    />
+                  ) : (
+                    <View style={{ width: 90, height: 40, borderBottomWidth: 1, borderBottomColor: DARK, marginBottom: 4 }} />
+                  )}
+                  {/* Nombre y cargo */}
+                  <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: DARK, textAlign: 'center' }}>
+                    {esp.nombre}
+                  </Text>
+                  {esp.cargo ? (
+                    <Text style={{ fontSize: 7, color: MUTED, textAlign: 'center', marginTop: 1 }}>{esp.cargo}</Text>
+                  ) : null}
+                </View>
+              ))}
+            </View>
           </View>
         )}
 
@@ -485,8 +520,8 @@ function Portada({ data }: { data: any }) {
       {/* ── Franja inferior ── */}
       <View style={s.coverFooterStrip}>
         <View>
-          <Text style={s.coverFooterLabel}>SISTEMA SCAS</Text>
-          <Text style={s.coverFooterValue}>scas.bcie.org</Text>
+          <Text style={s.coverFooterLabel}>SEGUIMIENTO DE CONDICIONES AMBIENTALES Y SOCIALES</Text>
+          <Text style={s.coverFooterValue}>MINEDUCYT / BCIE / PROGRAMA MI NUEVA ESCUELA</Text>
         </View>
         <View style={{ alignItems: 'center' }}>
           <Text style={s.coverFooterLabel}>PERIODO</Text>
@@ -678,6 +713,13 @@ function SeccionGenerales({ data }: { data: any }) {
         <Text style={s.sectionTitle}>Generales del Informe de Supervisión</Text>
       </View>
 
+      {c1317.sin_cambios_justificacion && (
+        <View style={{ backgroundColor: '#fffbeb', borderLeftWidth: 3, borderLeftColor: AMBER, padding: 8, marginBottom: 8 }}>
+          <Text style={{ fontSize: 8, color: AMBER, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ℹ Sin modificaciones respecto al mes anterior</Text>
+          <Text style={{ fontSize: 8, color: DARK }}>{c1317.sin_cambios_justificacion}</Text>
+        </View>
+      )}
+
       {/* Introducción */}
       <SubBanner title="1. Introducción" />
       <TextBlock text={c1317.introduccion} />
@@ -806,6 +848,14 @@ function SeccionHSSO({ data }: { data: any }) {
           <Text style={[s.chipText, { color: !!hsso ? GREEN : RED }]}>COMPLETADO</Text>
         </View>
       </View>
+
+      {/* Aviso sin cambios */}
+      {hsso.sin_cambios_justificacion && (
+        <View style={{ backgroundColor: '#fffbeb', borderLeftWidth: 3, borderLeftColor: AMBER, padding: 8, marginBottom: 8 }}>
+          <Text style={{ fontSize: 8, color: AMBER, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ℹ Sin modificaciones respecto al mes anterior</Text>
+          <Text style={{ fontSize: 8, color: DARK }}>{hsso.sin_cambios_justificacion}</Text>
+        </View>
+      )}
 
       {/* Descripción */}
       {hsso.descripcion_condicion && (
@@ -952,6 +1002,13 @@ function SeccionGARO({ data }: { data: any }) {
         <Text style={s.sectionNum}>2</Text>
         <Text style={s.sectionTitle}>Condición 2 — Gestión de Aguas Residuales Ordinarias (GARO)</Text>
       </View>
+
+      {garo.sin_cambios_justificacion && (
+        <View style={{ backgroundColor: '#fffbeb', borderLeftWidth: 3, borderLeftColor: AMBER, padding: 8, marginBottom: 8 }}>
+          <Text style={{ fontSize: 8, color: AMBER, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ℹ Sin modificaciones respecto al mes anterior</Text>
+          <Text style={{ fontSize: 8, color: DARK }}>{garo.sin_cambios_justificacion}</Text>
+        </View>
+      )}
 
       {/* Descripción */}
       {garo.descripcion_condicion && (
@@ -1350,6 +1407,13 @@ function SeccionPGR({ data }: { data: any }) {
         <Text style={s.sectionTitle}>Condición 3 — Plan de Gestión de Residuos (PGR)</Text>
       </View>
 
+      {pgr.sin_cambios_justificacion && (
+        <View style={{ backgroundColor: '#fffbeb', borderLeftWidth: 3, borderLeftColor: AMBER, padding: 8, marginBottom: 8 }}>
+          <Text style={{ fontSize: 8, color: AMBER, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ℹ Sin modificaciones respecto al mes anterior</Text>
+          <Text style={{ fontSize: 8, color: DARK }}>{pgr.sin_cambios_justificacion}</Text>
+        </View>
+      )}
+
       {pgr.descripcion_condicion && (
         <><SubBanner title="Descripción de la condición" /><TextBlock text={pgr.descripcion_condicion} /></>
       )}
@@ -1504,6 +1568,13 @@ function SeccionMCEAR({ data }: { data: any }) {
         <Text style={s.sectionNum}>4</Text>
         <Text style={s.sectionTitle}>Condición 4 — Monitoreo de Calidad de Emisiones y Ruido (MCEAR)</Text>
       </View>
+
+      {mcear.sin_cambios_justificacion && (
+        <View style={{ backgroundColor: '#fffbeb', borderLeftWidth: 3, borderLeftColor: AMBER, padding: 8, marginBottom: 8 }}>
+          <Text style={{ fontSize: 8, color: AMBER, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ℹ Sin modificaciones respecto al mes anterior</Text>
+          <Text style={{ fontSize: 8, color: DARK }}>{mcear.sin_cambios_justificacion}</Text>
+        </View>
+      )}
 
       {mcear.descripcion_condicion && (
         <><SubBanner title="Descripción de la condición" /><TextBlock text={mcear.descripcion_condicion} /></>
@@ -1842,6 +1913,13 @@ function SeccionPPPI({ data }: { data: any }) {
         <Text style={s.sectionNum}>5</Text>
         <Text style={s.sectionTitle}>Condición 5 — Plan de Participación de Partes Interesadas (PPPI)</Text>
       </View>
+
+      {pppi.sin_cambios_justificacion && (
+        <View style={{ backgroundColor: '#fffbeb', borderLeftWidth: 3, borderLeftColor: AMBER, padding: 8, marginBottom: 8 }}>
+          <Text style={{ fontSize: 8, color: AMBER, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ℹ Sin modificaciones respecto al mes anterior</Text>
+          <Text style={{ fontSize: 8, color: DARK }}>{pppi.sin_cambios_justificacion}</Text>
+        </View>
+      )}
 
       {/* 1. Descripción de la condición */}
       {pppi.descripcion_condicion && (
@@ -2515,6 +2593,13 @@ function SeccionMAQR({ data }: { data: any }) {
         <Text style={s.sectionTitle}>Condición 6 — Mecanismo de Atención de Quejas y Reclamos (MAQR)</Text>
       </View>
 
+      {maqr.sin_cambios_justificacion && (
+        <View style={{ backgroundColor: '#fffbeb', borderLeftWidth: 3, borderLeftColor: AMBER, padding: 8, marginBottom: 8 }}>
+          <Text style={{ fontSize: 8, color: AMBER, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ℹ Sin modificaciones respecto al mes anterior</Text>
+          <Text style={{ fontSize: 8, color: DARK }}>{maqr.sin_cambios_justificacion}</Text>
+        </View>
+      )}
+
       {maqr.descripcion_condicion && (
         <><SubBanner title="Descripción de la condición" /><TextBlock text={maqr.descripcion_condicion} /></>
       )}
@@ -2829,6 +2914,13 @@ function SeccionPRT({ data }: { data: any }) {
         <Text style={s.sectionNum}>7</Text>
         <Text style={s.sectionTitle}>Condición 7 — Plan de Reubicación Temporal (PRT)</Text>
       </View>
+
+      {prt.sin_cambios_justificacion && (
+        <View style={{ backgroundColor: '#fffbeb', borderLeftWidth: 3, borderLeftColor: AMBER, padding: 8, marginBottom: 8 }}>
+          <Text style={{ fontSize: 8, color: AMBER, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ℹ Sin modificaciones respecto al mes anterior</Text>
+          <Text style={{ fontSize: 8, color: DARK }}>{prt.sin_cambios_justificacion}</Text>
+        </View>
+      )}
 
       {prt.descripcion_condicion && (
         <><SubBanner title="Descripción de la condición" /><TextBlock text={prt.descripcion_condicion} /></>
@@ -3447,6 +3539,13 @@ function SeccionCCT({ data }: { data: any }) {
           <Text style={s.sectionTitle}>Condición 8 — Código de Conducta de Trabajadores</Text>
         </View>
 
+        {cct.sin_cambios_justificacion && (
+          <View style={{ backgroundColor: '#fffbeb', borderLeftWidth: 3, borderLeftColor: AMBER, padding: 8, marginBottom: 8 }}>
+            <Text style={{ fontSize: 8, color: AMBER, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ℹ Sin modificaciones respecto al mes anterior</Text>
+            <Text style={{ fontSize: 8, color: DARK }}>{cct.sin_cambios_justificacion}</Text>
+          </View>
+        )}
+
         {cct.descripcion_condicion && (
           <>
             <SubBanner title="Descripción de la Condición" />
@@ -3468,7 +3567,7 @@ function SeccionCCT({ data }: { data: any }) {
                 </Text>
                 <View style={s.table}>
                   <View style={s.tableHead}>
-                    <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Ítem</Text>
+                    <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Condición de Conducta</Text>
                     <Text style={[s.tableHeadCell, { flex: 1, textAlign: 'center' }]}>Estado</Text>
                     <Text style={[s.tableHeadCell, { flex: 2.5 }]}>Observaciones</Text>
                   </View>
@@ -3714,6 +3813,13 @@ function SeccionCumplimientoAmbiental({ data }: { data: any }) {
           <Text style={s.sectionNum}>9</Text>
           <Text style={s.sectionTitle}>Condición 9 — Cumplimiento Ambiental</Text>
         </View>
+
+        {ca.sin_cambios_justificacion && (
+          <View style={{ backgroundColor: '#fffbeb', borderLeftWidth: 3, borderLeftColor: AMBER, padding: 8, marginBottom: 8 }}>
+            <Text style={{ fontSize: 8, color: AMBER, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ℹ Sin modificaciones respecto al mes anterior</Text>
+            <Text style={{ fontSize: 8, color: DARK }}>{ca.sin_cambios_justificacion}</Text>
+          </View>
+        )}
 
         {ca.descripcion_condicion && (
           <>

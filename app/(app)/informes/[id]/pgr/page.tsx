@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
@@ -68,6 +68,7 @@ const INIT = {
   tiene_capacitaciones: '',
   capacitaciones_list:  [] as Capacitacion[],
   fotos: [] as Foto[],
+  sin_cambios_justificacion: '',
 }
 
 // ── Componente de sección (FUERA de PgrPage para evitar re-montaje) ──
@@ -351,6 +352,8 @@ export default function PgrPage() {
   const { id } = useParams<{ id: string }>()
   const [data, setData] = useState(INIT)
   const [autoLoaded, setAutoLoaded] = useState(false)
+  const preloadSnapshot = useRef<string | null>(null)
+  const isPreloaded = useRef(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -402,16 +405,43 @@ export default function PgrPage() {
 
   function set(field: string, value: any) { setData(prev => ({ ...prev, [field]: value })) }
 
-  async function onSave() {
-    const { error } = await supabase.from('informe_pgr').upsert({ ...data, informe_id: id }, { onConflict: 'informe_id' })
+  function isModified() {
+    if (!isPreloaded.current || preloadSnapshot.current === null) return true
+    return JSON.stringify({ ...data, sin_cambios_justificacion: '' }) !== preloadSnapshot.current
+  }
+
+  async function handlePreload() {
+    const { data: inf } = await supabase.from('informes').select('escuela_id, periodo_mes, periodo_anio').eq('id', id).single()
+    if (!inf) throw new Error('No se encontró el informe actual')
+    let mes = inf.periodo_mes - 1, anio = inf.periodo_anio
+    if (mes === 0) { mes = 12; anio -= 1 }
+    const { data: prevInf } = await supabase.from('informes').select('id').eq('escuela_id', inf.escuela_id).eq('periodo_mes', mes).eq('periodo_anio', anio).single()
+    if (!prevInf) throw new Error(`No existe informe del mes anterior (${mes}/${anio})`)
+    const { data: prev } = await supabase.from('informe_pgr').select('*').eq('informe_id', prevInf.id).single()
+    if (!prev) throw new Error('El informe del mes anterior no tiene datos PGR')
+    const { id: _id, informe_id, fotos, sin_cambios_justificacion, ...campos } = prev
+    const dp = { ...INIT, ...campos, fotos: [], sin_cambios_justificacion: '' }
+    setData(dp)
+    isPreloaded.current = true
+    preloadSnapshot.current = JSON.stringify({ ...dp, sin_cambios_justificacion: '' })
+  }
+
+  async function onSave(justificacion?: string) {
+    const { error } = await supabase.from('informe_pgr').upsert({ ...data, informe_id: id, sin_cambios_justificacion: justificacion ?? data.sin_cambios_justificacion ?? '' }, { onConflict: 'informe_id' })
     if (error) throw new Error(error.message)
   }
 
   return (
-    <FormWrapper title="Condición 3 - Plan de Gestión de Residuos" short="PGR" informeId={id} onSave={onSave}>
+    <FormWrapper title="Condición 3 - Plan de Gestión de Residuos" short="PGR" informeId={id} onSave={onSave} onPreload={handlePreload} isModified={isModified}>
       <div className="space-y-8">
 
         <EscuelaInfoHeader informeId={id} />
+
+        {data.sin_cambios_justificacion && (
+          <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 text-sm text-amber-800">
+            <span className="font-semibold">ℹ Sin modificaciones — </span>{data.sin_cambios_justificacion}
+          </div>
+        )}
 
         {autoLoaded && (
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">

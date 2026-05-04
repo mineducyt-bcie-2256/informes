@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
@@ -72,6 +72,7 @@ const INIT = {
   tiene_incidentes: '',
   incidentes: [] as ReturnType<typeof INCIDENTE_VACIO>[],
   fotos: [] as Foto[],
+  sin_cambios_justificacion: '',
 }
 
 // ── Componente ────────────────────────────────────────────────
@@ -80,6 +81,8 @@ export default function GaroPage() {
   const [data, setData] = useState(INIT)
   const [personalHsso, setPersonalHsso] = useState<{ hombres: number; mujeres: number; total: number } | null>(null)
   const [autoLoaded, setAutoLoaded] = useState(false)
+  const preloadSnapshot = useRef<string | null>(null)
+  const isPreloaded = useRef(false)
 
   // Unidades sanitarias
   const [mostrarFormUS, setMostrarFormUS] = useState(false)
@@ -245,8 +248,29 @@ export default function GaroPage() {
   const cumpleM = totalSanitariosM >= requeridosM
   const cumpleTotal = cumpleH && cumpleM
 
-  async function onSave() {
-    const { error } = await supabase.from('informe_garo').upsert({ ...data, informe_id: id }, { onConflict: 'informe_id' })
+  function isModified() {
+    if (!isPreloaded.current || preloadSnapshot.current === null) return true
+    return JSON.stringify({ ...data, sin_cambios_justificacion: '' }) !== preloadSnapshot.current
+  }
+
+  async function handlePreload() {
+    const { data: inf } = await supabase.from('informes').select('escuela_id, periodo_mes, periodo_anio').eq('id', id).single()
+    if (!inf) throw new Error('No se encontró el informe actual')
+    let mes = inf.periodo_mes - 1, anio = inf.periodo_anio
+    if (mes === 0) { mes = 12; anio -= 1 }
+    const { data: prevInf } = await supabase.from('informes').select('id').eq('escuela_id', inf.escuela_id).eq('periodo_mes', mes).eq('periodo_anio', anio).single()
+    if (!prevInf) throw new Error(`No existe informe del mes anterior (${mes}/${anio})`)
+    const { data: prev } = await supabase.from('informe_garo').select('*').eq('informe_id', prevInf.id).single()
+    if (!prev) throw new Error('El informe del mes anterior no tiene datos GARO')
+    const { id: _id, informe_id, fotos, sin_cambios_justificacion, ...campos } = prev
+    const dp = { ...INIT, ...campos, fotos: [], sin_cambios_justificacion: '' }
+    setData(dp)
+    isPreloaded.current = true
+    preloadSnapshot.current = JSON.stringify({ ...dp, sin_cambios_justificacion: '' })
+  }
+
+  async function onSave(justificacion?: string) {
+    const { error } = await supabase.from('informe_garo').upsert({ ...data, informe_id: id, sin_cambios_justificacion: justificacion ?? data.sin_cambios_justificacion ?? '' }, { onConflict: 'informe_id' })
     if (error) throw new Error(error.message)
   }
 
@@ -257,10 +281,16 @@ export default function GaroPage() {
   const mostrarSubEspecifica = formUA.actividad_cat && formUA.actividad_cat !== 'e' && subOpts.length > 0
 
   return (
-    <FormWrapper title="Condición 2 - Gestión de Aguas Residuales Ordinarias" short="GARO" informeId={id} onSave={onSave}>
+    <FormWrapper title="Condición 2 - Gestión de Aguas Residuales Ordinarias" short="GARO" informeId={id} onSave={onSave} onPreload={handlePreload} isModified={isModified}>
       <div className="space-y-8">
 
         <EscuelaInfoHeader informeId={id} />
+
+        {data.sin_cambios_justificacion && (
+          <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 text-sm text-amber-800">
+            <span className="font-semibold">ℹ Sin modificaciones — </span>{data.sin_cambios_justificacion}
+          </div>
+        )}
 
         {/* Banner: datos auto-cargados del mes anterior */}
         {autoLoaded && (

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
@@ -35,6 +35,7 @@ const INIT = {
   tiene_capacitaciones: '',
   capacitaciones_list: [] as any[],
   fotos: [] as Foto[],
+  sin_cambios_justificacion: '',
 }
 
 export default function HssoPage() {
@@ -42,8 +43,11 @@ export default function HssoPage() {
   const [data, setData] = useState(INIT)
   const supabase = createClient()
 
+  // Snapshot para detectar si se modificó la precarga
+  const preloadSnapshot = useRef<string | null>(null)
+  const isPreloaded = useRef(false)
+
   useEffect(() => {
-    // Asegurar que columnas nuevas existan en la BD
     fetch('/api/migrate-form', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -66,8 +70,65 @@ export default function HssoPage() {
     })
   }
 
-  async function onSave() {
-    const { error } = await supabase.from('informe_hsso').upsert({ ...data, informe_id: id }, { onConflict: 'informe_id' })
+  // Detecta si el usuario modificó algo respecto a la precarga
+  function isModified() {
+    if (!isPreloaded.current || preloadSnapshot.current === null) return true
+    const current = JSON.stringify({ ...data, sin_cambios_justificacion: '' })
+    return current !== preloadSnapshot.current
+  }
+
+  // Carga datos del informe del mes anterior
+  async function handlePreload() {
+    // Obtener informe actual
+    const { data: informe } = await supabase
+      .from('informes')
+      .select('escuela_id, periodo_mes, periodo_anio')
+      .eq('id', id)
+      .single()
+
+    if (!informe) throw new Error('No se encontró el informe actual')
+
+    // Calcular mes anterior
+    let mesBuscar = informe.periodo_mes - 1
+    let anioBuscar = informe.periodo_anio
+    if (mesBuscar === 0) { mesBuscar = 12; anioBuscar -= 1 }
+
+    // Buscar informe del mes anterior
+    const { data: informeAnterior } = await supabase
+      .from('informes')
+      .select('id')
+      .eq('escuela_id', informe.escuela_id)
+      .eq('periodo_mes', mesBuscar)
+      .eq('periodo_anio', anioBuscar)
+      .single()
+
+    if (!informeAnterior) throw new Error(`No existe informe del mes anterior (${mesBuscar}/${anioBuscar})`)
+
+    // Cargar datos HSSO del mes anterior
+    const { data: hssoAnterior } = await supabase
+      .from('informe_hsso')
+      .select('*')
+      .eq('informe_id', informeAnterior.id)
+      .single()
+
+    if (!hssoAnterior) throw new Error('El informe del mes anterior no tiene datos HSSO')
+
+    // Precargar sin id, informe_id ni justificacion
+    const { id: _id, informe_id, sin_cambios_justificacion, fotos, ...camposPrecarga } = hssoAnterior
+    const dataPrecargada = { ...INIT, ...camposPrecarga, fotos: [], sin_cambios_justificacion: '' }
+
+    setData(dataPrecargada)
+    isPreloaded.current = true
+    preloadSnapshot.current = JSON.stringify({ ...dataPrecargada, sin_cambios_justificacion: '' })
+  }
+
+  async function onSave(justificacion?: string) {
+    const payload = {
+      ...data,
+      informe_id: id,
+      sin_cambios_justificacion: justificacion ?? data.sin_cambios_justificacion ?? '',
+    }
+    const { error } = await supabase.from('informe_hsso').upsert(payload, { onConflict: 'informe_id' })
     if (error) throw new Error(error.message)
   }
 
@@ -94,8 +155,23 @@ export default function HssoPage() {
   )
 
   return (
-    <FormWrapper title="Condición 1 - Seguimiento al Plan de Higiene, Salud y Seguridad Ocupacional" short="HSSO" informeId={id} onSave={onSave}>
+    <FormWrapper
+      title="Condición 1 - Seguimiento al Plan de Higiene, Salud y Seguridad Ocupacional"
+      short="HSSO"
+      informeId={id}
+      onSave={onSave}
+      onPreload={handlePreload}
+      isModified={isModified}
+    >
       <div className="space-y-8">
+
+        {/* Aviso de precarga sin cambios */}
+        {data.sin_cambios_justificacion && (
+          <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 text-sm text-amber-800">
+            <span className="font-semibold">ℹ Sin modificaciones — </span>
+            {data.sin_cambios_justificacion}
+          </div>
+        )}
 
         <EscuelaInfoHeader informeId={id} />
 

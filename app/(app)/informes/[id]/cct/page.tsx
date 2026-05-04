@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
@@ -46,6 +46,7 @@ type FormData = {
   tiene_capacitaciones: string
   capacitaciones: Capacitacion[]
   fotos: Foto[]
+  sin_cambios_justificacion: string
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -129,6 +130,7 @@ const INIT: FormData = {
   tiene_capacitaciones: '',
   capacitaciones: [],
   fotos: [],
+  sin_cambios_justificacion: '',
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -142,6 +144,8 @@ export default function SeccionCCT() {
   const [data, setData] = useState<FormData>(INIT)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const preloadSnapshot = useRef<string | null>(null)
+  const isPreloaded = useRef(false)
 
   // Cargar datos
   useEffect(() => {
@@ -175,19 +179,33 @@ export default function SeccionCCT() {
     loadData()
   }, [informeId, supabase])
 
+  function isModified() {
+    if (!isPreloaded.current || preloadSnapshot.current === null) return true
+    return JSON.stringify({ ...data, sin_cambios_justificacion: '' }) !== preloadSnapshot.current
+  }
+
+  async function handlePreload() {
+    const { data: inf } = await supabase.from('informes').select('escuela_id, periodo_mes, periodo_anio').eq('id', informeId).single()
+    if (!inf) throw new Error('No se encontró el informe actual')
+    let mes = inf.periodo_mes - 1, anio = inf.periodo_anio
+    if (mes === 0) { mes = 12; anio -= 1 }
+    const { data: prevInf } = await supabase.from('informes').select('id').eq('escuela_id', inf.escuela_id).eq('periodo_mes', mes).eq('periodo_anio', anio).single()
+    if (!prevInf) throw new Error(`No existe informe del mes anterior (${mes}/${anio})`)
+    const { data: prev } = await supabase.from('informe_cct').select('*').eq('informe_id', prevInf.id).single()
+    if (!prev) throw new Error('El informe del mes anterior no tiene datos CCT')
+    const dp: FormData = { ...INIT, secciones: prev.secciones ?? INIT.secciones, documentos: prev.documentos ?? INIT.documentos, descripcion_condicion: prev.descripcion_condicion ?? '', comentarios_generales: prev.comentarios_generales ?? '', tiene_capacitaciones: prev.tiene_capacitaciones ?? '', capacitaciones: prev.capacitaciones ?? [], fotos: [], sin_cambios_justificacion: '' }
+    setData(dp)
+    isPreloaded.current = true
+    preloadSnapshot.current = JSON.stringify({ ...dp, sin_cambios_justificacion: '' })
+  }
+
   // Guardar datos
-  const handleSave = async () => {
+  const handleSave = async (justificacion?: string) => {
     setSaving(true)
     try {
       const { data: existing, error: checkError } = await supabase
-        .from('informe_cct')
-        .select('id')
-        .eq('informe_id', informeId)
-        .maybeSingle()
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        throw checkError
-      }
+        .from('informe_cct').select('id').eq('informe_id', informeId).maybeSingle()
+      if (checkError && checkError.code !== 'PGRST116') throw checkError
 
       const saveData = {
         descripcion_condicion: data.descripcion_condicion,
@@ -197,24 +215,15 @@ export default function SeccionCCT() {
         tiene_capacitaciones: data.tiene_capacitaciones,
         capacitaciones: data.capacitaciones,
         fotos: data.fotos,
+        sin_cambios_justificacion: justificacion ?? data.sin_cambios_justificacion ?? '',
       }
 
       if (existing?.id) {
-        const { error: updateError } = await supabase
-          .from('informe_cct')
-          .update(saveData)
-          .eq('id', existing.id)
-
-        if (updateError) throw updateError
+        const { error } = await supabase.from('informe_cct').update(saveData).eq('id', existing.id)
+        if (error) throw error
       } else {
-        const { error: insertError } = await supabase
-          .from('informe_cct')
-          .insert({
-            informe_id: informeId,
-            ...saveData,
-          })
-
-        if (insertError) throw insertError
+        const { error } = await supabase.from('informe_cct').insert({ informe_id: informeId, ...saveData })
+        if (error) throw error
       }
     } catch (err: any) {
       console.error('Error saving CCT data:', err)
@@ -246,8 +255,13 @@ export default function SeccionCCT() {
   if (loading) return <div className="p-4">Cargando...</div>
 
   return (
-    <FormWrapper title="Condición 8 - Código de Conducta de Trabajadores" short="CCT" informeId={informeId} onSave={handleSave}>
+    <FormWrapper title="Condición 8 - Código de Conducta de Trabajadores" short="CCT" informeId={informeId} onSave={handleSave} onPreload={handlePreload} isModified={isModified}>
       <EscuelaInfoHeader informeId={informeId} />
+      {data.sin_cambios_justificacion && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 text-sm text-amber-800 mb-4">
+          <span className="font-semibold">ℹ Sin modificaciones — </span>{data.sin_cambios_justificacion}
+        </div>
+      )}
       <DescripcionCondicion informeId={informeId} tabla="informe_cct" value={data.descripcion_condicion} onChange={val => setData(prev => ({ ...prev, descripcion_condicion: val }))} />
 
       {/* Secciones de Verificación */}
@@ -258,7 +272,7 @@ export default function SeccionCCT() {
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-slate-800 text-white">
-                  <th className="border border-slate-300 px-3 py-2 text-left text-sm font-bold">Ítem</th>
+                  <th className="border border-slate-300 px-3 py-2 text-left text-sm font-bold">Condición de Conducta</th>
                   <th className="border border-slate-300 px-3 py-2 text-center text-sm font-bold w-20">Cumple</th>
                   <th className="border border-slate-300 px-3 py-2 text-center text-sm font-bold w-20">No Cumple</th>
                   <th className="border border-slate-300 px-3 py-2 text-left text-sm font-bold">Observación</th>

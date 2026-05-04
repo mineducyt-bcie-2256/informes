@@ -506,13 +506,16 @@ function TarjetaQueja({
 // ════════════════════════════════════════════════════════════════
 export default function MaqrPage() {
   const { id } = useParams<{ id: string }>()
-  const [descripcion,       setDescripcion]       = useState('')
-  const [medios,            setMedios]            = useState<MediosRecepcion>(MEDIOS_INIT)
-  const [quejas,            setQuejas]            = useState<Queja[]>([])
-  const [fotos,             setFotos]             = useState<Foto[]>([])
-  const [autoLoaded,        setAutoLoaded]        = useState(false)
-  const [autoLoadedQuejas,  setAutoLoadedQuejas]  = useState(false)
-  const [statsAcum,         setStatsAcum]         = useState({ total: 0, abiertas: 0, resueltas: 0 })
+  const [descripcion,           setDescripcion]           = useState('')
+  const [medios,                setMedios]                = useState<MediosRecepcion>(MEDIOS_INIT)
+  const [quejas,                setQuejas]                = useState<Queja[]>([])
+  const [fotos,                 setFotos]                 = useState<Foto[]>([])
+  const [autoLoaded,            setAutoLoaded]            = useState(false)
+  const [autoLoadedQuejas,      setAutoLoadedQuejas]      = useState(false)
+  const [statsAcum,             setStatsAcum]             = useState({ total: 0, abiertas: 0, resueltas: 0 })
+  const [sinCambiosJust,        setSinCambiosJust]        = useState('')
+  const preloadSnapshot = useRef<string | null>(null)
+  const isPreloaded = useRef(false)
   const supabase = createClient()
 
   useEffect(() => {
@@ -597,9 +600,32 @@ export default function MaqrPage() {
     setQuejas(p => [...p, { ...QUEJA_INIT, id: String(Date.now()), numero_queja: p.length + 1, estado: 'En proceso' }])
   }
 
-  async function onSave() {
+  function isModified() {
+    if (!isPreloaded.current || preloadSnapshot.current === null) return true
+    return JSON.stringify({ medios, quejas }) !== preloadSnapshot.current
+  }
+
+  async function handlePreload() {
+    const { data: inf } = await supabase.from('informes').select('escuela_id, periodo_mes, periodo_anio').eq('id', id).single()
+    if (!inf) throw new Error('No se encontró el informe actual')
+    let mes = inf.periodo_mes - 1, anio = inf.periodo_anio
+    if (mes === 0) { mes = 12; anio -= 1 }
+    const { data: prevInf } = await supabase.from('informes').select('id').eq('escuela_id', inf.escuela_id).eq('periodo_mes', mes).eq('periodo_anio', anio).single()
+    if (!prevInf) throw new Error(`No existe informe del mes anterior (${mes}/${anio})`)
+    const { data: prev } = await supabase.from('informe_maqr').select('*').eq('informe_id', prevInf.id).single()
+    if (!prev) throw new Error('El informe del mes anterior no tiene datos MAQR')
+    if (prev.medios_recepcion) setMedios(prev.medios_recepcion)
+    setQuejas([])
+    setSinCambiosJust('')
+    isPreloaded.current = true
+    preloadSnapshot.current = JSON.stringify({ medios: prev.medios_recepcion ?? MEDIOS_INIT, quejas: [] })
+  }
+
+  async function onSave(justificacion?: string) {
+    const just = justificacion ?? sinCambiosJust ?? ''
+    if (justificacion) setSinCambiosJust(justificacion)
     const { data: maqrData, error: e1 } = await supabase.from('informe_maqr')
-      .upsert({ informe_id: id, descripcion_condicion: descripcion, medios_recepcion: medios, cantidad_quejas: quejas.length, fotos }, { onConflict: 'informe_id' })
+      .upsert({ informe_id: id, descripcion_condicion: descripcion, medios_recepcion: medios, cantidad_quejas: quejas.length, fotos, sin_cambios_justificacion: just }, { onConflict: 'informe_id' })
       .select().single()
     if (e1) throw new Error(e1.message)
 
@@ -630,10 +656,16 @@ export default function MaqrPage() {
   }
 
   return (
-    <FormWrapper title="Condición 6 - Mecanismo de Atención de Quejas y Reclamos" short="MAQR" informeId={id} onSave={onSave}>
+    <FormWrapper title="Condición 6 - Mecanismo de Atención de Quejas y Reclamos" short="MAQR" informeId={id} onSave={onSave} onPreload={handlePreload} isModified={isModified}>
       <div className="space-y-8">
 
         <EscuelaInfoHeader informeId={id} />
+
+        {sinCambiosJust && (
+          <div className="bg-amber-50 border border-amber-300 rounded-lg px-4 py-3 text-sm text-amber-800">
+            <span className="font-semibold">ℹ Sin modificaciones — </span>{sinCambiosJust}
+          </div>
+        )}
 
         {autoLoaded && (
           <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
