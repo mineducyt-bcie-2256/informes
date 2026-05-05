@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import FormWrapper from '@/components/forms/FormWrapper'
 import {
   Pencil, Lock, MapPin, Users, Shield, Trash2,
-  Building2, UserPlus
+  Building2, UserPlus, Upload, X, ImageIcon
 } from 'lucide-react'
 
 // ── Tipos ─────────────────────────────────────────────────────────
@@ -252,6 +252,9 @@ export default function C1317Page() {
   const [escuela,                    setEscuela]                    = useState<EscuelaGeo | null>(null)
   const [cargandoTextos,             setCargandoTextos]             = useState(false)
   const [sinCambiosJust,             setSinCambiosJust]             = useState('')
+  const [mapaUrl,                    setMapaUrl]                    = useState('')
+  const [mapaUploading,              setMapaUploading]              = useState(false)
+  const [mapaError,                  setMapaError]                  = useState('')
   const preloadSnapshot = useRef<string | null>(null)
   const isPreloaded = useRef(false)
 
@@ -288,6 +291,7 @@ export default function C1317Page() {
         setMarnFechaEmision(reg.marn_fecha_emision ?? '')
         setMarnFechaVencimiento(reg.marn_fecha_vencimiento ?? '')
         setMarnObs(reg.marn_observaciones ?? '')
+        setMapaUrl(reg.mapa_url ?? '')
         return
       }
 
@@ -369,9 +373,32 @@ export default function C1317Page() {
       marn_fecha_vencimiento:      marnFechaVencimiento   || null,
       marn_observaciones:          marnObs      || null,
       sin_cambios_justificacion:   just,
+      mapa_url:                    mapaUrl      || null,
     }
     const { error } = await supabase.from('informe_c1317').upsert(payload, { onConflict: 'informe_id' })
     if (error) throw new Error(error.message)
+  }
+
+  // ── Upload imagen mapa ─────────────────────────────────────────
+  async function handleMapaUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setMapaUploading(true)
+    setMapaError('')
+    try {
+      const ext  = file.name.split('.').pop()
+      const path = `informes/${id}/mapa.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('firmas-sellos')
+        .upload(path, file, { upsert: true })
+      if (upErr) throw upErr
+      const { data } = supabase.storage.from('firmas-sellos').getPublicUrl(path)
+      setMapaUrl(data.publicUrl)
+    } catch (err: any) {
+      setMapaError(err.message ?? 'Error al subir imagen')
+    } finally {
+      setMapaUploading(false)
+    }
   }
 
   // ── Helpers especialistas ──────────────────────────────────────
@@ -511,6 +538,52 @@ export default function C1317Page() {
                 <p className="text-sm">Sin coordenadas — el mapa se mostrará cuando se importen lat/lon</p>
               </div>
             )}
+          </div>
+
+          {/* ── Imagen del mapa para el PDF ─────────────────────── */}
+          <div className="mt-4 border border-dashed border-slate-300 rounded-xl p-4 bg-slate-50">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <ImageIcon size={13} /> Imagen del mapa para el informe PDF
+            </p>
+
+            {mapaUrl ? (
+              <div className="space-y-3">
+                <img src={mapaUrl} alt="Mapa" className="w-full max-h-48 object-cover rounded-lg border border-slate-200" />
+                <div className="flex gap-3 justify-center">
+                  <label className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium cursor-pointer">
+                    <Upload size={12} /> Cambiar
+                    <input type="file" accept="image/*" className="hidden" onChange={handleMapaUpload} />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setMapaUrl('')}
+                    className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 font-medium"
+                  >
+                    <X size={12} /> Quitar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center gap-2 py-6 cursor-pointer text-slate-400 hover:text-blue-500 transition-colors">
+                {mapaUploading ? (
+                  <span className="text-xs text-blue-500 animate-pulse">Subiendo imagen...</span>
+                ) : (
+                  <>
+                    <ImageIcon size={28} />
+                    <span className="text-xs text-center">
+                      Toma una captura de pantalla del mapa de arriba y súbela aquí.<br />
+                      <span className="text-slate-400">PNG, JPG, WEBP</span>
+                    </span>
+                    <span className="mt-1 px-4 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg">
+                      Seleccionar imagen
+                    </span>
+                  </>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={handleMapaUpload} disabled={mapaUploading} />
+              </label>
+            )}
+
+            {mapaError && <p className="text-xs text-red-500 text-center mt-2">{mapaError}</p>}
           </div>
         </section>
 

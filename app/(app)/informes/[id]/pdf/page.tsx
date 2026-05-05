@@ -62,6 +62,9 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
   const esc = informe.escuelas as any
   const periodo = `${MESES[informe.periodo_mes - 1]} ${informe.periodo_anio}`
 
+  // La URL del mapa se pasa directamente — la conversión a base64 se hace en el cliente
+  const mapImageUrl: string | null = c1317?.mapa_url ?? null
+
   console.log('=== MAQR Data ===')
   console.log('maqr object:', maqr)
   console.log('maqrQuejas:', maqrQuejas)
@@ -79,6 +82,7 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
     informe, esc, periodo,
     portada: { ...portada, elaborado_por_nombre: elaboradoPorNombre },
     c1317, hsso, garo, pgr, mcear, pppi, maqr: maqr ? { ...maqr, quejas: maqrQuejas } : null, prt, cct, cumplimientoAmbiental,
+    mapImageUrl,
   }
 
   return (

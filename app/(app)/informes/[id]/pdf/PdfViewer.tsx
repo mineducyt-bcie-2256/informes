@@ -4,7 +4,7 @@ import {
   PDFViewer, Image,
 } from '@react-pdf/renderer'
 import { Download, Eye } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { analizarCCT, obtenerColorNivel } from '@/lib/cctAnalyzer'
 
 // ═══════════════════════════════════════════════════════════════════
@@ -560,8 +560,17 @@ function ResumenEjecutivo({ data }: { data: any }) {
   const accs: any[] = hsso?.accidentes ?? []
   const totalAccidentes = accs.length
 
-  const caps: any[] = hsso?.capacitaciones_list ?? []
-  const totalPersonasCap = caps.reduce((s, c) => s + (parseInt(c.personal) || 0), 0)
+  // Sumar participantes de todos los módulos con capacitaciones
+  const todasCaps: any[] = [
+    ...(hsso?.capacitaciones_list ?? []),
+    ...(pppi?.capacitaciones_list ?? []),
+    ...(data.pgr?.capacitaciones_list ?? []),
+    ...(data.cct?.capacitaciones ?? []),
+  ]
+  const totalPersonasCap = todasCaps.reduce((s, c) => {
+    const t = parseInt(c.total) || parseInt(c.personal) || ((parseInt(c.hombres) || 0) + (parseInt(c.mujeres) || 0))
+    return s + t
+  }, 0)
 
   const quejas = parseInt(maqr?.cantidad_quejas) || 0
   const estudiantesPRT = parseInt(prt?.num_estudiantes) || 0
@@ -734,7 +743,7 @@ function SeccionGenerales({ data }: { data: any }) {
 
       {/* Ubicación */}
       <SubBanner title="4. Ubicación del Centro Educativo" />
-      <View style={[s.card, { marginBottom: 8 }]}>
+      <View style={[s.card, { marginBottom: 6 }]}>
         <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: NAVY, marginBottom: 4 }}>
           {val(esc?.nombre)}
         </Text>
@@ -744,7 +753,33 @@ function SeccionGenerales({ data }: { data: any }) {
         <Text style={{ fontSize: 8, color: MUTED }}>
           {[esc?.departamento, esc?.distrito].filter(Boolean).join('  ·  ') || '—'}
         </Text>
+        {lat && lon && (
+          <Text style={{ fontSize: 7.5, color: MUTED, marginTop: 4 }}>
+            Latitud: {lat}   Longitud: {lon}
+          </Text>
+        )}
       </View>
+
+      {/* Mapa estático */}
+      {mapUrl ? (
+        <View style={{ marginBottom: 8, borderRadius: 4, overflow: 'hidden', borderWidth: 1, borderColor: BORDER }}>
+          <Image
+            src={mapUrl}
+            style={{ width: '100%', height: 180, objectFit: 'cover' }}
+          />
+          <View style={{ backgroundColor: '#f8fafc', paddingHorizontal: 8, paddingVertical: 4 }}>
+            <Text style={{ fontSize: 7, color: MUTED, textAlign: 'center' }}>
+              © OpenStreetMap contributors
+            </Text>
+          </View>
+        </View>
+      ) : (lat && lon) ? (
+        <View style={[s.card, { marginBottom: 8, backgroundColor: '#f1f5f9' }]}>
+          <Text style={{ fontSize: 8, color: MUTED, textAlign: 'center' }}>
+            Coordenadas: {lat}, {lon}
+          </Text>
+        </View>
+      ) : null}
 
       {/* Resolución Ambiental */}
       <SubBanner title="5. Resolución Ambiental — MARN" />
@@ -923,55 +958,118 @@ function SeccionHSSO({ data }: { data: any }) {
         </>
       )}
 
-      {/* Accidentes */}
-      <SubBanner title="Accidentes de trabajo" />
-      {accidentes.length === 0 ? (
-        <View style={[s.chip, s.chipGreen, { marginBottom: 8 }]}>
-          <Text style={[s.chipText, { color: GREEN }]}>Sin accidentes registrados en el periodo</Text>
-        </View>
-      ) : (
-        <View style={s.table}>
-          <View style={s.tableHead}>
-            <Text style={s.tableHeadCell}>Tipo / Gravedad</Text>
-            <Text style={s.tableHeadCell}>Causa</Text>
-            <Text style={[s.tableHeadCell, { flex: 2 }]}>Descripción</Text>
-            <Text style={s.tableHeadCell}>Días perdidos</Text>
-          </View>
-          {accidentes.map((a: any, i: number) => (
-            <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-              <Text style={s.tableCell}>{val(a.gravedad)}</Text>
-              <Text style={s.tableCell}>{val(a.causa)}</Text>
-              <Text style={[s.tableCell, { flex: 2 }]}>{val(a.descripcion)}</Text>
-              <Text style={s.tableCell}>{val(a.dias_perdidos)}</Text>
-            </View>
-          ))}
-        </View>
-      )}
+      {/* ── Accidentes — resumen gráfico ── */}
+      <SubBanner title="Accidentes e incidentes de trabajo" />
+      {(() => {
+        const totalAcc = accidentes.filter((a: any) => a.tipo === 'Accidente').length
+        const totalInc = accidentes.filter((a: any) => a.tipo === 'Incidente').length
+        const sinDano  = accidentes.filter((a: any) => a.gravedad === 'Sin daño').length
+        const leve     = accidentes.filter((a: any) => a.gravedad === 'Leve').length
+        const grave    = accidentes.filter((a: any) => a.gravedad === 'Grave').length
+        const mortal   = accidentes.filter((a: any) => a.gravedad === 'Mortal').length
 
-      {/* Capacitaciones */}
-      {capacitaciones.length > 0 && (
-        <>
-          <SubBanner title="Capacitaciones realizadas" />
-          <View style={s.table}>
-            <View style={s.tableHead}>
-              <Text style={[s.tableHeadCell, { flex: 3 }]}>Temática</Text>
-              <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Fecha</Text>
-              <Text style={s.tableHeadCell}>Hombres</Text>
-              <Text style={s.tableHeadCell}>Mujeres</Text>
-              <Text style={s.tableHeadCell}>Total</Text>
-            </View>
-            {capacitaciones.map((c: any, i: number) => (
-              <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
-                <Text style={[s.tableCell, { flex: 3 }]}>{val(c.tematica)}</Text>
-                <Text style={[s.tableCell, { flex: 1.5 }]}>{val(c.fecha)}</Text>
-                <Text style={s.tableCell}>{val(c.hombres, '0')}</Text>
-                <Text style={s.tableCell}>{val(c.mujeres, '0')}</Text>
-                <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold' }]}>{val(c.total, '0')}</Text>
+        return (
+          <>
+            {/* Totales */}
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 8 }}>
+              <View style={{ flex: 1, backgroundColor: '#eff6ff', borderRadius: 8, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: '#bfdbfe' }}>
+                <Text style={{ fontSize: 20, fontFamily: 'Helvetica-Bold', color: '#1d4ed8' }}>{totalAcc}</Text>
+                <Text style={{ fontSize: 8.5, color: '#1d4ed8' }}>Total de accidentes</Text>
               </View>
-            ))}
-          </View>
-        </>
-      )}
+              <View style={{ flex: 1, backgroundColor: '#eff6ff', borderRadius: 8, padding: 10, flexDirection: 'row', alignItems: 'center', gap: 8, borderWidth: 1, borderColor: '#bfdbfe' }}>
+                <Text style={{ fontSize: 20, fontFamily: 'Helvetica-Bold', color: '#1d4ed8' }}>{totalInc}</Text>
+                <Text style={{ fontSize: 8.5, color: '#1d4ed8' }}>Total de incidentes</Text>
+              </View>
+            </View>
+
+            {/* Gravedad */}
+            <View style={{ backgroundColor: '#f8fafc', borderRadius: 8, padding: 10, marginBottom: 8, borderWidth: 1, borderColor: BORDER }}>
+              <Text style={{ fontSize: 7, color: MUTED, fontFamily: 'Helvetica-Bold', letterSpacing: 0.5, marginBottom: 8 }}>GRAVEDAD DEL ACCIDENTE</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {[
+                  { label: 'Sin daño', val: sinDano, bg: '#f0fdf4', color: GREEN,    border: '#bbf7d0' },
+                  { label: 'Leve',     val: leve,    bg: '#fefce8', color: '#ca8a04', border: '#fde68a' },
+                  { label: 'Grave',    val: grave,   bg: '#fff7ed', color: '#c2410c', border: '#fed7aa' },
+                  { label: 'Mortal',   val: mortal,  bg: '#fef2f2', color: RED,       border: '#fecaca' },
+                ].map((g, i) => (
+                  <View key={i} style={{ flex: 1, backgroundColor: g.bg, borderRadius: 8, padding: 8, alignItems: 'center', borderWidth: 1, borderColor: g.border }}>
+                    <Text style={{ fontSize: 18, fontFamily: 'Helvetica-Bold', color: g.color }}>{g.val}</Text>
+                    <Text style={{ fontSize: 7.5, color: g.color, marginTop: 2 }}>{g.label}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Tabla detalle */}
+            {accidentes.length === 0 ? (
+              <View style={[s.chip, s.chipGreen, { marginBottom: 8 }]}>
+                <Text style={[s.chipText, { color: GREEN }]}>Sin accidentes registrados en el periodo</Text>
+              </View>
+            ) : (
+              <View style={s.table}>
+                <View style={s.tableHead}>
+                  <Text style={s.tableHeadCell}>Tipo / Gravedad</Text>
+                  <Text style={s.tableHeadCell}>Causa</Text>
+                  <Text style={[s.tableHeadCell, { flex: 2 }]}>Descripción</Text>
+                  <Text style={s.tableHeadCell}>Días perdidos</Text>
+                </View>
+                {accidentes.map((a: any, i: number) => (
+                  <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                    <Text style={s.tableCell}>{val(a.gravedad)}</Text>
+                    <Text style={s.tableCell}>{val(a.causa)}</Text>
+                    <Text style={[s.tableCell, { flex: 2 }]}>{val(a.descripcion)}</Text>
+                    <Text style={s.tableCell}>{val(a.dias_perdidos)}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </>
+        )
+      })()}
+
+      {/* ── Capacitaciones — resumen gráfico ── */}
+      {capacitaciones.length > 0 && (() => {
+        const totalCaps = capacitaciones.length
+        const totalPart = capacitaciones.reduce((s: number, c: any) => s + (Number(c.total) || 0), 0)
+        return (
+          <>
+            <SubBanner title="Capacitaciones realizadas" />
+
+            {/* Resumen */}
+            <View style={{ backgroundColor: '#eff6ff', borderRadius: 8, padding: 10, marginBottom: 8, flexDirection: 'row', alignItems: 'center', gap: 16, borderWidth: 1, borderColor: '#bfdbfe' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 16, fontFamily: 'Helvetica-Bold', color: '#1d4ed8' }}>{totalCaps}</Text>
+                <Text style={{ fontSize: 8.5, color: '#1d4ed8' }}>capacitaciones impartidas</Text>
+              </View>
+              <View style={{ width: 1, height: 20, backgroundColor: '#bfdbfe' }} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={{ fontSize: 8.5, color: '#1d4ed8' }}>Total de participantes:</Text>
+                <Text style={{ fontSize: 14, fontFamily: 'Helvetica-Bold', color: '#1d4ed8' }}>{totalPart}</Text>
+              </View>
+            </View>
+
+            {/* Tabla detalle */}
+            <View style={s.table}>
+              <View style={s.tableHead}>
+                <Text style={[s.tableHeadCell, { flex: 3 }]}>Temática</Text>
+                <Text style={[s.tableHeadCell, { flex: 1.5 }]}>Fecha</Text>
+                <Text style={s.tableHeadCell}>Hombres</Text>
+                <Text style={s.tableHeadCell}>Mujeres</Text>
+                <Text style={s.tableHeadCell}>Total</Text>
+              </View>
+              {capacitaciones.map((c: any, i: number) => (
+                <View key={i} style={i % 2 === 0 ? s.tableRow : s.tableRowAlt}>
+                  <Text style={[s.tableCell, { flex: 3 }]}>{val(c.tematica)}</Text>
+                  <Text style={[s.tableCell, { flex: 1.5 }]}>{val(c.fecha)}</Text>
+                  <Text style={s.tableCell}>{val(c.hombres, '0')}</Text>
+                  <Text style={s.tableCell}>{val(c.mujeres, '0')}</Text>
+                  <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold' }]}>{val(c.total, '0')}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )
+      })()}
       <FotosGrid fotos={hsso.fotos ?? []} />
     </Page>
   )
@@ -1960,35 +2058,118 @@ function SeccionPPPI({ data }: { data: any }) {
 
       {/* 3. Socializaciones con alertas visuales */}
       <SubBanner title="Socializaciones con partes interesadas" />
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 3 }}>
-        {([1, 2, 3] as const).map(n => {
-          const fecha = pppi[`socializacion${n}_fecha`] as string | undefined
-          const ok = !!fecha
-          return (
-            <View key={n} style={{ flex: 1, backgroundColor: ok ? '#dcfce7' : '#f8fafc',
-              borderRadius: 6, padding: 10,
-              borderLeftWidth: 3, borderLeftColor: ok ? '#16a34a' : BORDER }}>
-              <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold',
-                color: ok ? '#15803d' : MUTED, marginBottom: 3 }}>
-                {n === 1 ? '1.ª' : n === 2 ? '2.ª' : '3.ª'} Socialización
-              </Text>
-              <Text style={{ fontSize: 9, fontFamily: ok ? 'Helvetica-Bold' : 'Helvetica',
-                color: ok ? DARK : MUTED }}>
-                {fecha || 'No programada'}
-              </Text>
-              {ok && (
-                <View style={{ marginTop: 4, backgroundColor: '#bbf7d0', borderRadius: 4,
-                  paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' }}>
-                  <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#15803d' }}>✓ Realizada</Text>
+      {(() => {
+        // Calcular avance (mismo parseAvance del formulario)
+        const rawAvance = esc?.porcentaje_avance ?? null
+        const avancePct = rawAvance
+          ? (() => { const n = parseFloat(rawAvance); return isNaN(n) ? 0 : n <= 1 ? Math.round(n * 100) : Math.round(n) })()
+          : 0
+
+        const f1 = pppi.socializacion1_fecha || ''
+        const f2 = pppi.socializacion2_fecha || ''
+        const f3 = pppi.socializacion3_fecha || ''
+
+        const barColor = avancePct >= 90 ? '#f97316' : avancePct >= 70 ? '#3b82f6' : '#22c55e'
+        const barText  = avancePct >= 90 ? '#ea580c' : avancePct >= 70 ? '#1d4ed8' : '#16a34a'
+
+        return (
+          <>
+            {/* Barra de avance */}
+            {avancePct > 0 && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8,
+                backgroundColor: '#f8fafc', borderRadius: 8, padding: 8,
+                borderWidth: 1, borderColor: BORDER, marginBottom: 8 }}>
+                <Text style={{ fontSize: 7.5, color: MUTED, width: 120 }}>Avance actual del proyecto</Text>
+                <View style={{ flex: 1, backgroundColor: '#e2e8f0', borderRadius: 4, height: 8 }}>
+                  <View style={{ width: `${avancePct}%` as any, backgroundColor: barColor, borderRadius: 4, height: 8 }} />
                 </View>
-              )}
+                <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: barText, width: 32, textAlign: 'right' }}>
+                  {avancePct}%
+                </Text>
+              </View>
+            )}
+
+            {/* Tarjetas de socializaciones */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 6 }}>
+              {/* 1ª */}
+              <View style={{ flex: 1, backgroundColor: f1 ? '#dcfce7' : '#f8fafc',
+                borderRadius: 6, padding: 10, borderLeftWidth: 3, borderLeftColor: f1 ? '#16a34a' : BORDER }}>
+                <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: f1 ? '#15803d' : MUTED, marginBottom: 3 }}>
+                  1.ª Socialización
+                </Text>
+                <Text style={{ fontSize: 9, fontFamily: f1 ? 'Helvetica-Bold' : 'Helvetica', color: f1 ? DARK : MUTED, marginBottom: 4 }}>
+                  {f1 || 'No programada'}
+                </Text>
+                {f1 && (
+                  <View style={{ backgroundColor: '#bbf7d0', borderRadius: 4,
+                    paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' }}>
+                    <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#15803d' }}>✓ Realizada</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* 2ª */}
+              <View style={{ flex: 1,
+                backgroundColor: avancePct > 90 && !f2 ? '#fef2f2' : avancePct >= 70 && !f2 ? '#eff6ff' : f2 ? '#dcfce7' : '#f8fafc',
+                borderRadius: 6, padding: 10, borderLeftWidth: 3,
+                borderLeftColor: avancePct > 90 && !f2 ? RED : avancePct >= 70 && !f2 ? '#3b82f6' : f2 ? '#16a34a' : BORDER }}>
+                <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', marginBottom: 3,
+                  color: avancePct > 90 && !f2 ? RED : avancePct >= 70 && !f2 ? '#1d4ed8' : f2 ? '#15803d' : MUTED }}>
+                  2.ª Socialización{avancePct > 90 && !f2 ? ' ⚠ requerida' : avancePct >= 70 && !f2 ? ' (70–90% ejecución)' : ''}
+                </Text>
+                <Text style={{ fontSize: 9, fontFamily: f2 ? 'Helvetica-Bold' : 'Helvetica', color: f2 ? DARK : MUTED, marginBottom: 4 }}>
+                  {f2 || 'No programada'}
+                </Text>
+                {f2 && (
+                  <View style={{ backgroundColor: '#bbf7d0', borderRadius: 4,
+                    paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' }}>
+                    <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#15803d' }}>✓ Realizada</Text>
+                  </View>
+                )}
+                {avancePct > 90 && !f2 && (
+                  <Text style={{ fontSize: 6.5, color: '#b91c1c', marginTop: 4, lineHeight: 1.3 }}>
+                    ⚠ El avance superó el 90% ({avancePct}%) y la 2ª Socialización no ha sido registrada. Se requiere acción inmediata.
+                  </Text>
+                )}
+                {avancePct >= 70 && avancePct <= 90 && !f2 && (
+                  <Text style={{ fontSize: 6.5, color: '#1e40af', marginTop: 4, lineHeight: 1.3 }}>
+                    ℹ El avance está en {avancePct}%. Es el momento de realizar la 2ª Socialización.
+                  </Text>
+                )}
+              </View>
+
+              {/* 3ª */}
+              <View style={{ flex: 1,
+                backgroundColor: avancePct > 90 && !f3 ? '#fff7ed' : f3 ? '#dcfce7' : '#f8fafc',
+                borderRadius: 6, padding: 10, borderLeftWidth: 3,
+                borderLeftColor: avancePct > 90 && !f3 ? '#f97316' : f3 ? '#16a34a' : BORDER }}>
+                <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', marginBottom: 3,
+                  color: avancePct > 90 && !f3 ? '#ea580c' : f3 ? '#15803d' : MUTED }}>
+                  3.ª Socialización{avancePct > 90 && !f3 ? ' (90–100% ejecución)' : ''}
+                </Text>
+                <Text style={{ fontSize: 9, fontFamily: f3 ? 'Helvetica-Bold' : 'Helvetica', color: f3 ? DARK : MUTED, marginBottom: 4 }}>
+                  {f3 || 'No programada'}
+                </Text>
+                {f3 && (
+                  <View style={{ backgroundColor: '#bbf7d0', borderRadius: 4,
+                    paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' }}>
+                    <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: '#15803d' }}>✓ Realizada</Text>
+                  </View>
+                )}
+                {avancePct > 90 && !f3 && (
+                  <Text style={{ fontSize: 6.5, color: '#c2410c', marginTop: 4, lineHeight: 1.3 }}>
+                    ⚠ El avance está en {avancePct}%. Es el momento de realizar la 3ª Socialización.
+                  </Text>
+                )}
+              </View>
             </View>
-          )
-        })}
-      </View>
+          </>
+        )
+      })()}
+
       {pppi.comentarios_socializacion && (
         <View style={{ backgroundColor: '#fef9c3', borderRadius: 4, padding: 8,
-          borderLeftWidth: 3, borderLeftColor: '#ca8a04', marginBottom: 3 }}>
+          borderLeftWidth: 3, borderLeftColor: '#ca8a04', marginBottom: 6 }}>
           <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: '#854d0e', marginBottom: 2 }}>Comentarios</Text>
           <Text style={{ fontSize: 8, color: DARK }}>{pppi.comentarios_socializacion}</Text>
         </View>
@@ -4056,7 +4237,23 @@ function SeccionCumplimientoAmbiental({ data }: { data: any }) {
 // COMPONENTE PÚBLICO
 // ═══════════════════════════════════════════════════════════════════
 export default function PdfViewer({ data }: { data: any }) {
-  const [preview, setPreview] = useState(false)
+  const [preview,      setPreview]      = useState(false)
+  const [mapaBase64,   setMapaBase64]   = useState<string | null>(null)
+
+  // Convierte la URL del mapa a base64 para que react-pdf pueda usarla
+  useEffect(() => {
+    const url = data.mapImageUrl
+    if (!url) return
+    fetch(`/api/proxy-image?url=${encodeURIComponent(url)}`)
+      .then(r => r.ok ? r.blob() : null)
+      .then(blob => {
+        if (!blob) return
+        const reader = new FileReader()
+        reader.onloadend = () => setMapaBase64(reader.result as string)
+        reader.readAsDataURL(blob)
+      })
+      .catch(() => {})
+  }, [data.mapImageUrl])
 
   const filename = [
     'Informe_SCAS',
@@ -4111,7 +4308,7 @@ export default function PdfViewer({ data }: { data: any }) {
         {/* Botones */}
         <div className="flex gap-3">
           <PDFDownloadLink
-            document={<InformePDF data={data} />}
+            document={<InformePDF data={{ ...data, mapImageUrl: mapaBase64 ?? data.mapImageUrl }} />}
             fileName={filename}
             className="flex-1"
           >
@@ -4149,7 +4346,7 @@ export default function PdfViewer({ data }: { data: any }) {
             </button>
           </div>
           <PDFViewer width="100%" height={700} showToolbar={false}>
-            <InformePDF data={data} />
+            <InformePDF data={{ ...data, mapImageUrl: mapaBase64 ?? data.mapImageUrl }} />
           </PDFViewer>
         </div>
       )}
