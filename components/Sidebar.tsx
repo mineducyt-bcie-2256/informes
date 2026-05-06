@@ -43,8 +43,8 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
             <span className="text-blue-900 font-bold text-lg">B</span>
           </div>
           <div>
-            <p className="text-white font-bold text-sm leading-tight">BCIE · SCAS</p>
-            <p className="text-blue-300 text-xs">Informes Ambientales</p>
+            <p className="text-white font-bold text-sm leading-tight">SISCAS</p>
+            <p className="text-blue-300 text-xs">Cond. Ambientales y Sociales</p>
           </div>
         </div>
       </div>

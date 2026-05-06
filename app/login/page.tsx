@@ -77,13 +77,15 @@ function LoginForm() {
     <div className="min-h-screen bg-slate-100 py-10 px-4 overflow-y-auto flex items-start justify-center">
       <div className="bg-white rounded-2xl shadow-lg p-10 w-full max-w-md mt-10">
 
-        {/* Logo */}
+        {/* Logos */}
+        <div className="flex items-center justify-center gap-6 mb-6">
+          <img src="/logo-mineducyt.png" alt="MINEDUCYT" className="h-14 object-contain" />
+          <div className="w-px h-12 bg-slate-200" />
+          <img src="/logo-bcie.png" alt="BCIE" className="h-10 object-contain" />
+        </div>
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-900 mb-4">
-            <span className="text-white font-bold text-xl">B</span>
-          </div>
-          <h1 className="text-2xl font-bold text-slate-800">BCIE · SCAS</h1>
-          <p className="text-slate-500 text-sm mt-1">Sistema de Informes Ambientales y Sociales</p>
+          <h1 className="text-2xl font-bold text-slate-800">SISCAS</h1>
+          <p className="text-slate-500 text-sm mt-1">Sistema de Seguimiento de Condiciones Ambientales y Sociales</p>
         </div>
 
         {/* Avisos por URL */}
