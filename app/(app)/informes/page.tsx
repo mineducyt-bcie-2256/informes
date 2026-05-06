@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Plus, HardHat, FileText, CheckCircle, Clock, AlertTriangle } from 'lucide-react'
+import { Plus, HardHat, FileText, CheckCircle, Clock, AlertTriangle, CircleCheck } from 'lucide-react'
+import BorrarInforme from './BorrarInforme'
 import { MESES } from '@/types'
 import PendienteCell from './PendienteCell'
 
@@ -25,6 +26,7 @@ export default async function InformesPage({
   // Si es "usuario" con empresa asignada → forzar su empresa, ignorar param
   // Solo rol 'usuario' queda restringido — administrador ve todo libremente
   const esUsuarioRestringido = perfil?.rol === 'usuario' && !!perfil?.empresa_supervision
+  const esProgramador = perfil?.rol === 'programador'
 
   const q = params.q ?? ''
   const mes = params.mes ?? ''
@@ -121,17 +123,32 @@ export default async function InformesPage({
     return true
   })
 
-  // Informes con observaciones pendientes o atendidas (para mostrar badge en la lista)
+  // Cargar observaciones para determinar estado visual de cada informe
   const idsLista = informesFiltrados?.map(i => i.id) ?? []
-  let informesConObs = new Set<string>()
+  // informe_id → Set de estados de sus observaciones
+  const obsEstadosMap: Record<string, Set<string>> = {}
   if (idsLista.length > 0) {
     const { data: obsData } = await supabase
       .from('informe_observaciones')
-      .select('informe_id')
+      .select('informe_id, estado')
       .in('informe_id', idsLista)
-      .in('estado', ['pendiente', 'atendido'])
       .neq('observacion', '')
-    obsData?.forEach(o => informesConObs.add(o.informe_id))
+    obsData?.forEach(o => {
+      if (!obsEstadosMap[o.informe_id]) obsEstadosMap[o.informe_id] = new Set()
+      obsEstadosMap[o.informe_id].add(o.estado)
+    })
+  }
+
+  // Helpers: un informe está "observado" si tiene obs pendientes
+  // y "resuelto" si tiene obs pero todas atendidas
+  function getEstadoVisual(inf: any): 'borrador' | 'enviado' | 'observado' | 'resuelto' | 'aprobado' {
+    if (inf.estado === 'borrador')  return 'borrador'
+    if (inf.estado === 'aprobado')  return 'aprobado'
+    // enviado → revisar observaciones
+    const estados = obsEstadosMap[inf.id]
+    if (!estados || estados.size === 0) return 'enviado'
+    if (estados.has('pendiente'))       return 'observado'
+    return 'resuelto'  // tiene obs pero todas atendidas
   }
 
   const MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
@@ -284,24 +301,39 @@ export default async function InformesPage({
                   </td>
                   <td className="px-4 py-3 text-slate-600">{MESES[inf.periodo_mes - 1]} {inf.periodo_anio}</td>
                   <td className="px-4 py-3">
-                    <div className="flex flex-col gap-1">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium w-fit ${
-                        inf.estado === 'aprobado' ? 'bg-green-100 text-green-700' :
-                        inf.estado === 'enviado'  ? 'bg-blue-100 text-blue-700' :
-                        'bg-amber-100 text-amber-700'}`}>
-                        {inf.estado}
-                      </span>
-                      {informesConObs.has(inf.id) && inf.estado !== 'borrador' && (
-                        <span className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded-full w-fit">
-                          <AlertTriangle size={10} /> Observado
+                    {(() => {
+                      const ev = getEstadoVisual(inf)
+                      return (
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium w-fit flex items-center gap-1 ${
+                          ev === 'aprobado'  ? 'bg-green-100 text-green-700' :
+                          ev === 'enviado'   ? 'bg-blue-100 text-blue-700' :
+                          ev === 'observado' ? 'bg-amber-100 text-amber-700' :
+                          ev === 'resuelto'  ? 'bg-purple-100 text-purple-700' :
+                                              'bg-slate-100 text-slate-600'
+                        }`}>
+                          {ev === 'observado' && <AlertTriangle size={10} />}
+                          {ev === 'resuelto'  && <CircleCheck size={10} />}
+                          {ev === 'aprobado'  ? 'Aprobado'  :
+                           ev === 'enviado'   ? 'Enviado'   :
+                           ev === 'observado' ? 'Observado' :
+                           ev === 'resuelto'  ? 'Resuelto'  : 'Borrador'}
                         </span>
-                      )}
-                    </div>
+                      )
+                    })()}
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={`/informes/${inf.id}`} className="text-blue-600 hover:text-blue-800 font-medium text-xs">
-                      Ver / Editar
-                    </Link>
+                    <div className="flex items-center gap-2">
+                      <Link href={`/informes/${inf.id}`} className="text-blue-600 hover:text-blue-800 font-medium text-xs">
+                        Ver / Editar
+                      </Link>
+                      {esProgramador && (
+                        <BorrarInforme
+                          informeId={inf.id}
+                          nombre={inf.escuelas?.nombre ?? ''}
+                          periodo={`${MESES[inf.periodo_mes - 1]} ${inf.periodo_anio}`}
+                        />
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
