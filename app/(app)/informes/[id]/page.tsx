@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MESES, CONDICIONES } from '@/types'
-import { CheckCircle, Clock, FileDown, ChevronRight } from 'lucide-react'
+import { CheckCircle, Clock, FileDown, ChevronRight, AlertTriangle, CircleCheck } from 'lucide-react'
 import AccionesInforme from './AccionesInforme'
 
 export default async function InformePage({ params }: { params: Promise<{ id: string }> }) {
@@ -33,6 +33,18 @@ export default async function InformePage({ params }: { params: Promise<{ id: st
   }))
 
   const completadas = Object.values(filled).filter(Boolean).length
+
+  // Cargar observaciones solo si el informe fue enviado o aprobado
+  // (en borrador el administrador aún no puede observar)
+  const obsMap: Record<string, string> = {}
+  if (informe.estado !== 'borrador') {
+    const { data: rawObservaciones } = await supabase
+      .from('informe_observaciones')
+      .select('seccion, estado')
+      .eq('informe_id', id)
+      .neq('observacion', '')
+    rawObservaciones?.forEach(o => { obsMap[o.seccion] = o.estado })
+  }
 
   return (
     
@@ -96,34 +108,61 @@ export default async function InformePage({ params }: { params: Promise<{ id: st
 
         {/* Condiciones */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {CONDICIONES.map(({ key, label, short }) => (
-            <Link
-              key={key}
-              href={`/informes/${id}/${key}`}
-              className="bg-white rounded-xl border border-slate-200 p-5 hover:border-blue-300 hover:shadow-sm transition-all group"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{short}</span>
-                    {filled[key] ? (
-                      <CheckCircle size={14} className="text-green-500" />
-                    ) : (
-                      <Clock size={14} className="text-amber-400" />
-                    )}
+          {CONDICIONES.map(({ key, label, short }) => {
+            const obsEstado = obsMap[short]  // 'pendiente' | 'atendido' | 'aprobado' | undefined
+            const tieneObsPendiente = obsEstado === 'pendiente'
+            const tieneObsAtendida  = obsEstado === 'atendido'
+            const borderCls =
+              tieneObsPendiente ? 'border-amber-300 bg-amber-50/40' :
+              tieneObsAtendida  ? 'border-blue-300  bg-blue-50/30'  :
+                                  'border-slate-200'
+            return (
+              <Link
+                key={key}
+                href={`/informes/${id}/${key}`}
+                className={`bg-white rounded-xl border p-5 hover:shadow-sm transition-all group ${borderCls}`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{short}</span>
+                      {filled[key] ? (
+                        <CheckCircle size={14} className="text-green-500" />
+                      ) : (
+                        <Clock size={14} className="text-amber-400" />
+                      )}
+                    </div>
+                    <p className={`text-sm font-medium group-hover:text-blue-700 ${
+                      tieneObsPendiente ? 'text-amber-800' :
+                      tieneObsAtendida  ? 'text-blue-800'  :
+                                          'text-slate-700'
+                    }`}>{label}</p>
                   </div>
-                  <p className="text-sm font-medium text-slate-700 group-hover:text-blue-700">{label}</p>
+                  <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-500 mt-1" />
                 </div>
-                <ChevronRight size={16} className="text-slate-400 group-hover:text-blue-500 mt-1" />
-              </div>
-              <p className="text-xs mt-2 font-medium">
-                {filled[key]
-                  ? <span className="text-green-600">Completado</span>
-                  : <span className="text-amber-500">Pendiente</span>
-                }
-              </p>
-            </Link>
-          ))}
+
+                {/* Estado del formulario + badge de observación */}
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs font-medium">
+                    {filled[key]
+                      ? <span className="text-green-600">Completado</span>
+                      : <span className="text-amber-500">Pendiente</span>
+                    }
+                  </p>
+                  {tieneObsPendiente && (
+                    <span className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full">
+                      <AlertTriangle size={11} /> Observado
+                    </span>
+                  )}
+                  {tieneObsAtendida && (
+                    <span className="flex items-center gap-1 text-xs font-semibold text-blue-700 bg-blue-100 border border-blue-300 px-2 py-0.5 rounded-full">
+                      <CircleCheck size={11} /> Atendido
+                    </span>
+                  )}
+                </div>
+              </Link>
+            )
+          })}
         </div>
       </div>
     

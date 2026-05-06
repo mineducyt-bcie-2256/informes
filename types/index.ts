@@ -2,6 +2,7 @@ export type Rol = 'programador' | 'administrador' | 'usuario'
 
 export interface Profile {
   id: string
+  username: string | null
   nombre: string
   email: string
   rol: Rol

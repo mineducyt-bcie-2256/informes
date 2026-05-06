@@ -1,7 +1,9 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, Save, CheckCircle, DownloadCloud, X } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronLeft, Save, CheckCircle, DownloadCloud, X, Eye } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import ObservacionAdmin from './ObservacionAdmin'
+import { createClient } from '@/lib/supabase/client'
 
 interface Props {
   title: string
@@ -16,10 +18,22 @@ interface Props {
 
 export default function FormWrapper({ title, short, informeId, children, onSave, onPreload, isModified }: Props) {
   const router = useRouter()
+  const supabase = createClient()
   const [loading, setLoading] = useState(false)
   const [preloading, setPreloading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [rol, setRol] = useState<string | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('profiles').select('rol').eq('id', user.id).single()
+        .then(({ data }) => setRol(data?.rol ?? 'usuario'))
+    })
+  }, [])
+
+  const soloLectura = rol === 'administrador'
 
   // Modal "sin cambios"
   const [showModal, setShowModal] = useState(false)
@@ -89,42 +103,58 @@ export default function FormWrapper({ title, short, informeId, children, onSave,
           <h1 className="text-lg font-bold text-slate-800 truncate">{title}</h1>
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          {success && (
-            <span className="flex items-center gap-1.5 text-green-600 text-sm font-medium">
-              <CheckCircle size={16} />
-              Guardado
+          {/* Badge solo lectura para administrador */}
+          {soloLectura && (
+            <span className="flex items-center gap-1.5 text-slate-500 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-lg text-xs font-medium">
+              <Eye size={13} />
+              Solo lectura
             </span>
           )}
-          {error && (
-            <span className="text-red-500 text-sm">{error}</span>
+
+          {!soloLectura && (
+            <>
+              {success && (
+                <span className="flex items-center gap-1.5 text-green-600 text-sm font-medium">
+                  <CheckCircle size={16} />
+                  Guardado
+                </span>
+              )}
+              {error && (
+                <span className="text-red-500 text-sm">{error}</span>
+              )}
+              {onPreload && (
+                <button
+                  type="button"
+                  onClick={handlePreload}
+                  disabled={preloading}
+                  className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-600 disabled:opacity-60"
+                >
+                  <DownloadCloud size={15} />
+                  {preloading ? 'Precargando...' : 'Precargar mes anterior'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={loading}
+                className="flex items-center gap-2 bg-blue-900 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-800 disabled:opacity-60"
+              >
+                <Save size={15} />
+                {loading ? 'Guardando...' : 'Guardar'}
+              </button>
+            </>
           )}
-          {onPreload && (
-            <button
-              type="button"
-              onClick={handlePreload}
-              disabled={preloading}
-              className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-amber-600 disabled:opacity-60"
-            >
-              <DownloadCloud size={15} />
-              {preloading ? 'Precargando...' : 'Precargar mes anterior'}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={loading}
-            className="flex items-center gap-2 bg-blue-900 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-800 disabled:opacity-60"
-          >
-            <Save size={15} />
-            {loading ? 'Guardando...' : 'Guardar'}
-          </button>
         </div>
       </div>
 
       {/* ── Contenido ── */}
       <div className="p-8 max-w-4xl w-full">
         <div className="bg-white rounded-xl border border-slate-200 p-6">
-          {children}
+          {/* fieldset deshabilitado bloquea todos los inputs/select/textarea/button del formulario */}
+          <fieldset disabled={soloLectura} className={soloLectura ? 'opacity-70 pointer-events-none select-none' : ''}>
+            {children}
+          </fieldset>
+          <ObservacionAdmin informeId={informeId} seccion={short} />
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Plus, HardHat, FileText, CheckCircle, Clock } from 'lucide-react'
+import { Plus, HardHat, FileText, CheckCircle, Clock, AlertTriangle } from 'lucide-react'
 import { MESES } from '@/types'
 import PendienteCell from './PendienteCell'
 
@@ -13,17 +13,48 @@ export default async function InformesPage({
 }) {
   const supabase = await createClient()
   const params = await searchParams
+
+  // ── Perfil del usuario logueado ──────────────────────────────────
+  const { data: { user } } = await supabase.auth.getUser()
+  let perfil: { rol: string; empresa_supervision: string | null } | null = null
+  if (user) {
+    const { data } = await supabase.from('profiles')
+      .select('rol, empresa_supervision').eq('id', user.id).single()
+    perfil = data
+  }
+  // Si es "usuario" con empresa asignada → forzar su empresa, ignorar param
+  // Solo rol 'usuario' queda restringido — administrador ve todo libremente
+  const esUsuarioRestringido = perfil?.rol === 'usuario' && !!perfil?.empresa_supervision
+
   const q = params.q ?? ''
   const mes = params.mes ?? ''
   const anio = params.anio ?? String(ANIO_ACTUAL)
   const estado = params.estado ?? ''
-  const supervision = params.supervision ?? ''
+  // Supervisión: si es usuario restringido, siempre su empresa
+  const supervision = esUsuarioRestringido
+    ? (perfil!.empresa_supervision ?? '')
+    : (params.supervision ?? '')
   const vista = params.vista ?? 'lista'
   const mesDesde = parseInt(params.mes_desde ?? '1')
   const mesHasta = parseInt(params.mes_hasta ?? '12')
 
   const mesActual  = new Date().getMonth() + 1
   const anioActual = new Date().getFullYear()
+
+  // Base de escuelas habilitadas (si usuario restringido → solo su empresa)
+  const baseEscuelas = supabase.from('escuelas').select('*', { count: 'exact', head: true })
+    .eq('activa', true).eq('etapa', 'Construcción')
+    .neq('numero_contrato', 'SIN ADJUDICAR').not('numero_contrato', 'is', null)
+
+  // Base de informes del mes actual (joined con escuelas para filtrar por empresa si aplica)
+  const baseInformesCount = (estado_val: string) => {
+    let q = supabase.from('informes')
+      .select('*, escuelas!inner(empresa_supervision)', { count: 'exact', head: true })
+      .eq('periodo_mes', mesActual).eq('periodo_anio', anioActual)
+    if (estado_val) q = q.eq('estado', estado_val)
+    if (esUsuarioRestringido && supervision) q = q.eq('escuelas.empresa_supervision', supervision)
+    return q
+  }
 
   const [
     { data: supervisiones },
@@ -36,18 +67,15 @@ export default async function InformesPage({
       .eq('activa', true).eq('etapa', 'Construcción')
       .neq('numero_contrato', 'SIN ADJUDICAR').not('numero_contrato', 'is', null)
       .order('empresa_supervision'),
-    supabase.from('escuelas').select('*', { count: 'exact', head: true })
-      .eq('activa', true).eq('etapa', 'Construcción')
-      .neq('numero_contrato', 'SIN ADJUDICAR').not('numero_contrato', 'is', null),
-    supabase.from('informes').select('*', { count: 'exact', head: true })
-      .eq('periodo_mes', mesActual).eq('periodo_anio', anioActual),
-    supabase.from('informes').select('*', { count: 'exact', head: true })
-      .eq('estado', 'aprobado').eq('periodo_mes', mesActual).eq('periodo_anio', anioActual),
-    supabase.from('informes').select('*', { count: 'exact', head: true })
-      .eq('estado', 'borrador').eq('periodo_mes', mesActual).eq('periodo_anio', anioActual),
+    esUsuarioRestringido && supervision
+      ? baseEscuelas.eq('empresa_supervision', supervision)
+      : baseEscuelas,
+    baseInformesCount(''),
+    baseInformesCount('aprobado'),
+    baseInformesCount('borrador'),
   ])
 
-  const empresasUnicas = [...new Set(supervisiones?.map(e => e.empresa_supervision).filter(Boolean))]
+  const empresasUnicas = [...new Set((supervisiones ?? []).map((e: any) => e.empresa_supervision).filter(Boolean))] as string[]
 
   let escuelasQuery = supabase
     .from('escuelas')
@@ -92,6 +120,19 @@ export default async function InformesPage({
     if (supervision && esc?.empresa_supervision !== supervision) return false
     return true
   })
+
+  // Informes con observaciones pendientes o atendidas (para mostrar badge en la lista)
+  const idsLista = informesFiltrados?.map(i => i.id) ?? []
+  let informesConObs = new Set<string>()
+  if (idsLista.length > 0) {
+    const { data: obsData } = await supabase
+      .from('informe_observaciones')
+      .select('informe_id')
+      .in('informe_id', idsLista)
+      .in('estado', ['pendiente', 'atendido'])
+      .neq('observacion', '')
+    obsData?.forEach(o => informesConObs.add(o.informe_id))
+  }
 
   const MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
   // Meses visibles según el rango seleccionado (1-based)
@@ -162,11 +203,22 @@ export default async function InformesPage({
 
       <form method="GET" className="flex flex-wrap gap-3 mb-5 bg-white border border-slate-200 rounded-xl p-4">
         <input type="hidden" name="vista" value={vista} />
-        <select name="supervision" defaultValue={supervision}
-          className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-72">
-          <option value="">Todas las empresas de supervision</option>
-          {empresasUnicas.map(e => <option key={e} value={e}>{e}</option>)}
-        </select>
+        {esUsuarioRestringido ? (
+          // Usuario restringido: muestra su empresa fija, no puede cambiarla
+          <>
+            <input type="hidden" name="supervision" value={supervision} />
+            <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 rounded-lg px-3 py-2 text-sm text-blue-800 min-w-72">
+              <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+              <span className="font-medium truncate">{supervision}</span>
+            </div>
+          </>
+        ) : (
+          <select name="supervision" defaultValue={supervision}
+            className="border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-72">
+            <option value="">Todas las empresas de supervision</option>
+            {empresasUnicas.map(e => <option key={e} value={e}>{e}</option>)}
+          </select>
+        )}
         <input name="anio" type="number" defaultValue={anio} placeholder="Año"
           className="border border-slate-300 rounded-lg px-3 py-2 text-sm w-24 focus:outline-none focus:ring-2 focus:ring-blue-500" />
         {vista === 'control' && (
@@ -232,12 +284,19 @@ export default async function InformesPage({
                   </td>
                   <td className="px-4 py-3 text-slate-600">{MESES[inf.periodo_mes - 1]} {inf.periodo_anio}</td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      inf.estado === 'aprobado' ? 'bg-green-100 text-green-700' :
-                      inf.estado === 'enviado'  ? 'bg-blue-100 text-blue-700' :
-                      'bg-amber-100 text-amber-700'}`}>
-                      {inf.estado}
-                    </span>
+                    <div className="flex flex-col gap-1">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium w-fit ${
+                        inf.estado === 'aprobado' ? 'bg-green-100 text-green-700' :
+                        inf.estado === 'enviado'  ? 'bg-blue-100 text-blue-700' :
+                        'bg-amber-100 text-amber-700'}`}>
+                        {inf.estado}
+                      </span>
+                      {informesConObs.has(inf.id) && inf.estado !== 'borrador' && (
+                        <span className="flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded-full w-fit">
+                          <AlertTriangle size={10} /> Observado
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <Link href={`/informes/${inf.id}`} className="text-blue-600 hover:text-blue-800 font-medium text-xs">

@@ -17,18 +17,34 @@ export default function NuevoInformePage() {
   const router        = useRouter()
   const supabase      = createClient()
 
-  const [supervisiones, setSupervisiones] = useState<string[]>([])
-  const [supervision,   setSupervision]   = useState('')
-  const [escuelas,      setEscuelas]      = useState<any[]>([])
-  const [escuelaId,     setEscuelaId]     = useState(searchParams.get('escuela_id') ?? '')
-  const [mes,           setMes]           = useState(searchParams.get('mes') ?? String(new Date().getMonth() + 1))
-  const [anio,          setAnio]          = useState(searchParams.get('anio') ?? String(new Date().getFullYear()))
-  const [perfiles,      setPerfiles]      = useState<any[]>([])
-  const [elaboradores,  setElaboradores]  = useState<Elaborador[]>([])
-  const [loading,       setLoading]       = useState(false)
-  const [error,         setError]         = useState('')
+  const [supervisiones,    setSupervisiones]    = useState<string[]>([])
+  const [supervision,      setSupervision]      = useState('')
+  const [escuelas,         setEscuelas]         = useState<any[]>([])
+  const [escuelaId,        setEscuelaId]        = useState(searchParams.get('escuela_id') ?? '')
+  const [mes,              setMes]              = useState(searchParams.get('mes') ?? String(new Date().getMonth() + 1))
+  const [anio,             setAnio]             = useState(searchParams.get('anio') ?? String(new Date().getFullYear()))
+  const [perfiles,         setPerfiles]         = useState<any[]>([])
+  const [elaboradores,     setElaboradores]     = useState<Elaborador[]>([])
+  const [loading,          setLoading]          = useState(false)
+  const [error,            setError]            = useState('')
+  const [miEmpresa,        setMiEmpresa]        = useState<string | null>(null) // empresa fija del usuario
 
   const inp = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+
+  // ── Cargar perfil del usuario logueado ───────────────────────────────
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('profiles').select('rol, empresa_supervision')
+        .eq('id', user.id).single()
+        .then(({ data: p }) => {
+          if (p?.rol === 'usuario' && p?.empresa_supervision) {
+            setMiEmpresa(p.empresa_supervision)
+            setSupervision(p.empresa_supervision)
+          }
+        })
+    })
+  }, [])
 
   // ── Cargar empresas de supervisión (solo Construcción + con contrato) ──
   useEffect(() => {
@@ -142,10 +158,18 @@ export default function NuevoInformePage() {
           {/* ── Empresa de Supervisión ────────────────────────── */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">Empresa de Supervisión</label>
-            <select value={supervision} onChange={e => setSupervision(e.target.value)} required className={inp}>
-              <option value="">Seleccionar empresa...</option>
-              {supervisiones.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+            {miEmpresa ? (
+              // Usuario restringido: empresa fija, no editable
+              <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 rounded-lg px-3 py-2 text-sm text-blue-800">
+                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                <span className="font-medium">{miEmpresa}</span>
+              </div>
+            ) : (
+              <select value={supervision} onChange={e => setSupervision(e.target.value)} required className={inp}>
+                <option value="">Seleccionar empresa...</option>
+                {supervisiones.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            )}
           </div>
 
           {/* ── Centro Educativo (solo si hay supervisión) ───── */}

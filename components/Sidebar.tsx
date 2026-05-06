@@ -7,17 +7,26 @@ import {
 } from 'lucide-react'
 import type { Profile } from '@/types'
 
-const navItems = [
-  { href: '/dashboard',  label: 'Dashboard',  icon: LayoutDashboard },
-  { href: '/informes',   label: 'Informes',    icon: FileText },
-  { href: '/escuelas',   label: 'Escuelas',    icon: School },
-  { href: '/usuarios',   label: 'Usuarios',    icon: Users },
+const ALL_NAV = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['programador', 'administrador'] },
+  { href: '/informes',  label: 'Informes',  icon: FileText,         roles: ['programador', 'administrador', 'usuario'] },
+  { href: '/escuelas',  label: 'Escuelas',  icon: School,           roles: ['programador', 'administrador'] },
+  { href: '/usuarios',  label: 'Usuarios',  icon: Users,            roles: ['programador'] },
 ]
+
+const ROL_BADGE: Record<string, { label: string; color: string }> = {
+  programador:   { label: 'Programador',   color: 'bg-violet-500' },
+  administrador: { label: 'Administrador', color: 'bg-red-500'    },
+  usuario:       { label: 'Usuario',       color: 'bg-blue-500'   },
+}
 
 export default function Sidebar({ profile }: { profile: Profile | null }) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+
+  const rol = profile?.rol ?? 'usuario'
+  const navItems = ALL_NAV.filter(n => n.roles.includes(rol))
 
   async function handleLogout() {
     await supabase.auth.signOut()
@@ -67,7 +76,13 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
         {profile && (
           <div className="mb-3 px-2">
             <p className="text-white text-sm font-medium truncate">{profile.nombre}</p>
-            <p className="text-blue-300 text-xs capitalize">{profile.rol}</p>
+            {profile.username && (
+              <p className="text-blue-400 text-xs font-mono">@{profile.username}</p>
+            )}
+            <div className="flex items-center gap-1.5 mt-1">
+              <span className={`w-2 h-2 rounded-full ${ROL_BADGE[profile.rol]?.color ?? 'bg-slate-400'}`} />
+              <p className="text-blue-300 text-xs">{ROL_BADGE[profile.rol]?.label ?? profile.rol}</p>
+            </div>
           </div>
         )}
         <button

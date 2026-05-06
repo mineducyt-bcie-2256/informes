@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import Sidebar from '@/components/Sidebar'
+import SinPermisoToast from '@/components/SinPermisoToast'
 import type { Profile } from '@/types'
 
 const DEV_PROFILE: Profile = {
   id: 'dev-user',
+  username: 'dev',
   nombre: 'Desarrollador',
   email: 'dev@local.com',
   rol: 'programador',
@@ -17,9 +19,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Bypass de autenticación para desarrollo local
   if (process.env.DEV_BYPASS_AUTH === 'true') {
     return (
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-full overflow-hidden">
         <Sidebar profile={DEV_PROFILE} />
         <main className="flex-1 overflow-y-auto bg-slate-50">
+          <SinPermisoToast />
           {children}
         </main>
       </div>
@@ -36,9 +39,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-full overflow-hidden">
       <Sidebar profile={profile} />
       <main className="flex-1 overflow-y-auto bg-slate-50">
+        <SinPermisoToast />
         {children}
       </main>
     </div>

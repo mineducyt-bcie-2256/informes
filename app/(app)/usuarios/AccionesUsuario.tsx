@@ -5,12 +5,14 @@ import { createClient } from '@/lib/supabase/client'
 
 interface Usuario {
   id:                  string
+  username:            string | null
   nombre:              string
   email:               string
   rol:                 string
   cargo:               string | null
   empresa:             string | null
   empresa_supervision: string | null
+  institucion:         string | null
   activo:              boolean
 }
 
@@ -26,14 +28,16 @@ const lbl = 'text-sm font-medium text-slate-700 mb-1 block'
 // ════════════════════════════════════════════════════════════════
 // Modal Editar
 // ════════════════════════════════════════════════════════════════
-function ModalEditar({ usuario, onClose }: { usuario: Usuario; onClose: () => void }) {
+function ModalEditar({ usuario, miRol, onClose }: { usuario: Usuario; miRol: string; onClose: () => void }) {
   const supabase = createClient()
 
   const [form, setForm] = useState({
+    username:            usuario.username            ?? '',
     nombre:              usuario.nombre,
     email:               usuario.email,
     empresa:             usuario.empresa             ?? '',
     empresa_supervision: usuario.empresa_supervision ?? '',
+    institucion:         usuario.institucion          ?? '',
     cargo:               usuario.cargo               ?? '',
     rol:                 usuario.rol,
     activo:              usuario.activo,
@@ -68,48 +72,35 @@ function ModalEditar({ usuario, onClose }: { usuario: Usuario; onClose: () => vo
     setLoading(true)
     setError('')
 
-    // 1. Actualizar profile en BD
-    const { error: profileErr } = await supabase.from('profiles').update({
-      nombre:              form.nombre,
-      cargo:               form.cargo               || null,
-      empresa:             form.empresa             || null,
-      empresa_supervision: form.empresa_supervision || null,
-      rol:                 form.rol,
-      activo:              form.activo,
-    }).eq('id', usuario.id)
+    // Todo via API con service role (bypasa RLS)
+    const res = await fetch('/api/update-user', {
+      method:  'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId:              usuario.id,
+        username:            form.username,
+        nombre:              form.nombre,
+        cargo:               form.cargo,
+        empresa:             form.empresa,
+        empresa_supervision: form.rol === 'administrador' ? '' : form.empresa_supervision,
+        institucion:         form.rol === 'administrador' ? form.institucion : '',
+        rol:                 form.rol,
+        activo:              form.activo,
+        email:               form.email.trim() !== usuario.email ? form.email.trim() : undefined,
+        password:            form.password.length > 0 ? form.password : undefined,
+      }),
+    })
 
-    if (profileErr) { setError(profileErr.message); setLoading(false); return }
-
-    // 2. Si cambió email o password → actualizar en auth via service role
-    const emailChanged    = form.email.trim() !== usuario.email
-    const passwordChanged = form.password.length > 0
-
-    if (emailChanged || passwordChanged) {
-      const res = await fetch('/api/update-user', {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({
-          userId:   usuario.id,
-          email:    emailChanged    ? form.email.trim()  : undefined,
-          password: passwordChanged ? form.password      : undefined,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok || data.error) { setError(data.error ?? 'Error al actualizar auth'); setLoading(false); return }
-
-      // Actualizar email también en profiles si cambió
-      if (emailChanged) {
-        await supabase.from('profiles').update({ email: form.email.trim() }).eq('id', usuario.id)
-      }
-    }
+    const data = await res.json()
+    if (!res.ok || data.error) { setError(data.error ?? 'Error al guardar'); setLoading(false); return }
 
     setSuccess(true)
     setLoading(false)
   }
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 bg-black/40 flex items-start justify-center z-50 p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col my-8">
 
         {/* Header — fijo */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
@@ -120,8 +111,8 @@ function ModalEditar({ usuario, onClose }: { usuario: Usuario; onClose: () => vo
           <button onClick={onClose}><X size={20} className="text-slate-400 hover:text-slate-600" /></button>
         </div>
 
-        {/* Contenido — scrollable */}
-        <div className="p-6 overflow-y-auto flex-1">
+        {/* Contenido */}
+        <div className="p-6">
           {success ? (
             <div className="text-center py-4">
               <CheckCircle className="mx-auto mb-3 text-green-500" size={40} />
@@ -135,6 +126,14 @@ function ModalEditar({ usuario, onClose }: { usuario: Usuario; onClose: () => vo
             </div>
           ) : (
             <form onSubmit={handleSave} className="space-y-4">
+
+              {/* Username */}
+              <div>
+                <label className={lbl}>Usuario <span className="text-slate-400 font-normal">(para iniciar sesión)</span></label>
+                <input value={form.username}
+                  onChange={e => set('username', e.target.value.toLowerCase().replace(/\s/g, ''))}
+                  placeholder="Ej: jperez" className={inp} />
+              </div>
 
               {/* Nombre */}
               <div>
@@ -150,23 +149,43 @@ function ModalEditar({ usuario, onClose }: { usuario: Usuario; onClose: () => vo
                   required className={inp} />
               </div>
 
-              {/* Empresa Contratista */}
-              <div>
-                <label className={lbl}>Empresa Contratista</label>
-                <select value={form.empresa} onChange={e => set('empresa', e.target.value)} className={inp}>
-                  <option value="">Sin empresa asignada</option>
-                  {empresas.map(emp => <option key={emp} value={emp}>{emp}</option>)}
-                </select>
-              </div>
-
-              {/* Empresa de Supervisión */}
-              <div>
-                <label className={lbl}>Empresa de Supervisión</label>
-                <select value={form.empresa_supervision} onChange={e => set('empresa_supervision', e.target.value)} className={inp}>
-                  <option value="">Sin empresa asignada</option>
-                  {supervisiones.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
-              </div>
+              {/* Campos según rol */}
+              {form.rol === 'administrador' ? (
+                /* Administrador: campo Institución (solo editable por programador) */
+                <div>
+                  <label className={lbl}>
+                    Institución
+                    {miRol !== 'programador' && (
+                      <span className="ml-2 text-xs font-normal text-slate-400">(solo el programador puede editar)</span>
+                    )}
+                  </label>
+                  <input
+                    value={form.institucion}
+                    onChange={e => set('institucion', e.target.value)}
+                    placeholder="Ej: BCIE, Ministerio de Educación..."
+                    disabled={miRol !== 'programador'}
+                    className={`${inp} ${miRol !== 'programador' ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : ''}`}
+                  />
+                </div>
+              ) : (
+                /* Usuario: campos de empresa */
+                <>
+                  <div>
+                    <label className={lbl}>Empresa Contratista</label>
+                    <select value={form.empresa} onChange={e => set('empresa', e.target.value)} className={inp}>
+                      <option value="">Sin empresa asignada</option>
+                      {empresas.map(emp => <option key={emp} value={emp}>{emp}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={lbl}>Empresa de Supervisión</label>
+                    <select value={form.empresa_supervision} onChange={e => set('empresa_supervision', e.target.value)} className={inp}>
+                      <option value="">Sin empresa asignada</option>
+                      {supervisiones.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </>
+              )}
 
               {/* Cargo */}
               <div>
@@ -311,7 +330,7 @@ function ModalEliminar({ usuario, onClose }: { usuario: Usuario; onClose: () => 
 // ════════════════════════════════════════════════════════════════
 // Botones por fila
 // ════════════════════════════════════════════════════════════════
-export default function AccionesUsuario({ usuario }: { usuario: Usuario }) {
+export default function AccionesUsuario({ usuario, miRol }: { usuario: Usuario; miRol: string }) {
   const [modal, setModal] = useState<'editar' | 'eliminar' | null>(null)
 
   return (
@@ -326,7 +345,7 @@ export default function AccionesUsuario({ usuario }: { usuario: Usuario }) {
           <Trash2 size={15} />
         </button>
       </div>
-      {modal === 'editar'   && <ModalEditar   usuario={usuario} onClose={() => setModal(null)} />}
+      {modal === 'editar'   && <ModalEditar   usuario={usuario} miRol={miRol} onClose={() => setModal(null)} />}
       {modal === 'eliminar' && <ModalEliminar usuario={usuario} onClose={() => setModal(null)} />}
     </>
   )
