@@ -97,6 +97,7 @@ export default async function DashboardPage({
 
   // Solo el rol 'usuario' queda restringido a su empresa
   const esRestringido = miRol === 'usuario' && !!miEmpresa
+  const esVisitante   = miRol === 'visitante'
   const empresaForzada = esRestringido ? miEmpresa : null
 
   // Empresa seleccionada: si está restringido usa la suya, sino la del param URL
@@ -117,11 +118,10 @@ export default async function DashboardPage({
     { data: rawInformesAnio },
     { data: rawEmpresas },
   ] = await Promise.all([
-    // Escuelas activas con grupo — admin bypasa RLS
-    admin
-      .from('escuelas')
-      .select('id, nombre, empresa_supervision, numero_contrato, etapa, grupos(nombre)')
-      .eq('activa', true),
+    // Escuelas activas con grupo — visitante solo ve demo
+    esVisitante
+      ? admin.from('escuelas').select('id, nombre, empresa_supervision, numero_contrato, etapa, grupos(nombre)').eq('activa', true).eq('es_demo', true)
+      : admin.from('escuelas').select('id, nombre, empresa_supervision, numero_contrato, etapa, grupos(nombre)').eq('activa', true),
 
     // Informes del mes seleccionado
     admin

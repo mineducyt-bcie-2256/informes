@@ -15,12 +15,23 @@ export default async function EscuelasPage({
   const grupo = params.grupo ?? ''
   const etapa = params.etapa ?? ''
 
+  // Detectar rol visitante → solo escuelas demo
+  const { data: { user } } = await supabase.auth.getUser()
+  let rolActual = 'usuario'
+  if (user) {
+    const { data: prof } = await supabase.from('profiles').select('rol').eq('id', user.id).single()
+    rolActual = prof?.rol ?? 'usuario'
+  }
+  const esVisitante = rolActual === 'visitante'
+
   let query = supabase
     .from('escuelas')
     .select('*, grupos(numero)')
     .eq('activa', true)
     .order('grupo_id', { ascending: true })
     .order('nombre', { ascending: true })
+
+  if (esVisitante) query = query.eq('es_demo', true)
 
   if (q) query = query.ilike('nombre', `%${q}%`)
   if (grupo) query = query.eq('grupo_id', grupo)
@@ -50,7 +61,7 @@ export default async function EscuelasPage({
             <h1 className="text-2xl font-bold text-slate-800">Centros Educativos Programa Mi Nueva Escuela BCIE</h1>
             <p className="text-slate-500 text-sm mt-1">{escuelas?.length ?? 0} centros educativos</p>
           </div>
-          <ImportarEscuelas />
+          {!esVisitante && <ImportarEscuelas />}
         </div>
 
         {/* Filtros */}

@@ -10,15 +10,15 @@ const ROUTE_ROLES: { pattern: RegExp; roles: string[] }[] = [
   { pattern: /^\/usuarios/, roles: ['programador'] },
 
   // Programador + administrador (usuario NO tiene dashboard)
-  { pattern: /^\/dashboard/, roles: ['programador', 'administrador'] },
+  { pattern: /^\/dashboard/, roles: ['programador', 'administrador', 'visitante'] },
 
-  // Programador + administrador
-  { pattern: /^\/escuelas/, roles: ['programador', 'administrador'] },
+  // Programador + administrador + visitante
+  { pattern: /^\/escuelas/, roles: ['programador', 'administrador', 'visitante'] },
 
-  // Formularios de informe: programador + administrador + usuario
+  // Formularios de informe: programador + administrador + usuario + visitante
   {
     pattern: /^\/informes\/[^/]+\/(portada|c1317|hsso|garo|pgr|mcear|pppi|maqr|prt|cct|cumplimiento_ambiental)$/,
-    roles: ['programador', 'administrador', 'usuario'],
+    roles: ['programador', 'administrador', 'usuario', 'visitante'],
   },
 ]
 
@@ -87,7 +87,7 @@ export async function proxy(request: NextRequest) {
   for (const { pattern, roles } of ROUTE_ROLES) {
     if (pattern.test(pathname)) {
       if (!roles.includes(rol)) {
-        const fallback = new URL(rol === 'usuario' ? '/informes' : '/dashboard', request.url)
+        const fallback = new URL(rol === 'usuario' || rol === 'visitante' ? '/informes' : '/dashboard', request.url)
         fallback.searchParams.set('error', 'sin_permiso')
         return NextResponse.redirect(fallback)
       }

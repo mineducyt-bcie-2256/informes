@@ -33,7 +33,7 @@ export default function FormWrapper({ title, short, informeId, children, onSave,
     })
   }, [])
 
-  const soloLectura = rol === 'administrador'
+  const soloLectura = rol === 'administrador' || rol === 'visitante'
 
   // Modal "sin cambios"
   const [showModal, setShowModal] = useState(false)

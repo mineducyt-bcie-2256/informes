@@ -27,6 +27,7 @@ export default async function InformesPage({
   // Solo rol 'usuario' queda restringido — administrador ve todo libremente
   const esUsuarioRestringido = perfil?.rol === 'usuario' && !!perfil?.empresa_supervision
   const esProgramador = perfil?.rol === 'programador'
+  const esVisitante = perfil?.rol === 'visitante'
 
   const q = params.q ?? ''
   const mes = params.mes ?? ''
@@ -42,6 +43,96 @@ export default async function InformesPage({
 
   const mesActual  = new Date().getMonth() + 1
   const anioActual = new Date().getFullYear()
+
+  // Visitante: solo escuelas demo
+  if (esVisitante) {
+    let escuelasDemo = await supabase.from('escuelas')
+      .select('id, nombre, codigo, grupo_id, empresa_supervision, empresa_obras, numero_contrato, grupos(numero)')
+      .eq('es_demo', true).eq('activa', true).order('nombre')
+    const escuelasDemoList = escuelasDemo.data ?? []
+    const escuelaDemoIds = escuelasDemoList.map((e: any) => e.id)
+
+    const { data: informesDemo } = await supabase
+      .from('informes').select('*, escuelas(nombre, codigo, grupo_id, empresa_supervision, grupos(numero))')
+      .in('escuela_id', escuelaDemoIds.length > 0 ? escuelaDemoIds : ['no-id'])
+      .order('periodo_anio', { ascending: false }).order('periodo_mes', { ascending: false })
+
+    const idsDemo = informesDemo?.map(i => i.id) ?? []
+    const obsEstadosMapDemo: Record<string, Set<string>> = {}
+    if (idsDemo.length > 0) {
+      const { data: obsData } = await supabase.from('informe_observaciones')
+        .select('informe_id, estado').in('informe_id', idsDemo).neq('observacion', '')
+      obsData?.forEach(o => {
+        if (!obsEstadosMapDemo[o.informe_id]) obsEstadosMapDemo[o.informe_id] = new Set()
+        obsEstadosMapDemo[o.informe_id].add(o.estado)
+      })
+    }
+
+    function getEstadoVisualDemo(inf: any): 'borrador'|'enviado'|'observado'|'resuelto'|'aprobado' {
+      if (inf.estado === 'borrador') return 'borrador'
+      if (inf.estado === 'aprobado') return 'aprobado'
+      const estados = obsEstadosMapDemo[inf.id]
+      if (!estados || estados.size === 0) return 'enviado'
+      if (estados.has('pendiente')) return 'observado'
+      return 'resuelto'
+    }
+
+    const ESTADO_VISUAL_STYLES: Record<string, { label: string; cls: string }> = {
+      borrador:  { label: 'Borrador',  cls: 'bg-amber-100 text-amber-700 border border-amber-200' },
+      enviado:   { label: 'Enviado',   cls: 'bg-blue-100 text-blue-700 border border-blue-200' },
+      observado: { label: 'Observado', cls: 'bg-orange-100 text-orange-700 border border-orange-200' },
+      resuelto:  { label: 'Resuelto',  cls: 'bg-indigo-100 text-indigo-700 border border-indigo-200' },
+      aprobado:  { label: 'Aprobado',  cls: 'bg-green-100 text-green-700 border border-green-200' },
+    }
+
+    return (
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-slate-800">Informes — Vista de demostración</h1>
+          <p className="text-slate-500 text-sm mt-1">Acceso de solo lectura · Escuela demo</p>
+        </div>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-6 text-sm text-blue-800">
+          Estás en modo <strong>visitante</strong>. Solo puedes visualizar los informes de la escuela de demostración.
+        </div>
+        {(informesDemo ?? []).length === 0 ? (
+          <p className="text-slate-400 text-sm text-center py-12">No hay informes demo disponibles aún.</p>
+        ) : (
+          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Centro Educativo</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Período</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-slate-500 uppercase">Estado</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {(informesDemo ?? []).map((inf: any) => {
+                  const esc = inf.escuelas as any
+                  const ev = getEstadoVisualDemo(inf)
+                  const es = ESTADO_VISUAL_STYLES[ev]
+                  return (
+                    <tr key={inf.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium text-slate-800">{esc?.nombre ?? '—'}</td>
+                      <td className="px-4 py-3 text-slate-600">{MESES[inf.periodo_mes - 1]} {inf.periodo_anio}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${es.cls}`}>{es.label}</span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link href={`/informes/${inf.id}`}
+                          className="text-blue-700 hover:underline text-xs font-medium">Ver informe →</Link>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    )
+  }
 
   // Base de escuelas habilitadas (si usuario restringido → solo su empresa)
   const baseEscuelas = supabase.from('escuelas').select('*', { count: 'exact', head: true })
