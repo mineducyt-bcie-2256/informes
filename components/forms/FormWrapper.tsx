@@ -33,7 +33,9 @@ export default function FormWrapper({ title, short, informeId, children, onSave,
     })
   }, [])
 
-  const soloLectura = rol === 'administrador' || rol === 'visitante'
+  // Lista blanca: solo programador y usuario pueden editar
+  // null (cargando) → bloqueado por seguridad hasta confirmar el rol
+  const soloLectura = rol !== 'programador' && rol !== 'usuario'
 
   // Modal "sin cambios"
   const [showModal, setShowModal] = useState(false)
