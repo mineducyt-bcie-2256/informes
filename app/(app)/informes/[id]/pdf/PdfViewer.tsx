@@ -1925,7 +1925,13 @@ function SeccionPPPI({ data }: { data: any }) {
   const inasistencias: any[] = ind.inasistencias      ?? []
   const deserciones: any[]   = ind.deserciones        ?? []
   const diasEsc: any[]       = ind.dias_escolares     ?? []
-  const emplDir: any[]       = ind.empleos_directos   ?? []
+  // Si empleos_directos está vacío pero hay datos HSSO, usar HSSO como fila del periodo actual
+  const periodoMesPdf  = data.informe?.periodo_mes  ?? new Date().getMonth() + 1
+  const periodoAnioPdf = data.informe?.periodo_anio ?? new Date().getFullYear()
+  const emplDirRaw: any[] = ind.empleos_directos ?? []
+  const emplDir: any[] = emplDirRaw.length === 0 && (hssoH > 0 || hssoM > 0)
+    ? [{ mes: periodoMesPdf, anio: periodoAnioPdf, hombres: hssoH, mujeres: hssoM }]
+    : emplDirRaw
   const emplInd: any[]       = ind.empleos_indirectos ?? []
 
   // Matrícula total (año más reciente)
