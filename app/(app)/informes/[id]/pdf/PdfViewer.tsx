@@ -1891,8 +1891,12 @@ function AnalysisBox({ children }: { children: React.ReactNode }) {
 // PPPI
 // ═══════════════════════════════════════════════════════════════════
 function SeccionPPPI({ data }: { data: any }) {
-  const { esc, periodo, pppi } = data
+  const { esc, periodo, pppi, hsso } = data
   if (!pppi) return null
+
+  // Referencia HSSO para empleos directos
+  const hssoH = parseInt(hsso?.personal_hombres ?? 0) || 0
+  const hssoM = parseInt(hsso?.personal_mujeres ?? 0) || 0
 
   const partes: any  = pppi.partes_interesadas ?? {}
   const caps: any[]  = pppi.capacitaciones_list ?? []
@@ -2581,6 +2585,19 @@ function SeccionPPPI({ data }: { data: any }) {
           {emplDir.length > 0 && (
             <>
               <SubBanner title="Empleos directos fijos derivados del proyecto" />
+              {(hssoH > 0 || hssoM > 0) && (
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6,
+                  backgroundColor: '#eff6ff', borderRadius: 8, padding: 8,
+                  borderWidth: 1, borderColor: '#bfdbfe', marginBottom: 8 }}>
+                  <Text style={{ fontSize: 7.5, color: '#1d4ed8', flex: 1 }}>
+                    {'Referencia HSSO del periodo: '}
+                    <Text style={{ fontFamily: 'Helvetica-Bold' }}>{hssoH} hombres</Text>
+                    {' y '}
+                    <Text style={{ fontFamily: 'Helvetica-Bold' }}>{hssoM} mujeres</Text>
+                    {` (total ${hssoH + hssoM}). Los valores del mes actual se precargan con estos datos.`}
+                  </Text>
+                </View>
+              )}
               <View style={s.kpiRow}>
                 <View style={s.kpiBox}>
                   <Text style={s.kpiNum}>{totDirH + totDirM}</Text>
