@@ -100,13 +100,23 @@ export default async function DashboardPage({
   const esVisitante   = miRol === 'visitante'
   const empresaForzada = esRestringido ? miEmpresa : null
 
+  // Visitante: obtener ID de la escuela demo para forzar vista escuela
+  let escuelaDemoId: string | null = null
+  if (esVisitante) {
+    const { data: demoEsc } = await admin.from('escuelas').select('id').eq('es_demo', true).limit(1).single()
+    escuelaDemoId = demoEsc?.id ?? null
+  }
+
   // Empresa seleccionada: si está restringido usa la suya, sino la del param URL
   const empresaEfectiva = empresaForzada ?? empresaSel
 
+  // Visitante fuerza nivel escuela con la demo
+  const escuelaIdEfectivo = esVisitante ? (escuelaDemoId ?? escuelaId) : escuelaId
+
   // ── Nivel activo ───────────────────────────────────────────────
   const nivel: 'total' | 'empresa' | 'escuela' =
-    escuelaId        ? 'escuela'  :
-    empresaEfectiva  ? 'empresa'  : 'total'
+    escuelaIdEfectivo ? 'escuela'  :
+    empresaEfectiva   ? 'empresa'  : 'total'
 
   // Alias para el resto del código
   const empresaEfectiva2 = empresaEfectiva
@@ -135,7 +145,7 @@ export default async function DashboardPage({
       ? admin
           .from('informes')
           .select('id, escuela_id, estado, periodo_mes, periodo_anio')
-          .eq('escuela_id', escuelaId!)
+          .eq('escuela_id', escuelaIdEfectivo!)
           .eq('periodo_anio', anio)
           .order('periodo_mes', { ascending: false })
       : admin
@@ -171,8 +181,8 @@ export default async function DashboardPage({
     : escuelasBase
 
   // Escuela seleccionada (si aplica)
-  const escuelaSel = escuelaId
-    ? todasEscuelas.find(e => e.id === escuelaId)
+  const escuelaSel = escuelaIdEfectivo
+    ? todasEscuelas.find(e => e.id === escuelaIdEfectivo)
     : null
 
   // Escuelas a considerar para KPIs y tabla
