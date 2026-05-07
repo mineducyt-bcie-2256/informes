@@ -11,9 +11,10 @@ const CARGOS = [
 ]
 
 const ROLES = [
-  { value: 'programador',   label: 'Programador',   desc: 'Acceso total',               color: 'bg-violet-100 text-violet-700 border-violet-200' },
-  { value: 'administrador', label: 'Administrador', desc: 'Dashboard e informes (solo lectura)', color: 'bg-red-100 text-red-700 border-red-200' },
-  { value: 'usuario',       label: 'Usuario',       desc: 'Llenar y editar informes',   color: 'bg-blue-100 text-blue-700 border-blue-200'   },
+  { value: 'programador',   label: 'Programador',   desc: 'Acceso total',                       color: 'bg-violet-100 text-violet-700 border-violet-200' },
+  { value: 'administrador', label: 'Administrador', desc: 'Dashboard e informes (solo lectura)', color: 'bg-red-100 text-red-700 border-red-200'          },
+  { value: 'usuario',       label: 'Usuario',       desc: 'Llenar y editar informes',            color: 'bg-blue-100 text-blue-700 border-blue-200'       },
+  { value: 'visitante',     label: 'Visitante',     desc: 'Solo lectura — escuela demo',         color: 'bg-green-100 text-green-700 border-green-200'    },
 ]
 
 const inp = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
