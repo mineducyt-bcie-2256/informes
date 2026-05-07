@@ -8,37 +8,75 @@ const adminClient = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { username, nombre, email, password, cargo, rol, activo, empresa_supervision, institucion } = await req.json()
+    const {
+      username, nombre, email, password, cargo, rol, activo,
+      empresa_supervision, institucion,
+      fromRegistro,   // true cuando viene del auto-registro público
+    } = await req.json()
 
     if (!email || !password) {
       return NextResponse.json({ error: 'Email y contraseña son requeridos' }, { status: 400 })
     }
 
-    // 1. Crear usuario en Auth (sin afectar la sesión actual)
-    const { data, error: authErr } = await adminClient.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { nombre },
-    })
+    let userId: string
 
-    if (authErr) {
-      const msg = authErr.message.includes('already') || authErr.message.includes('registered')
-        ? 'Ese correo ya está registrado.'
-        : authErr.message
-      return NextResponse.json({ error: msg }, { status: 400 })
+    if (fromRegistro) {
+      // ── Auto-registro: usar cliente anónimo para que Supabase envíe el email de verificación
+      const anonClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+
+      const origin = req.headers.get('origin') ?? process.env.NEXT_PUBLIC_SUPABASE_URL!.replace('.supabase.co', '.vercel.app')
+
+      const { data, error: signUpErr } = await anonClient.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${origin}/login`,
+          data: { nombre },
+        },
+      })
+
+      if (signUpErr) {
+        const msg = signUpErr.message.includes('already') || signUpErr.message.includes('registered')
+          ? 'Ese correo ya está registrado.'
+          : signUpErr.message
+        return NextResponse.json({ error: msg }, { status: 400 })
+      }
+
+      userId = data.user?.id ?? ''
+      if (!userId) return NextResponse.json({ error: 'No se pudo obtener el ID del usuario' }, { status: 500 })
+
+    } else {
+      // ── Creación por programador/admin: confirmación directa sin email
+      const { data, error: authErr } = await adminClient.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: { nombre },
+      })
+
+      if (authErr) {
+        const msg = authErr.message.includes('already') || authErr.message.includes('registered')
+          ? 'Ese correo ya está registrado.'
+          : authErr.message
+        return NextResponse.json({ error: msg }, { status: 400 })
+      }
+
+      userId = data.user?.id ?? ''
+      if (!userId) return NextResponse.json({ error: 'No se pudo obtener el ID del usuario' }, { status: 500 })
     }
 
-    const userId = data.user?.id
-    if (!userId) return NextResponse.json({ error: 'No se pudo obtener el ID del usuario' }, { status: 500 })
-
-    // 2. Actualizar perfil con todos los datos
+    // Actualizar perfil con todos los datos
     const { error: profErr } = await adminClient.from('profiles').update({
       username:            username?.trim().toLowerCase() || null,
-      nombre:              nombre  || null,
-      cargo:               cargo   || null,
-      rol:                 rol     || 'usuario',
-      activo:              activo  ?? true,
+      nombre:              nombre   || null,
+      cargo:               cargo    || null,
+      rol:                 rol      || 'usuario',
+      // Auto-registro: activo=true, el email de verificación es el control de acceso
+      // Creación manual: usa el valor que pase el programador
+      activo:              fromRegistro ? true : (activo ?? true),
       email,
       empresa_supervision: empresa_supervision || null,
       institucion:         institucion         || null,

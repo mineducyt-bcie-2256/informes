@@ -133,7 +133,7 @@ function RegistroForm() {
         empresa_supervision: empresaSupervision,
         institucion,
         rol:                 'usuario',
-        activo:              false,
+        fromRegistro:        true,   // activa envío de email de verificación
       }),
     })
 
@@ -154,10 +154,10 @@ function RegistroForm() {
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
           <CheckCircle size={30} className="text-green-600" />
         </div>
-        <h2 className="text-lg font-bold text-slate-800 mb-2">¡Solicitud enviada!</h2>
+        <h2 className="text-lg font-bold text-slate-800 mb-2">¡Cuenta creada!</h2>
         <p className="text-sm text-slate-500 leading-relaxed max-w-xs mx-auto">
-          Tu cuenta está <strong>pendiente de activación</strong>.
-          Un administrador revisará tu solicitud y te avisará cuando puedas ingresar.
+          Te enviamos un correo a <strong>{form.correo}</strong>.
+          Revisa tu bandeja de entrada y haz clic en el enlace para <strong>confirmar tu cuenta</strong> e ingresar al sistema.
         </p>
         <Link href="/login"
           className="mt-6 inline-flex items-center gap-2 bg-blue-900 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-800 transition">
@@ -383,7 +383,7 @@ export default function RegistroPage() {
         </div>
 
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
-          Tu cuenta será <strong>activada por el administrador</strong> antes de que puedas ingresar.
+          Recibirás un <strong>correo de verificación</strong> para activar tu cuenta e ingresar al sistema.
         </div>
 
         <Suspense>
