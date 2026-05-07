@@ -8,9 +8,9 @@ import {
 import type { Profile } from '@/types'
 
 const ALL_NAV = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['programador', 'administrador'] },
-  { href: '/informes',  label: 'Informes',  icon: FileText,         roles: ['programador', 'administrador', 'usuario'] },
-  { href: '/escuelas',  label: 'Escuelas',  icon: School,           roles: ['programador', 'administrador'] },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['programador', 'administrador', 'visitante'] },
+  { href: '/informes',  label: 'Informes',  icon: FileText,         roles: ['programador', 'administrador', 'usuario', 'visitante'] },
+  { href: '/escuelas',  label: 'Escuelas',  icon: School,           roles: ['programador', 'administrador', 'visitante'] },
   { href: '/usuarios',  label: 'Usuarios',  icon: Users,            roles: ['programador'] },
 ]
 
@@ -18,6 +18,7 @@ const ROL_BADGE: Record<string, { label: string; color: string }> = {
   programador:   { label: 'Programador',   color: 'bg-violet-500' },
   administrador: { label: 'Administrador', color: 'bg-red-500'    },
   usuario:       { label: 'Usuario',       color: 'bg-blue-500'   },
+  visitante:     { label: 'Visitante',     color: 'bg-green-500'  },
 }
 
 export default function Sidebar({ profile }: { profile: Profile | null }) {
