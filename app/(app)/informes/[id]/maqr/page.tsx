@@ -67,7 +67,7 @@ const QUEJA_INIT: Queja = {
 
 // ── Catálogos ────────────────────────────────────────────────────
 const MEDIOS_QUEJA  = ['Buzón', 'Correo electrónico', 'Teléfono', 'WhatsApp', 'Otro']
-const TIPOS_QUEJA   = ['Laboral (personal o condiciones)', 'Ambiental', 'Social', 'Seguridad', 'Otro']
+const TIPOS_QUEJA   = ['Ambiental', 'Social y comunitaria', 'Laboral (personal o condiciones)', 'Infraestructura', 'Otro']
 const ORIGENES      = ['Comunidad directa', 'Trabajador', 'Institución', 'Otro']
 const NIVELES       = ['Nivel 1 (Bajo)', 'Nivel 2 (Medio)', 'Nivel 3 (Alto)']
 
