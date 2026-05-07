@@ -375,11 +375,13 @@ export default function RegistroPage() {
       <div className="bg-white rounded-2xl shadow-lg p-10 w-full max-w-md mx-auto">
 
         <div className="text-center mb-7">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-900 mb-4">
-            <span className="text-white font-bold text-xl">B</span>
+          <div className="flex items-center justify-center gap-6 mb-6">
+            <img src="/logo-mineducyt.png" alt="MINEDUCYT" className="h-14 object-contain" />
+            <div className="w-px h-12 bg-slate-200" />
+            <img src="/logo-bcie.png" alt="BCIE" className="h-10 object-contain" />
           </div>
           <h1 className="text-2xl font-bold text-slate-800">Crear cuenta</h1>
-          <p className="text-slate-500 text-sm mt-1">BCIE · SCAS</p>
+          <p className="text-slate-500 text-sm mt-1">SISCAS</p>
         </div>
 
         <div className="mb-6 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
