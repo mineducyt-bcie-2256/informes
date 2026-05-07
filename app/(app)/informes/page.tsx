@@ -55,6 +55,7 @@ export default async function InformesPage({
     const { data: informesDemo } = await supabase
       .from('informes').select('*, escuelas(nombre, codigo, grupo_id, empresa_supervision, grupos(numero))')
       .in('escuela_id', escuelaDemoIds.length > 0 ? escuelaDemoIds : ['no-id'])
+      .eq('periodo_mes', 3).eq('periodo_anio', 2026)
       .order('periodo_anio', { ascending: false }).order('periodo_mes', { ascending: false })
 
     const idsDemo = informesDemo?.map(i => i.id) ?? []

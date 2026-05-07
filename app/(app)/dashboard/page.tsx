@@ -80,9 +80,6 @@ export default async function DashboardPage({
 
   const hoy        = new Date()
   const mesActual  = hoy.getMonth() + 1
-  const anio       = hoy.getFullYear()
-  // Mes seleccionado por el usuario (default = mes actual)
-  const mesSel     = params.mes ? parseInt(params.mes) : mesActual
 
   // ── Perfil del usuario logueado ────────────────────────────────
   const { data: { user } } = await supabase.auth.getUser()
@@ -100,12 +97,14 @@ export default async function DashboardPage({
   const esVisitante   = miRol === 'visitante'
   const empresaForzada = esRestringido ? miEmpresa : null
 
-  // Visitante: obtener ID de la escuela demo para forzar vista escuela
+  // Visitante: obtener ID de la escuela demo y forzar mes marzo 2026
   let escuelaDemoId: string | null = null
   if (esVisitante) {
     const { data: demoEsc } = await admin.from('escuelas').select('id').eq('es_demo', true).limit(1).single()
     escuelaDemoId = demoEsc?.id ?? null
   }
+  const mesSel = esVisitante ? 3 : (params.mes ? parseInt(params.mes) : mesActual)
+  const anio   = esVisitante ? 2026 : hoy.getFullYear()
 
   // Empresa seleccionada: si está restringido usa la suya, sino la del param URL
   const empresaEfectiva = empresaForzada ?? empresaSel
