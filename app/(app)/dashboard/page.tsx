@@ -552,110 +552,96 @@ export default async function DashboardPage({
         </div>
       )}
 
-      {/* ── Bloque 3: Datos HSSO ── */}
+      {/* ── Bloque 3: HSSO consolidado ── */}
       {hssoData.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
-            HSSO consolidado — {periodoLabel}
-          </h2>
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
 
-          {/* Personal */}
-          <div>
-            <p className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1">
-              <Users size={13} /> Personal en obra
-            </p>
-            <div className="grid grid-cols-3 gap-3">
-              <StatCard icon={UserCheck} color="blue"   value={totalHombres} label="Hombres" />
-              <StatCard icon={UserCheck} color="violet" value={totalMujeres} label="Mujeres" />
-              <StatCard icon={Users}     color="slate"  value={totalPersonal} label="Total personal" />
-            </div>
+          {/* Header */}
+          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+            <ShieldAlert size={14} className="text-slate-500" />
+            <h2 className="text-xs font-semibold text-slate-600 uppercase tracking-widest">
+              HSSO consolidado — {periodoLabel}
+            </h2>
           </div>
 
-          {/* Accidentes e incidentes */}
-          {totalEventos > 0 && (
-            <div className="space-y-4">
-              <p className="text-xs font-medium text-slate-500 flex items-center gap-1">
-                <ShieldAlert size={13} /> Accidentes e incidentes
-              </p>
+          <div className="p-5 space-y-5">
 
-              {/* Resumen general */}
-              <div className="grid grid-cols-3 gap-3">
-                <StatCard icon={Activity}     color="slate"  value={totalEventos}   label="Total eventos" />
-                <StatCard icon={AlertTriangle} color="orange" value={totalAccidentes} label="Accidentes" />
-                <StatCard icon={Activity}      color="amber"  value={totalIncidentes} label="Incidentes" />
-              </div>
+            {/* Personal + Accidentes en una sola fila */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              <MiniStat label="Hombres"       value={totalHombres}   color="blue"   />
+              <MiniStat label="Mujeres"        value={totalMujeres}   color="violet" />
+              <MiniStat label="Total personal" value={totalPersonal}  color="slate"  />
+              <MiniStat label="Total eventos"  value={totalEventos}   color="slate"  />
+              <MiniStat label="Accidentes"     value={totalAccidentes} color="orange" />
+              <MiniStat label="Incidentes"     value={totalIncidentes} color="amber"  />
+            </div>
 
-              {/* Gravedad */}
-              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                  <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5">
-                    <ShieldAlert size={13} /> Gravedad del accidente
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4">
-                  {(['Sin daño', 'Leve', 'Grave (incapacitante)', 'Mortal'] as const).map(grav => (
-                    <StatCard
-                      key={grav}
-                      icon={ShieldAlert}
-                      color={
-                        grav === 'Mortal'                ? 'red'    :
-                        grav === 'Grave (incapacitante)' ? 'orange' :
-                        grav === 'Leve'                  ? 'amber'  : 'green'
-                      }
-                      value={gravedades[grav] ?? 0}
-                      label={grav}
-                    />
-                  ))}
-                </div>
-              </div>
+            {totalEventos > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-              {/* Causa del accidente */}
-              {topCausas.length > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                    <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5">
-                      <AlertTriangle size={13} /> Causa del accidente
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
-                    {topCausas.map(([causa, count]) => (
-                      <div key={causa} className="bg-orange-50 border border-orange-100 rounded-xl p-3 flex flex-col gap-1">
-                        <p className="text-xl font-bold text-orange-700">{count}</p>
-                        <p className="text-xs text-slate-600 leading-tight">{causa}</p>
+                {/* Gravedad */}
+                <div>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Gravedad</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {(['Sin daño', 'Leve', 'Grave (incapacitante)', 'Mortal'] as const).map(grav => (
+                      <div key={grav} className={`rounded-lg px-3 py-2 flex items-center justify-between ${
+                        grav === 'Mortal'                ? 'bg-red-50 border border-red-100'    :
+                        grav === 'Grave (incapacitante)' ? 'bg-orange-50 border border-orange-100' :
+                        grav === 'Leve'                  ? 'bg-amber-50 border border-amber-100'  :
+                                                           'bg-green-50 border border-green-100'
+                      }`}>
+                        <span className="text-xs text-slate-600">{grav}</span>
+                        <span className={`text-sm font-bold ${
+                          grav === 'Mortal'                ? 'text-red-700'    :
+                          grav === 'Grave (incapacitante)' ? 'text-orange-700' :
+                          grav === 'Leve'                  ? 'text-amber-700'  : 'text-green-700'
+                        }`}>{gravedades[grav] ?? 0}</span>
                       </div>
                     ))}
                   </div>
                 </div>
-              )}
 
-              {/* Tipo de lesión */}
-              {topLesiones.length > 0 && (
-                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                    <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5">
-                      <UserX size={13} /> Tipo de lesión
-                    </p>
+                {/* Causa */}
+                {topCausas.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Causa</p>
+                    <div className="space-y-1">
+                      {topCausas.map(([causa, count]) => (
+                        <div key={causa} className="flex items-center justify-between px-3 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
+                          <span className="text-xs text-slate-600 truncate">{causa}</span>
+                          <span className="text-xs font-bold text-orange-700 ml-2 shrink-0">{count}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
-                    {topLesiones.map(([lesion, count]) => (
-                      <div key={lesion} className="bg-red-50 border border-red-100 rounded-xl p-3 flex flex-col gap-1">
-                        <p className="text-xl font-bold text-red-700">{count}</p>
-                        <p className="text-xs text-slate-600 leading-tight">{lesion}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
 
-          {/* Sin eventos */}
-          {totalEventos === 0 && (
-            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 flex items-center gap-2">
-              <CheckCircle size={16} />
-              Sin accidentes ni incidentes reportados en el periodo
-            </div>
-          )}
+                {/* Tipo de lesión */}
+                {topLesiones.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Tipo de lesión</p>
+                    <div className="space-y-1">
+                      {topLesiones.map(([lesion, count]) => (
+                        <div key={lesion} className="flex items-center justify-between px-3 py-1.5 bg-red-50 border border-red-100 rounded-lg">
+                          <span className="text-xs text-slate-600 truncate">{lesion}</span>
+                          <span className="text-xs font-bold text-red-700 ml-2 shrink-0">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            )}
+
+            {totalEventos === 0 && (
+              <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                <CheckCircle size={13} className="shrink-0" />
+                Sin accidentes ni incidentes reportados en el periodo
+              </div>
+            )}
+
+          </div>
         </div>
       )}
 
@@ -691,6 +677,16 @@ function StatCard({ icon: Icon, color, value, label }: {
         <p className="text-xl font-bold text-slate-800 leading-none">{value.toLocaleString()}</p>
         <p className="text-xs text-slate-500 mt-0.5 leading-tight">{label}</p>
       </div>
+    </div>
+  )
+}
+
+function MiniStat({ label, value, color }: { label: string; value: number; color: string }) {
+  const c = COLOR_MAP[color] ?? COLOR_MAP.slate
+  return (
+    <div className={`rounded-lg border ${c.border} ${c.bg} px-3 py-2 text-center`}>
+      <p className={`text-lg font-bold ${c.icon} leading-none`}>{value.toLocaleString()}</p>
+      <p className="text-xs text-slate-500 mt-0.5 leading-tight">{label}</p>
     </div>
   )
 }
