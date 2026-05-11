@@ -48,7 +48,7 @@ export default async function InformePage({ params }: { params: Promise<{ id: st
 
   return (
     
-      <div className="p-8 max-w-4xl">
+      <div className="p-8 w-full">
         {/* Header */}
         <div className="flex items-start justify-between mb-6">
           <div>
