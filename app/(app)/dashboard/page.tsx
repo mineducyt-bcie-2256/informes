@@ -31,6 +31,7 @@ type AccidenteItem = {
   tipo: 'Incidente' | 'Accidente'
   gravedad: 'Sin daño' | 'Leve' | 'Grave (incapacitante)' | 'Mortal'
   causa?: string
+  tipo_lesion?: string
 }
 
 type InformeHsso = {
@@ -266,7 +267,14 @@ export default async function DashboardPage({
   }
   const topCausas = Object.entries(causas)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
+    .slice(0, 8)
+
+  // Por tipo de lesión
+  const lesiones: Record<string, number> = {}
+  for (const ev of todosEventos) {
+    if (ev.tipo_lesion) lesiones[ev.tipo_lesion] = (lesiones[ev.tipo_lesion] ?? 0) + 1
+  }
+  const topLesiones = Object.entries(lesiones).sort(([, a], [, b]) => b - a)
 
   // ── Periodo label ──────────────────────────────────────────────
   let periodoLabel: string
@@ -563,49 +571,79 @@ export default async function DashboardPage({
             </div>
           </div>
 
-          {/* Eventos */}
+          {/* Accidentes e incidentes */}
           {totalEventos > 0 && (
-            <div>
-              <p className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1">
+            <div className="space-y-4">
+              <p className="text-xs font-medium text-slate-500 flex items-center gap-1">
                 <ShieldAlert size={13} /> Accidentes e incidentes
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                <StatCard icon={Activity}      color="slate"  value={totalEventos}    label="Total eventos" />
-                <StatCard icon={AlertTriangle}  color="orange" value={totalAccidentes}  label="Accidentes" />
-                <StatCard icon={Activity}       color="amber"  value={totalIncidentes}  label="Incidentes" />
-                {Object.entries(gravedades).map(([grav, count]) => (
-                  <StatCard
-                    key={grav}
-                    icon={ShieldAlert}
-                    color={
-                      grav === 'Mortal'                ? 'red'    :
-                      grav === 'Grave (incapacitante)' ? 'orange' :
-                      grav === 'Leve'                  ? 'amber'  : 'slate'
-                    }
-                    value={count}
-                    label={grav}
-                  />
-                ))}
+
+              {/* Resumen general */}
+              <div className="grid grid-cols-3 gap-3">
+                <StatCard icon={Activity}     color="slate"  value={totalEventos}   label="Total eventos" />
+                <StatCard icon={AlertTriangle} color="orange" value={totalAccidentes} label="Accidentes" />
+                <StatCard icon={Activity}      color="amber"  value={totalIncidentes} label="Incidentes" />
               </div>
 
-              {/* Top causas */}
+              {/* Gravedad */}
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+                  <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5">
+                    <ShieldAlert size={13} /> Gravedad del accidente
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4">
+                  {(['Sin daño', 'Leve', 'Grave (incapacitante)', 'Mortal'] as const).map(grav => (
+                    <StatCard
+                      key={grav}
+                      icon={ShieldAlert}
+                      color={
+                        grav === 'Mortal'                ? 'red'    :
+                        grav === 'Grave (incapacitante)' ? 'orange' :
+                        grav === 'Leve'                  ? 'amber'  : 'green'
+                      }
+                      value={gravedades[grav] ?? 0}
+                      label={grav}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Causa del accidente */}
               {topCausas.length > 0 && (
-                <div className="mt-3 bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                   <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
-                    <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                      Principales causas
+                    <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5">
+                      <AlertTriangle size={13} /> Causa del accidente
                     </p>
                   </div>
-                  <ul className="divide-y divide-slate-100">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
                     {topCausas.map(([causa, count]) => (
-                      <li key={causa} className="px-4 py-3 flex items-center justify-between text-sm">
-                        <span className="text-slate-700">{causa}</span>
-                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
-                          {count}
-                        </span>
-                      </li>
+                      <div key={causa} className="bg-orange-50 border border-orange-100 rounded-xl p-3 flex flex-col gap-1">
+                        <p className="text-xl font-bold text-orange-700">{count}</p>
+                        <p className="text-xs text-slate-600 leading-tight">{causa}</p>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
+                </div>
+              )}
+
+              {/* Tipo de lesión */}
+              {topLesiones.length > 0 && (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+                    <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide flex items-center gap-1.5">
+                      <UserX size={13} /> Tipo de lesión
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 p-4">
+                    {topLesiones.map(([lesion, count]) => (
+                      <div key={lesion} className="bg-red-50 border border-red-100 rounded-xl p-3 flex flex-col gap-1">
+                        <p className="text-xl font-bold text-red-700">{count}</p>
+                        <p className="text-xs text-slate-600 leading-tight">{lesion}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
