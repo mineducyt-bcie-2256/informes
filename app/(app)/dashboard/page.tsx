@@ -567,78 +567,86 @@ export default async function DashboardPage({
 
           <div className="p-5 space-y-5">
 
-            {/* Personal + Accidentes */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <PersonalDonut hombres={totalHombres} mujeres={totalMujeres} total={totalPersonal} />
+            {/* Fila principal: Personal | Accidentes | Gravedad | Causas | Lesiones */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-start">
 
-              {/* Accidentes resumen */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Accidentes e incidentes</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <MiniStat label="Total eventos"  value={totalEventos}    color="slate"  />
-                  <MiniStat label="Accidentes"      value={totalAccidentes} color="orange" />
-                  <MiniStat label="Incidentes"      value={totalIncidentes} color="amber"  />
+              {/* Personal donut */}
+              <div className="lg:col-span-1">
+                <PersonalDonut hombres={totalHombres} mujeres={totalMujeres} total={totalPersonal} />
+              </div>
+
+              {/* Accidentes e incidentes — vertical */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Eventos</p>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between px-2 py-1.5 bg-white border border-slate-200 rounded-lg">
+                    <span className="text-xs text-slate-500">Total</span>
+                    <span className="text-sm font-bold text-slate-700">{totalEventos}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-2 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
+                    <span className="text-xs text-slate-500">Accidentes</span>
+                    <span className="text-sm font-bold text-orange-600">{totalAccidentes}</span>
+                  </div>
+                  <div className="flex items-center justify-between px-2 py-1.5 bg-amber-50 border border-amber-100 rounded-lg">
+                    <span className="text-xs text-slate-500">Incidentes</span>
+                    <span className="text-sm font-bold text-amber-600">{totalIncidentes}</span>
+                  </div>
                 </div>
               </div>
+
+              {/* Gravedad — vertical */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Gravedad</p>
+                <div className="space-y-1.5">
+                  {(['Sin daño', 'Leve', 'Grave (incapacitante)', 'Mortal'] as const).map(grav => (
+                    <div key={grav} className={`flex items-center justify-between px-2 py-1.5 rounded-lg border ${
+                      grav === 'Mortal'                ? 'bg-red-50 border-red-100'      :
+                      grav === 'Grave (incapacitante)' ? 'bg-orange-50 border-orange-100':
+                      grav === 'Leve'                  ? 'bg-amber-50 border-amber-100'  :
+                                                         'bg-green-50 border-green-100'
+                    }`}>
+                      <span className="text-xs text-slate-600 truncate">{grav === 'Grave (incapacitante)' ? 'Grave' : grav}</span>
+                      <span className={`text-sm font-bold shrink-0 ml-1 ${
+                        grav === 'Mortal'                ? 'text-red-700'    :
+                        grav === 'Grave (incapacitante)' ? 'text-orange-700' :
+                        grav === 'Leve'                  ? 'text-amber-700'  : 'text-green-700'
+                      }`}>{gravedades[grav] ?? 0}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Causas — vertical */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Causas</p>
+                <div className="space-y-1.5">
+                  {topCausas.length > 0 ? topCausas.map(([causa, count]) => (
+                    <div key={causa} className="flex items-center justify-between px-2 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
+                      <span className="text-xs text-slate-600 truncate">{causa}</span>
+                      <span className="text-xs font-bold text-orange-700 ml-1 shrink-0">{count}</span>
+                    </div>
+                  )) : (
+                    <p className="text-xs text-slate-400 italic">Sin datos</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Tipo de lesión — vertical */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tipo de lesión</p>
+                <div className="space-y-1.5">
+                  {topLesiones.length > 0 ? topLesiones.map(([lesion, count]) => (
+                    <div key={lesion} className="flex items-center justify-between px-2 py-1.5 bg-red-50 border border-red-100 rounded-lg">
+                      <span className="text-xs text-slate-600 truncate">{lesion}</span>
+                      <span className="text-xs font-bold text-red-700 ml-1 shrink-0">{count}</span>
+                    </div>
+                  )) : (
+                    <p className="text-xs text-slate-400 italic">Sin datos</p>
+                  )}
+                </div>
+              </div>
+
             </div>
-
-            {totalEventos > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-                {/* Gravedad */}
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Gravedad</p>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {(['Sin daño', 'Leve', 'Grave (incapacitante)', 'Mortal'] as const).map(grav => (
-                      <div key={grav} className={`rounded-lg px-3 py-2 flex items-center justify-between ${
-                        grav === 'Mortal'                ? 'bg-red-50 border border-red-100'    :
-                        grav === 'Grave (incapacitante)' ? 'bg-orange-50 border border-orange-100' :
-                        grav === 'Leve'                  ? 'bg-amber-50 border border-amber-100'  :
-                                                           'bg-green-50 border border-green-100'
-                      }`}>
-                        <span className="text-xs text-slate-600">{grav}</span>
-                        <span className={`text-sm font-bold ${
-                          grav === 'Mortal'                ? 'text-red-700'    :
-                          grav === 'Grave (incapacitante)' ? 'text-orange-700' :
-                          grav === 'Leve'                  ? 'text-amber-700'  : 'text-green-700'
-                        }`}>{gravedades[grav] ?? 0}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Causa */}
-                {topCausas.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Causa</p>
-                    <div className="space-y-1">
-                      {topCausas.map(([causa, count]) => (
-                        <div key={causa} className="flex items-center justify-between px-3 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
-                          <span className="text-xs text-slate-600 truncate">{causa}</span>
-                          <span className="text-xs font-bold text-orange-700 ml-2 shrink-0">{count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Tipo de lesión */}
-                {topLesiones.length > 0 && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Tipo de lesión</p>
-                    <div className="space-y-1">
-                      {topLesiones.map(([lesion, count]) => (
-                        <div key={lesion} className="flex items-center justify-between px-3 py-1.5 bg-red-50 border border-red-100 rounded-lg">
-                          <span className="text-xs text-slate-600 truncate">{lesion}</span>
-                          <span className="text-xs font-bold text-red-700 ml-2 shrink-0">{count}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-              </div>
-            )}
 
             {totalEventos === 0 && (
               <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
