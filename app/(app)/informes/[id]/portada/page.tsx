@@ -219,12 +219,13 @@ export default function PortadaPage() {
         })
       }
 
-      // 2. Lista de especialistas
+      // 2. Lista de especialistas — solo los de la empresa supervisora del informe
       const { data: perfiles } = await supabase
         .from('profiles')
         .select('id, nombre, cargo, rol')
         .in('rol', ['programador', 'administrador', 'usuario'])
         .eq('activo', true)
+        .eq('empresa_supervision', esc?.empresa_supervision ?? '')
         .order('nombre')
       setEspecialistas(perfiles ?? [])
 
