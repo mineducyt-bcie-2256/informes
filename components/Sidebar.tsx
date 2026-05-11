@@ -38,16 +38,15 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
   return (
     <aside className="w-64 h-full flex-shrink-0 flex flex-col overflow-y-auto" style={{ backgroundColor: '#1e3a5f' }}>
       {/* Logo */}
-      <div className="px-6 py-5 border-b border-blue-800">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-400 flex items-center justify-center">
-            <span className="text-blue-900 font-bold text-lg">B</span>
-          </div>
-          <div>
-            <p className="text-white font-bold text-sm leading-tight">SISCAS</p>
-            <p className="text-blue-300 text-xs">Cond. Ambientales y Sociales</p>
-          </div>
+      <div className="px-5 py-4 border-b border-blue-800">
+        <div className="flex items-center gap-2 mb-3">
+          <img src="/logo-mineducyt.png" alt="MINEDUCYT" className="h-8 object-contain" />
+          <div className="w-px h-6 bg-blue-600" />
+          <img src="/logo-bcie.png" alt="BCIE" className="h-6 object-contain" />
         </div>
+        <p className="text-white font-bold text-sm leading-tight">SISCAS</p>
+        <p className="text-blue-300 text-xs leading-snug mt-0.5">Sistema de Seguimiento de<br/>Condiciones Ambientales y Sociales</p>
+        <p className="text-blue-400 text-xs mt-1">Programa Mi Nueva Escuela</p>
       </div>
 
       {/* Navigation */}
