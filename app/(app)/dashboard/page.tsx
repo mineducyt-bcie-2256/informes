@@ -3,36 +3,10 @@ import { createClient as createAdmin } from '@supabase/supabase-js'
 import { MESES } from '@/types'
 import {
   Building2, School, FileText, CheckCircle, Clock,
-  HardHat, BarChart2, Filter, ChevronRight, AlertCircle,
+  HardHat, Users, AlertTriangle, Filter, ChevronRight,
+  UserCheck, UserX, Activity, ShieldAlert,
 } from 'lucide-react'
 import Link from 'next/link'
-
-// ── Secciones de formulario ────────────────────────────────────────
-const SECCIONES = [
-  { key: 'portada',               tabla: 'informe_portada',                short: 'PORTADA' },
-  { key: 'c1317',                 tabla: 'informe_c1317',                  short: 'C13-17'  },
-  { key: 'hsso',                  tabla: 'informe_hsso',                   short: 'HSSO'    },
-  { key: 'garo',                  tabla: 'informe_garo',                   short: 'GARO'    },
-  { key: 'pgr',                   tabla: 'informe_pgr',                    short: 'PGR'     },
-  { key: 'mcear',                 tabla: 'informe_mcear',                  short: 'MCEAR'   },
-  { key: 'pppi',                  tabla: 'informe_pppi',                   short: 'PPPI'    },
-  { key: 'maqr',                  tabla: 'informe_maqr',                   short: 'MAQR'    },
-  { key: 'prt',                   tabla: 'informe_prt',                    short: 'PRT'     },
-  { key: 'cct',                   tabla: 'informe_cct',                    short: 'CCT'     },
-  { key: 'cumplimiento_ambiental',tabla: 'informe_cumplimiento_ambiental', short: 'C.AMB'   },
-]
-
-const ESTADO_BADGE: Record<string, string> = {
-  aprobado: 'bg-green-100 text-green-700',
-  enviado:  'bg-blue-100  text-blue-700',
-  borrador: 'bg-amber-100 text-amber-700',
-}
-
-const ESTADO_LABEL: Record<string, string> = {
-  aprobado: 'Aprobado',
-  enviado:  'Enviado',
-  borrador: 'Borrador',
-}
 
 // ── Tipos internos ─────────────────────────────────────────────────
 type Escuela = {
@@ -41,259 +15,301 @@ type Escuela = {
   empresa_supervision: string | null
   numero_contrato: string | null
   etapa: string | null
-  grupos: { nombre: string }[] | null
+  activa: boolean
+  grupos: { numero: number }[] | null
 }
 
 type Informe = {
   id: string
   escuela_id: string
-  estado: string
+  estado: 'borrador' | 'enviado' | 'aprobado'
   periodo_mes: number
   periodo_anio: number
 }
 
-// ── Helpers ────────────────────────────────────────────────────────
-function esConContrato(e: Escuela) {
-  return e.numero_contrato && e.numero_contrato.trim().toUpperCase() !== 'SIN ADJUDICAR'
+type AccidenteItem = {
+  tipo: 'Incidente' | 'Accidente'
+  gravedad: 'Sin daño' | 'Leve' | 'Grave (incapacitante)' | 'Mortal'
+  causa?: string
 }
 
+type InformeHsso = {
+  informe_id: string
+  personal_hombres: number | null
+  personal_mujeres: number | null
+  personal_total: number | null
+  tiene_accidentes: 'Sí' | 'No' | null
+  accidentes: AccidenteItem[] | null
+}
+
+// ── Helpers ────────────────────────────────────────────────────────
 function esConstruccion(e: Escuela) {
   return e.etapa?.toLowerCase().includes('construcci') ?? false
+}
+
+function buildSearchParams(
+  base: Record<string, string | number | null | undefined>,
+  override: Record<string, string | number | null | undefined> = {}
+) {
+  const merged = { ...base, ...override }
+  const params = new URLSearchParams()
+  for (const [k, v] of Object.entries(merged)) {
+    if (v !== null && v !== undefined && v !== '') params.set(k, String(v))
+  }
+  const str = params.toString()
+  return str ? `?${str}` : ''
+}
+
+// ── Colores de estado ──────────────────────────────────────────────
+const ESTADO_BADGE: Record<string, string> = {
+  aprobado: 'bg-green-100 text-green-700',
+  enviado:  'bg-blue-100 text-blue-700',
+  borrador: 'bg-amber-100 text-amber-700',
+}
+const ESTADO_LABEL: Record<string, string> = {
+  aprobado: 'Aprobado',
+  enviado:  'Enviado',
+  borrador: 'Borrador',
 }
 
 // ─────────────────────────────────────────────────────────────────
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ empresa?: string; escuela_id?: string; mes?: string }>
+  searchParams: Promise<{
+    empresa?: string
+    escuela_id?: string
+    mes?: string
+    mes_desde?: string
+    mes_hasta?: string
+    detalle?: string
+  }>
 }) {
-  const params     = await searchParams
-  const empresaSel  = params.empresa    ? decodeURIComponent(params.empresa)    : null
-  const escuelaId  = params.escuela_id ? decodeURIComponent(params.escuela_id) : null
+  const params = await searchParams
 
-  const supabase   = await createClient()
-  // Admin client para consultas de datos (bypasa RLS)
-  const admin      = createAdmin(
+  const supabase = await createClient()
+  const admin = createAdmin(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const hoy        = new Date()
-  const mesActual  = hoy.getMonth() + 1
-
-  // ── Perfil del usuario logueado ────────────────────────────────
+  // ── Usuario y perfil ───────────────────────────────────────────
   const { data: { user } } = await supabase.auth.getUser()
-  let miEmpresa: string | null = null
   let miRol: string = 'programador'
+  let miEmpresa: string | null = null
   if (user) {
-    const { data: perfil } = await supabase.from('profiles')
-      .select('rol, empresa_supervision').eq('id', user.id).single()
+    const { data: perfil } = await supabase
+      .from('profiles')
+      .select('rol, empresa_supervision')
+      .eq('id', user.id)
+      .single()
     miRol     = perfil?.rol ?? 'programador'
     miEmpresa = perfil?.empresa_supervision ?? null
   }
 
-  // Solo el rol 'usuario' queda restringido a su empresa
   const esRestringido = miRol === 'usuario' && !!miEmpresa
   const esVisitante   = miRol === 'visitante'
-  const empresaForzada = esRestringido ? miEmpresa : null
 
-  // Visitante: obtener ID de la escuela demo y forzar mes marzo 2026
+  // ── Visitante: buscar escuela demo ─────────────────────────────
   let escuelaDemoId: string | null = null
   if (esVisitante) {
-    const { data: demoEsc } = await admin.from('escuelas').select('id').eq('es_demo', true).limit(1).single()
+    const { data: demoEsc } = await admin
+      .from('escuelas')
+      .select('id')
+      .eq('es_demo', true)
+      .limit(1)
+      .single()
     escuelaDemoId = demoEsc?.id ?? null
   }
-  const mesSel = esVisitante ? 3 : (params.mes ? parseInt(params.mes) : mesActual)
-  const anio   = esVisitante ? 2026 : hoy.getFullYear()
 
-  // Empresa seleccionada: si está restringido usa la suya, sino la del param URL
-  const empresaEfectiva = empresaForzada ?? empresaSel
+  // ── Periodo y año ──────────────────────────────────────────────
+  const hoy         = new Date()
+  const anio        = esVisitante ? 2026 : hoy.getFullYear()
+  const mesDefault  = esVisitante ? 3 : (hoy.getMonth() === 0 ? 12 : hoy.getMonth())
 
-  // Visitante fuerza nivel escuela con la demo
-  const escuelaIdEfectivo = esVisitante ? (escuelaDemoId ?? escuelaId) : escuelaId
+  const mesSel     = esVisitante ? 3     : (params.mes      ? parseInt(params.mes)      : mesDefault)
+  const mesDesde   = esVisitante ? null  : (params.mes_desde ? parseInt(params.mes_desde) : null)
+  const mesHasta   = esVisitante ? null  : (params.mes_hasta ? parseInt(params.mes_hasta) : null)
+  const detalleSel = params.detalle ?? null
 
-  // ── Nivel activo ───────────────────────────────────────────────
-  const nivel: 'total' | 'empresa' | 'escuela' =
-    escuelaIdEfectivo ? 'escuela'  :
-    empresaEfectiva   ? 'empresa'  : 'total'
+  // ── Filtros de empresa / escuela ───────────────────────────────
+  const empresaParam  = params.empresa    ? decodeURIComponent(params.empresa)    : null
+  const escuelaParam  = params.escuela_id ? decodeURIComponent(params.escuela_id) : null
 
-  // Alias para el resto del código
-  const empresaEfectiva2 = empresaEfectiva
+  const empresaEfectiva   = esRestringido ? miEmpresa : (esVisitante ? null : empresaParam)
+  const escuelaIdEfectiva = esVisitante ? escuelaDemoId : escuelaParam
 
-  // ── Queries base en paralelo ───────────────────────────────────
+  // Params activos para construir URLs
+  const baseParams: Record<string, string | number | null | undefined> = {
+    empresa:    empresaEfectiva   ?? undefined,
+    escuela_id: escuelaIdEfectiva ?? undefined,
+    mes:        mesSel !== mesDefault ? mesSel : undefined,
+    mes_desde:  mesDesde ?? undefined,
+    mes_hasta:  mesHasta ?? undefined,
+  }
+
+  // ── Queries en paralelo ────────────────────────────────────────
+  // Escuelas activas
+  let escuelasQuery = admin
+    .from('escuelas')
+    .select('id, nombre, empresa_supervision, numero_contrato, etapa, activa, grupos(numero)')
+    .eq('activa', true)
+
+  if (esVisitante && escuelaDemoId) {
+    escuelasQuery = escuelasQuery.eq('id', escuelaDemoId)
+  }
+
+  // Empresas para selector (escuelas en construcción)
+  const empresasQuery = admin
+    .from('escuelas')
+    .select('empresa_supervision')
+    .eq('activa', true)
+    .ilike('etapa', '%construcci%')
+
+  // Informes del periodo
+  const periodoMesMin = mesDesde ?? mesSel
+  const periodoMesMax = mesHasta ?? mesSel
+
+  let informesQuery = admin
+    .from('informes')
+    .select('id, escuela_id, estado, periodo_mes, periodo_anio')
+    .eq('periodo_anio', anio)
+    .gte('periodo_mes', periodoMesMin)
+    .lte('periodo_mes', periodoMesMax)
+
   const [
     { data: rawEscuelas },
-    { data: rawInformesMes },
-    { data: rawInformesAnio },
     { data: rawEmpresas },
+    { data: rawInformes },
   ] = await Promise.all([
-    // Escuelas activas con grupo — visitante solo ve demo
-    esVisitante
-      ? admin.from('escuelas').select('id, nombre, empresa_supervision, numero_contrato, etapa, grupos(nombre)').eq('activa', true).eq('es_demo', true)
-      : admin.from('escuelas').select('id, nombre, empresa_supervision, numero_contrato, etapa, grupos(nombre)').eq('activa', true),
-
-    // Informes del mes seleccionado
-    admin
-      .from('informes')
-      .select('id, escuela_id, estado, periodo_mes, periodo_anio')
-      .eq('periodo_mes', mesSel)
-      .eq('periodo_anio', anio),
-
-    // Informes del año actual
-    nivel === 'escuela'
-      ? admin
-          .from('informes')
-          .select('id, escuela_id, estado, periodo_mes, periodo_anio')
-          .eq('escuela_id', escuelaIdEfectivo!)
-          .eq('periodo_anio', anio)
-          .order('periodo_mes', { ascending: false })
-      : admin
-          .from('informes')
-          .select('id, escuela_id, estado, periodo_mes, periodo_anio')
-          .eq('periodo_anio', anio),
-
-    // Lista de empresas distintas para el selector
-    admin
-      .from('escuelas')
-      .select('empresa_supervision')
-      .eq('activa', true)
-      .eq('etapa', 'Construcción')
-      .neq('numero_contrato', 'SIN ADJUDICAR')
-      .not('numero_contrato', 'is', null),
+    escuelasQuery,
+    empresasQuery,
+    informesQuery,
   ])
 
-  const todasEscuelas  = (rawEscuelas   ?? []) as Escuela[]
-  const informesMes    = (rawInformesMes ?? []) as Informe[]
-  const informesAnio   = (rawInformesAnio ?? []) as Informe[]
+  const todasEscuelas = (rawEscuelas ?? []) as Escuela[]
+  const todosInformes = (rawInformes ?? []) as Informe[]
 
-  // Empresas únicas para el selector
+  // Empresas únicas para selector
   const empresasUnicas = Array.from(
     new Set((rawEmpresas ?? []).map((e: any) => e.empresa_supervision).filter(Boolean))
   ).sort() as string[]
 
-  // Filtrar escuelas: activas, con contrato, en construcción
-  const escuelasBase = todasEscuelas.filter(e => esConContrato(e) && esConstruccion(e))
+  // ── Filtrar escuelas base (en construcción) ────────────────────
+  let escuelasBase = todasEscuelas.filter(esConstruccion)
 
-  // Escuelas de la empresa seleccionada — todas las activas de esa empresa (para el dropdown)
-  const escuelasEmpresa = empresaEfectiva
-    ? todasEscuelas.filter(e => e.empresa_supervision === empresaEfectiva)
+  // Escuelas disponibles para selector de escuela (por empresa)
+  const escuelasDeEmpresa = empresaEfectiva
+    ? escuelasBase.filter(e => e.empresa_supervision === empresaEfectiva)
     : escuelasBase
 
-  // Escuela seleccionada (si aplica)
-  const escuelaSel = escuelaIdEfectivo
-    ? todasEscuelas.find(e => e.id === escuelaIdEfectivo)
-    : null
-
-  // Escuelas a considerar para KPIs y tabla
-  const escuelasFiltradas = nivel === 'escuela'
-    ? (escuelaSel ? [escuelaSel] : [])
-    : escuelasEmpresa
+  // Escuelas activas para KPIs
+  let escuelasFiltradas: Escuela[]
+  if (escuelaIdEfectiva) {
+    escuelasFiltradas = escuelasBase.filter(e => e.id === escuelaIdEfectiva)
+  } else if (empresaEfectiva) {
+    escuelasFiltradas = escuelasBase.filter(e => e.empresa_supervision === empresaEfectiva)
+  } else {
+    escuelasFiltradas = escuelasBase
+  }
 
   const escuelaIds = new Set(escuelasFiltradas.map(e => e.id))
 
-  // Informes del mes filtrados
-  const infMesFiltrados = informesMes.filter(i => escuelaIds.has(i.escuela_id))
+  // Informes filtrados al scope actual
+  const informesFiltrados = todosInformes.filter(i => escuelaIds.has(i.escuela_id))
 
   // ── KPIs ───────────────────────────────────────────────────────
-  const kpiCEs        = escuelasFiltradas.length
-  const kpiInformes   = infMesFiltrados.length
-  const kpiAprobados  = infMesFiltrados.filter(i => i.estado === 'aprobado').length
-  const kpiPendientes = escuelasFiltradas.filter(
-    e => !infMesFiltrados.some(i => i.escuela_id === e.id)
-  ).length
+  const kpiConstruccion = escuelasFiltradas.length
+  const kpiInformes     = informesFiltrados.length
+  const kpiPresentados  = informesFiltrados.filter(i => i.estado === 'enviado' || i.estado === 'aprobado').length
+  const kpiAprobados    = informesFiltrados.filter(i => i.estado === 'aprobado').length
 
-  // ── Tabla por empresa ──────────────────────────────────────────
-  type EmpresaRow = {
-    totalCEs: number; informes: number; aprobados: number
-    enviados: number; borrador: number
-  }
-  const porEmpresa: Record<string, EmpresaRow> = {}
+  // Escuelas sin informe en el periodo
+  const escuelasConInforme = new Set(informesFiltrados.map(i => i.escuela_id))
+  const escuelasSinInforme = escuelasFiltradas.filter(e => !escuelasConInforme.has(e.id))
+  const kpiPendientes = escuelasSinInforme.length
 
-  for (const e of escuelasBase) {
-    const emp = e.empresa_supervision ?? 'Sin empresa'
-    if (!porEmpresa[emp]) porEmpresa[emp] = { totalCEs: 0, informes: 0, aprobados: 0, enviados: 0, borrador: 0 }
-    porEmpresa[emp].totalCEs++
-  }
-  for (const inf of informesMes) {
-    const esc = escuelasBase.find(e => e.id === inf.escuela_id)
-    if (!esc) continue
-    const emp = esc.empresa_supervision ?? 'Sin empresa'
-    if (!porEmpresa[emp]) continue
-    porEmpresa[emp].informes++
-    if (inf.estado === 'aprobado') porEmpresa[emp].aprobados++
-    if (inf.estado === 'enviado')  porEmpresa[emp].enviados++
-    if (inf.estado === 'borrador') porEmpresa[emp].borrador++
-  }
-  const tablaEmpresas = Object.entries(porEmpresa).sort(([a], [b]) => a.localeCompare(b))
+  // ── HSSO: datos de personal y accidentes ───────────────────────
+  const informeIds = informesFiltrados.map(i => i.id)
+  let hssoData: InformeHsso[] = []
 
-  const totales = tablaEmpresas.reduce(
-    (acc, [, r]) => ({
-      totalCEs:  acc.totalCEs  + r.totalCEs,
-      informes:  acc.informes  + r.informes,
-      aprobados: acc.aprobados + r.aprobados,
-      enviados:  acc.enviados  + r.enviados,
-      borrador:  acc.borrador  + r.borrador,
-    }),
-    { totalCEs: 0, informes: 0, aprobados: 0, enviados: 0, borrador: 0 }
-  )
-
-  // ── Análisis de formularios ────────────────────────────────────
-  // Para los informes relevantes (del año, filtrados por escuelas)
-  const informesParaAnalisis = informesAnio.filter(i => escuelaIds.has(i.escuela_id))
-  const idsParaAnalisis      = informesParaAnalisis.map(i => i.id)
-
-  // Mapa: informe_id → Set<seccion_key>
-  const formulariosMap: Record<string, Set<string>> = {}
-
-  if (idsParaAnalisis.length > 0) {
-    const { data: seccionesData } = await admin.rpc('get_secciones_completadas', {
-      informe_ids: idsParaAnalisis,
-    })
-    for (const row of seccionesData ?? []) {
-      if (!formulariosMap[row.informe_id]) formulariosMap[row.informe_id] = new Set()
-      formulariosMap[row.informe_id].add(row.seccion)
-    }
+  if (informeIds.length > 0) {
+    const { data: rawHsso } = await admin
+      .from('informe_hsso')
+      .select('informe_id, personal_hombres, personal_mujeres, personal_total, tiene_accidentes, accidentes')
+      .in('informe_id', informeIds)
+    hssoData = (rawHsso ?? []) as InformeHsso[]
   }
 
-  // Estadísticas por sección
-  const statsPorSeccion = SECCIONES.map(sec => {
-    const completados = idsParaAnalisis.filter(id => formulariosMap[id]?.has(sec.key)).length
-    return { ...sec, completados, total: idsParaAnalisis.length }
-  })
+  // Totales de personal
+  const totalHombres = hssoData.reduce((s, h) => s + (h.personal_hombres ?? 0), 0)
+  const totalMujeres = hssoData.reduce((s, h) => s + (h.personal_mujeres ?? 0), 0)
+  const totalPersonal = hssoData.reduce((s, h) => s + (h.personal_total ?? 0), 0)
 
-  // ── Tabla de escuelas (nivel empresa) ─────────────────────────
-  // Informe del mes por escuela
-  const informesPorEscuela: Record<string, Informe | null> = {}
-  for (const esc of escuelasEmpresa) {
-    informesPorEscuela[esc.id] = infMesFiltrados.find(i => i.escuela_id === esc.id) ?? null
+  // Todos los eventos de accidentes/incidentes
+  const todosEventos: AccidenteItem[] = hssoData.flatMap(h => h.accidentes ?? [])
+  const totalEventos    = todosEventos.length
+  const totalIncidentes = todosEventos.filter(a => a.tipo === 'Incidente').length
+  const totalAccidentes = todosEventos.filter(a => a.tipo === 'Accidente').length
+
+  // Por gravedad
+  const gravedades: Record<string, number> = {}
+  for (const ev of todosEventos) {
+    const g = ev.gravedad ?? 'Sin especificar'
+    gravedades[g] = (gravedades[g] ?? 0) + 1
   }
 
-  // ── Labels de nivel ───────────────────────────────────────────
-  const vistaLabel =
-    nivel === 'escuela' ? (escuelaSel?.nombre ?? 'Escuela')  :
-    nivel === 'empresa' ? empresaEfectiva!                         : 'Total'
+  // Por causa (top causas)
+  const causas: Record<string, number> = {}
+  for (const ev of todosEventos) {
+    if (ev.causa) causas[ev.causa] = (causas[ev.causa] ?? 0) + 1
+  }
+  const topCausas = Object.entries(causas)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+
+  // ── Periodo label ──────────────────────────────────────────────
+  let periodoLabel: string
+  if (mesDesde && mesHasta && mesDesde !== mesHasta) {
+    periodoLabel = `${MESES[mesDesde - 1]} – ${MESES[mesHasta - 1]} ${anio}`
+  } else {
+    periodoLabel = `${MESES[mesSel - 1]} ${anio}`
+  }
+
+  // ── Detalle expandido ──────────────────────────────────────────
+  let detalleEscuelas: Escuela[] = []
+  let detalleInformes: Informe[] = []
+
+  if (detalleSel === 'construccion') detalleEscuelas = escuelasFiltradas
+  if (detalleSel === 'informes')     detalleInformes = informesFiltrados
+  if (detalleSel === 'presentados')  detalleInformes = informesFiltrados.filter(i => i.estado === 'enviado' || i.estado === 'aprobado')
+  if (detalleSel === 'aprobados')    detalleInformes = informesFiltrados.filter(i => i.estado === 'aprobado')
+  if (detalleSel === 'pendientes')   detalleEscuelas = escuelasSinInforme
+
+  // Mapa id→nombre para detalles de informes
+  const escuelaNombreMap = Object.fromEntries(todasEscuelas.map(e => [e.id, e.nombre]))
 
   // ─────────────────────────────────────────────────────────────
   return (
     <div className="p-6 lg:p-8 space-y-8 max-w-screen-xl mx-auto">
 
-      {/* ── Encabezado + barra de filtros ── */}
-      <div className="flex flex-col gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            {MESES[mesSel - 1]} {anio} — Programa Mi Nueva Escuela BCIE
-          </p>
-        </div>
+      {/* ── Encabezado ── */}
+      <div>
+        <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
+        <p className="text-slate-500 text-sm mt-1">
+          {periodoLabel} — Programa Mi Nueva Escuela BCIE
+        </p>
+      </div>
 
-        {/* Formulario GET de filtros */}
-        <form method="GET" className="flex flex-wrap items-end gap-3">
-          {/* Select empresa — oculto si el usuario está restringido a su empresa */}
+      {/* ── Bloque 1: Filtros ── */}
+      {!esVisitante && (
+        <form method="GET" className="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap items-end gap-3">
+          {/* Empresa */}
           {esRestringido ? (
             <>
               <input type="hidden" name="empresa" value={empresaEfectiva ?? ''} />
               <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 rounded-lg px-3 py-2 text-sm text-blue-800 min-w-[220px]">
-                <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                <Building2 size={14} className="text-blue-500 shrink-0" />
                 <span className="font-medium truncate">{empresaEfectiva}</span>
               </div>
             </>
@@ -315,7 +331,7 @@ export default async function DashboardPage({
             </div>
           )}
 
-          {/* Select escuela (solo si hay empresa seleccionada) */}
+          {/* Escuela (solo si hay empresa) */}
           {empresaEfectiva && (
             <div className="flex flex-col gap-1">
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
@@ -323,27 +339,55 @@ export default async function DashboardPage({
               </label>
               <select
                 name="escuela_id"
-                defaultValue={escuelaId ?? ''}
+                defaultValue={escuelaParam ?? ''}
                 className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300 min-w-[280px]"
               >
                 <option value="">— Todas las escuelas —</option>
-                {escuelasEmpresa.map(esc => (
+                {escuelasDeEmpresa.map(esc => (
                   <option key={esc.id} value={esc.id}>{esc.nombre}</option>
                 ))}
               </select>
             </div>
           )}
 
-          {/* Select mes */}
+          {/* Mes */}
           <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-              Mes
-            </label>
+            <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Mes</label>
             <select
               name="mes"
               defaultValue={mesSel}
               className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
+              {MESES.map((mes, i) => (
+                <option key={i + 1} value={i + 1}>{mes}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Mes desde */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Desde</label>
+            <select
+              name="mes_desde"
+              defaultValue={mesDesde ?? ''}
+              className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              <option value="">—</option>
+              {MESES.map((mes, i) => (
+                <option key={i + 1} value={i + 1}>{mes}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Mes hasta */}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Hasta</label>
+            <select
+              name="mes_hasta"
+              defaultValue={mesHasta ?? ''}
+              className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            >
+              <option value="">—</option>
               {MESES.map((mes, i) => (
                 <option key={i + 1} value={i + 1}>{mes}</option>
               ))}
@@ -359,328 +403,221 @@ export default async function DashboardPage({
             Filtrar
           </button>
 
-          {/* Chip de nivel activo */}
-          <span className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
-            nivel === 'total'   ? 'bg-slate-100 text-slate-600 border-slate-200' :
-            nivel === 'empresa' ? 'bg-blue-50 text-blue-700 border-blue-200'     :
-                                  'bg-violet-50 text-violet-700 border-violet-200'
-          }`}>
-            {nivel === 'total'   && <BarChart2 size={13} />}
-            {nivel === 'empresa' && <Building2 size={13} />}
-            {nivel === 'escuela' && <School    size={13} />}
-            Vista: {vistaLabel}
-          </span>
-
-          {/* Reset link */}
-          {nivel !== 'total' && (
-            <Link
-              href={`/dashboard${mesSel !== mesActual ? `?mes=${mesSel}` : ''}`}
-              className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2"
-            >
-              Limpiar filtros
-            </Link>
-          )}
+          {/* Limpiar filtros */}
+          <Link
+            href="/dashboard"
+            className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 self-center"
+          >
+            Limpiar filtros
+          </Link>
         </form>
-      </div>
-
-      {/* ── KPI Cards ── */}
-      <div>
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">
-          Resumen — {MESES[mesSel - 1]} {anio}
-          {nivel !== 'total' && <span className="ml-2 normal-case font-normal text-slate-400">· {vistaLabel}</span>}
-        </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard icon={HardHat}      color="orange" value={kpiCEs}        label="CEs en construcción" />
-          <StatCard icon={FileText}     color="slate"  value={kpiInformes}   label="Informes este mes" />
-          <StatCard icon={CheckCircle}  color="green"  value={kpiAprobados}  label="Aprobados este mes" />
-          <StatCard icon={AlertCircle}  color="amber"  value={kpiPendientes} label="CEs sin informe" />
-        </div>
-      </div>
-
-      {/* ── NIVEL ESCUELA: Tabla de informes del año ── */}
-      {nivel === 'escuela' && escuelaSel && (
-        <div>
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <School size={14} />
-            Informes de {escuelaSel.nombre} — {anio}
-          </h2>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Período</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600">Estado</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Formularios completados</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {informesAnio.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
-                      No hay informes registrados este año
-                    </td>
-                  </tr>
-                )}
-                {informesAnio.map(inf => {
-                  const seccCompletas = formulariosMap[inf.id] ?? new Set<string>()
-                  return (
-                    <tr key={inf.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-slate-700">
-                        {MESES[inf.periodo_mes - 1]} {inf.periodo_anio}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${ESTADO_BADGE[inf.estado] ?? 'bg-slate-100 text-slate-600'}`}>
-                          {ESTADO_LABEL[inf.estado] ?? inf.estado}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex flex-wrap gap-1">
-                          {SECCIONES.map(sec => (
-                            <span
-                              key={sec.key}
-                              className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                                seccCompletas.has(sec.key)
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-slate-100 text-slate-400'
-                              }`}
-                            >
-                              {sec.short}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Link
-                          href={`/informes/${inf.id}`}
-                          className="text-blue-600 hover:text-blue-800 inline-flex items-center gap-1 text-xs font-medium"
-                        >
-                          Ver <ChevronRight size={13} />
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
       )}
 
-      {/* ── NIVEL EMPRESA: Tabla de escuelas de esa empresa ── */}
-      {nivel === 'empresa' && empresaEfectiva && (
-        <div>
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <School size={14} />
-            Escuelas de {empresaEfectiva} — {MESES[mesSel - 1]} {anio}
-          </h2>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      {/* ── Bloque 2: Tarjetas de resumen ── */}
+      <div>
+        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">
+          Resumen — {periodoLabel}
+        </h2>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <DetalleCard
+            href={`/dashboard${buildSearchParams(baseParams, { detalle: detalleSel === 'construccion' ? undefined : 'construccion' })}`}
+            icon={HardHat}
+            color="orange"
+            value={kpiConstruccion}
+            label="CEs en construcción"
+            active={detalleSel === 'construccion'}
+          />
+          <DetalleCard
+            href={`/dashboard${buildSearchParams(baseParams, { detalle: detalleSel === 'informes' ? undefined : 'informes' })}`}
+            icon={FileText}
+            color="slate"
+            value={kpiInformes}
+            label="Informes del mes"
+            active={detalleSel === 'informes'}
+          />
+          <DetalleCard
+            href={`/dashboard${buildSearchParams(baseParams, { detalle: detalleSel === 'presentados' ? undefined : 'presentados' })}`}
+            icon={Clock}
+            color="blue"
+            value={kpiPresentados}
+            label="Presentados"
+            active={detalleSel === 'presentados'}
+          />
+          <DetalleCard
+            href={`/dashboard${buildSearchParams(baseParams, { detalle: detalleSel === 'aprobados' ? undefined : 'aprobados' })}`}
+            icon={CheckCircle}
+            color="green"
+            value={kpiAprobados}
+            label="Aprobados"
+            active={detalleSel === 'aprobados'}
+          />
+          <DetalleCard
+            href={`/dashboard${buildSearchParams(baseParams, { detalle: detalleSel === 'pendientes' ? undefined : 'pendientes' })}`}
+            icon={AlertTriangle}
+            color="amber"
+            value={kpiPendientes}
+            label="Sin informe"
+            active={detalleSel === 'pendientes'}
+          />
+        </div>
+      </div>
+
+      {/* ── Detalle expandido ── */}
+      {detalleSel && (detalleEscuelas.length > 0 || detalleInformes.length > 0) && (
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-700">
+              {detalleSel === 'construccion' && 'Centros escolares en construcción'}
+              {detalleSel === 'informes'     && 'Informes del periodo'}
+              {detalleSel === 'presentados'  && 'Informes presentados (enviado / aprobado)'}
+              {detalleSel === 'aprobados'    && 'Informes aprobados'}
+              {detalleSel === 'pendientes'   && 'Centros sin informe en el periodo'}
+            </h3>
+            <Link
+              href={`/dashboard${buildSearchParams(baseParams)}`}
+              className="text-xs text-slate-400 hover:text-slate-600"
+            >
+              Cerrar ✕
+            </Link>
+          </div>
+
+          {/* Tabla de escuelas */}
+          {detalleEscuelas.length > 0 && (
             <table className="w-full text-sm">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   <th className="text-left px-4 py-3 font-semibold text-slate-600">Escuela</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Grupo</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600">Informe este mes</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Empresa supervisora</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Etapa</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {detalleEscuelas.map(esc => (
+                  <tr key={esc.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-slate-700">{esc.nombre}</td>
+                    <td className="px-4 py-3 text-slate-500">{esc.empresa_supervision ?? '—'}</td>
+                    <td className="px-4 py-3 text-slate-500">{esc.etapa ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* Tabla de informes */}
+          {detalleInformes.length > 0 && (
+            <table className="w-full text-sm">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Escuela</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-600">Período</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-600">Estado</th>
                   <th className="text-center px-4 py-3 font-semibold text-slate-600"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {escuelasEmpresa.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-slate-400">
-                      No hay escuelas en construcción para esta empresa
+                {detalleInformes.map(inf => (
+                  <tr key={inf.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-4 py-3 font-medium text-slate-700">
+                      {escuelaNombreMap[inf.escuela_id] ?? inf.escuela_id}
+                    </td>
+                    <td className="px-4 py-3 text-center text-slate-500">
+                      {MESES[inf.periodo_mes - 1]} {inf.periodo_anio}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${ESTADO_BADGE[inf.estado] ?? 'bg-slate-100 text-slate-600'}`}>
+                        {ESTADO_LABEL[inf.estado] ?? inf.estado}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Link
+                        href={`/informes/${inf.id}`}
+                        className="text-blue-600 hover:text-blue-800 inline-flex items-center gap-1 text-xs font-medium"
+                      >
+                        Ver <ChevronRight size={13} />
+                      </Link>
                     </td>
                   </tr>
-                )}
-                {escuelasEmpresa.map(esc => {
-                  const inf = informesPorEscuela[esc.id]
-                  return (
-                    <tr key={esc.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-slate-700">{esc.nombre}</td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">{esc.grupos?.[0]?.nombre ?? '—'}</td>
-                      <td className="px-4 py-3 text-center">
-                        {inf ? (
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${ESTADO_BADGE[inf.estado] ?? 'bg-slate-100 text-slate-600'}`}>
-                            {ESTADO_LABEL[inf.estado] ?? inf.estado}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-slate-400 italic">Pendiente</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Link
-                          href={`/dashboard?empresa=${encodeURIComponent(empresaEfectiva!)}&escuela_id=${esc.id}&mes=${mesSel}`}
-                          className="text-blue-600 hover:text-blue-800 inline-flex items-center gap-1 text-xs font-medium"
-                        >
-                          Detalle <ChevronRight size={13} />
-                        </Link>
-                      </td>
-                    </tr>
-                  )
-                })}
+                ))}
               </tbody>
             </table>
-          </div>
+          )}
         </div>
       )}
 
-      {/* ── Tabla por empresa (siempre visible) ── */}
-      <div>
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-          <Building2 size={14} />
-          Resumen por empresa de supervisión — {MESES[mesSel - 1]} {anio}
-        </h2>
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-semibold text-slate-600">Empresa de supervisión</th>
-                <th className="text-center px-4 py-3 font-semibold text-slate-600">CEs</th>
-                <th className="text-center px-4 py-3 font-semibold text-slate-600">Informes mes</th>
-                <th className="text-center px-4 py-3 font-semibold text-green-700">Aprobados</th>
-                <th className="text-center px-4 py-3 font-semibold text-blue-700">Enviados</th>
-                <th className="text-center px-4 py-3 font-semibold text-amber-700">Borrador</th>
-                <th className="text-center px-4 py-3 font-semibold text-slate-500">Sin informe</th>
-                <th className="text-center px-4 py-3 font-semibold text-slate-600">% Cobertura</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {tablaEmpresas.map(([empresa, row]) => {
-                const sinInforme = row.totalCEs - row.informes
-                const cobertura = row.totalCEs > 0 ? Math.round((row.informes / row.totalCEs) * 100) : 0
-                const isActive  = empresaEfectiva === empresa
-                return (
-                  <tr
-                    key={empresa}
-                    className={`hover:bg-slate-50 transition-colors ${isActive ? 'bg-blue-50/60' : ''}`}
-                  >
-                    <td className="px-4 py-3 font-medium text-slate-700">
-                      <Link
-                        href={`/dashboard?empresa=${encodeURIComponent(empresa)}&mes=${mesSel}`}
-                        className="hover:text-blue-700 hover:underline underline-offset-2 flex items-center gap-1"
-                      >
-                        {isActive && <ChevronRight size={13} className="text-blue-500 shrink-0" />}
-                        {empresa}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-center text-slate-600">{row.totalCEs}</td>
-                    <td className="px-4 py-3 text-center font-semibold text-slate-800">{row.informes}</td>
-                    <td className="px-4 py-3 text-center">
-                      {row.aprobados > 0
-                        ? <Pill value={row.aprobados} cls="bg-green-100 text-green-700" />
-                        : <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {row.enviados > 0
-                        ? <Pill value={row.enviados} cls="bg-blue-100 text-blue-700" />
-                        : <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {row.borrador > 0
-                        ? <Pill value={row.borrador} cls="bg-amber-100 text-amber-700" />
-                        : <span className="text-slate-300">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      {sinInforme > 0
-                        ? <Pill value={sinInforme} cls="bg-slate-100 text-slate-500" />
-                        : <span className="text-green-600 text-xs font-semibold">Completo</span>}
-                    </td>
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${cobertura >= 80 ? 'bg-green-500' : cobertura >= 50 ? 'bg-amber-400' : 'bg-red-400'}`}
-                            style={{ width: `${cobertura}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-slate-500 font-medium">{cobertura}%</span>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-            <tfoot className="border-t-2 border-slate-200 bg-slate-50">
-              <tr>
-                <td className="px-4 py-3 font-bold text-slate-800">Total general</td>
-                <td className="px-4 py-3 text-center font-bold text-slate-800">{totales.totalCEs}</td>
-                <td className="px-4 py-3 text-center font-bold text-slate-800">{totales.informes}</td>
-                <td className="px-4 py-3 text-center font-bold text-green-700">{totales.aprobados}</td>
-                <td className="px-4 py-3 text-center font-bold text-blue-700">{totales.enviados}</td>
-                <td className="px-4 py-3 text-center font-bold text-amber-700">{totales.borrador}</td>
-                <td className="px-4 py-3 text-center font-bold text-slate-500">{totales.totalCEs - totales.informes}</td>
-                <td className="px-4 py-3 text-center font-bold text-slate-600">
-                  {totales.totalCEs > 0 ? Math.round((totales.informes / totales.totalCEs) * 100) : 0}%
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      </div>
-
-      {/* ── Análisis de completitud de formularios ── */}
-      {idsParaAnalisis.length > 0 && (
-        <div>
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <BarChart2 size={14} />
-            Análisis de formularios — {anio}
-            {nivel !== 'total' && (
-              <span className="normal-case font-normal text-slate-400 ml-1">· {vistaLabel}</span>
-            )}
+      {/* ── Bloque 3: Datos HSSO ── */}
+      {hssoData.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+            HSSO consolidado — {periodoLabel}
           </h2>
-          <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Sección</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600">Completados</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600">Total informes</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600">%</th>
-                  <th className="px-4 py-3 font-semibold text-slate-600">Progreso</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {statsPorSeccion.map(sec => {
-                  const pct = sec.total > 0 ? Math.round((sec.completados / sec.total) * 100) : 0
-                  return (
-                    <tr key={sec.key} className="hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3">
-                        <span className="inline-flex items-center gap-2">
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
-                            {sec.short}
-                          </span>
-                          <span className="text-slate-700 capitalize">{sec.key.replace(/_/g, ' ')}</span>
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center font-semibold text-slate-800">{sec.completados}</td>
-                      <td className="px-4 py-3 text-center text-slate-500">{sec.total}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                          pct >= 80 ? 'bg-green-100 text-green-700' :
-                          pct >= 50 ? 'bg-amber-100 text-amber-700' :
-                                      'bg-red-100  text-red-600'
-                        }`}>
-                          {pct}%
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all ${
-                              pct >= 80 ? 'bg-green-500' :
-                              pct >= 50 ? 'bg-amber-400' :
-                                          'bg-red-400'
-                            }`}
-                            style={{ width: `${pct}%` }}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+
+          {/* Personal */}
+          <div>
+            <p className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1">
+              <Users size={13} /> Personal en obra
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              <StatCard icon={UserCheck} color="blue"   value={totalHombres} label="Hombres" />
+              <StatCard icon={UserCheck} color="violet" value={totalMujeres} label="Mujeres" />
+              <StatCard icon={Users}     color="slate"  value={totalPersonal} label="Total personal" />
+            </div>
           </div>
+
+          {/* Eventos */}
+          {totalEventos > 0 && (
+            <div>
+              <p className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1">
+                <ShieldAlert size={13} /> Accidentes e incidentes
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <StatCard icon={Activity}      color="slate"  value={totalEventos}    label="Total eventos" />
+                <StatCard icon={AlertTriangle}  color="orange" value={totalAccidentes}  label="Accidentes" />
+                <StatCard icon={Activity}       color="amber"  value={totalIncidentes}  label="Incidentes" />
+                {Object.entries(gravedades).map(([grav, count]) => (
+                  <StatCard
+                    key={grav}
+                    icon={ShieldAlert}
+                    color={
+                      grav === 'Mortal'                ? 'red'    :
+                      grav === 'Grave (incapacitante)' ? 'orange' :
+                      grav === 'Leve'                  ? 'amber'  : 'slate'
+                    }
+                    value={count}
+                    label={grav}
+                  />
+                ))}
+              </div>
+
+              {/* Top causas */}
+              {topCausas.length > 0 && (
+                <div className="mt-3 bg-white rounded-xl border border-slate-200 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
+                    <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                      Principales causas
+                    </p>
+                  </div>
+                  <ul className="divide-y divide-slate-100">
+                    {topCausas.map(([causa, count]) => (
+                      <li key={causa} className="px-4 py-3 flex items-center justify-between text-sm">
+                        <span className="text-slate-700">{causa}</span>
+                        <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-orange-100 text-orange-700">
+                          {count}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Sin eventos */}
+          {totalEventos === 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+              <CheckCircle size={16} />
+              Sin accidentes ni incidentes reportados en el periodo
+            </div>
+          )}
         </div>
       )}
 
@@ -690,36 +627,64 @@ export default async function DashboardPage({
 
 // ── Componentes auxiliares ─────────────────────────────────────────
 
-const COLOR_MAP: Record<string, { bg: string; icon: string; border: string }> = {
-  blue:   { bg: 'bg-blue-50',   icon: 'text-blue-600',   border: 'border-blue-200'   },
-  green:  { bg: 'bg-green-50',  icon: 'text-green-600',  border: 'border-green-200'  },
-  amber:  { bg: 'bg-amber-50',  icon: 'text-amber-600',  border: 'border-amber-200'  },
-  orange: { bg: 'bg-orange-50', icon: 'text-orange-600', border: 'border-orange-200' },
-  violet: { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-200' },
-  slate:  { bg: 'bg-slate-50',  icon: 'text-slate-600',  border: 'border-slate-200'  },
+const COLOR_MAP: Record<string, { bg: string; icon: string; border: string; ring: string }> = {
+  blue:   { bg: 'bg-blue-50',   icon: 'text-blue-600',   border: 'border-blue-200',   ring: 'ring-blue-400'   },
+  green:  { bg: 'bg-green-50',  icon: 'text-green-600',  border: 'border-green-200',  ring: 'ring-green-400'  },
+  amber:  { bg: 'bg-amber-50',  icon: 'text-amber-600',  border: 'border-amber-200',  ring: 'ring-amber-400'  },
+  orange: { bg: 'bg-orange-50', icon: 'text-orange-600', border: 'border-orange-200', ring: 'ring-orange-400' },
+  violet: { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-200', ring: 'ring-violet-400' },
+  slate:  { bg: 'bg-slate-50',  icon: 'text-slate-600',  border: 'border-slate-200',  ring: 'ring-slate-400'  },
+  red:    { bg: 'bg-red-50',    icon: 'text-red-600',    border: 'border-red-200',    ring: 'ring-red-400'    },
 }
 
 function StatCard({ icon: Icon, color, value, label }: {
-  icon: React.ElementType; color: string; value: number; label: string
+  icon: React.ElementType
+  color: string
+  value: number
+  label: string
 }) {
   const c = COLOR_MAP[color] ?? COLOR_MAP.slate
   return (
-    <div className={`bg-white rounded-xl border ${c.border} p-5 flex items-center gap-4`}>
-      <div className={`w-11 h-11 rounded-lg flex items-center justify-center ${c.bg}`}>
-        <Icon size={22} className={c.icon} />
+    <div className={`bg-white rounded-xl border ${c.border} p-4 flex items-center gap-3`}>
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${c.bg}`}>
+        <Icon size={20} className={c.icon} />
       </div>
       <div>
-        <p className="text-2xl font-bold text-slate-800">{value}</p>
-        <p className="text-sm text-slate-500 leading-tight">{label}</p>
+        <p className="text-xl font-bold text-slate-800 leading-none">{value.toLocaleString()}</p>
+        <p className="text-xs text-slate-500 mt-0.5 leading-tight">{label}</p>
       </div>
     </div>
   )
 }
 
-function Pill({ value, cls }: { value: number; cls: string }) {
+function DetalleCard({ href, icon: Icon, color, value, label, active }: {
+  href: string
+  icon: React.ElementType
+  color: string
+  value: number
+  label: string
+  active: boolean
+}) {
+  const c = COLOR_MAP[color] ?? COLOR_MAP.slate
   return (
-    <span className={`inline-flex items-center justify-center min-w-[28px] h-7 rounded-full text-xs font-bold px-2 ${cls}`}>
-      {value}
-    </span>
+    <Link
+      href={href}
+      className={`bg-white rounded-xl border p-4 flex flex-col gap-2 hover:shadow-md transition-all cursor-pointer ${
+        active ? `${c.border} ring-2 ${c.ring}` : 'border-slate-200 hover:border-slate-300'
+      }`}
+    >
+      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${c.bg}`}>
+        <Icon size={18} className={c.icon} />
+      </div>
+      <div>
+        <p className="text-2xl font-bold text-slate-800 leading-none">{value.toLocaleString()}</p>
+        <p className="text-xs text-slate-500 mt-1 leading-tight">{label}</p>
+      </div>
+      {active && (
+        <div className={`text-[10px] font-semibold ${c.icon} flex items-center gap-0.5`}>
+          Ver listado <ChevronRight size={11} />
+        </div>
+      )}
+    </Link>
   )
 }
