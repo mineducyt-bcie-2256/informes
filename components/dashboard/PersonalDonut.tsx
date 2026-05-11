@@ -47,73 +47,62 @@ export default function PersonalDonut({ hombres, mujeres, total }: Props) {
   ]
 
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Personal en obra</p>
+    <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 h-full">
+      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Personal en obra</p>
 
-      <div className="flex items-center justify-between gap-4">
+      {/* Donut centrado */}
+      <div className="relative w-24 h-24 mx-auto">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={28}
+              outerRadius={42}
+              startAngle={90}
+              endAngle={-270}
+              dataKey="value"
+              strokeWidth={2}
+              stroke="#fff"
+            >
+              {data.map((_, i) => (
+                <Cell key={i} fill={COLORS[i]} />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(v: number, name: string) => [`${v} personas`, name]}
+              contentStyle={{ fontSize: 11, borderRadius: 8 }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <p className="text-base font-bold text-slate-800 leading-none">{total}</p>
+          <p className="text-[9px] text-slate-400">Total</p>
+        </div>
+      </div>
 
-        {/* Gráfico donut */}
-        <div className="relative w-36 h-36 shrink-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={data}
-                cx="50%"
-                cy="50%"
-                innerRadius={42}
-                outerRadius={62}
-                startAngle={90}
-                endAngle={-270}
-                dataKey="value"
-                strokeWidth={2}
-                stroke="#fff"
-              >
-                {data.map((_, i) => (
-                  <Cell key={i} fill={COLORS[i]} />
-                ))}
-              </Pie>
-              <Tooltip
-                formatter={(v: number, name: string) => [`${v} personas`, name]}
-                contentStyle={{ fontSize: 11, borderRadius: 8 }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-          {/* Total en el centro */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <p className="text-xl font-bold text-slate-800 leading-none">{total}</p>
-            <p className="text-[10px] text-slate-400 mt-0.5">Total</p>
+      {/* Hombres y Mujeres */}
+      <div className="mt-2 space-y-1.5">
+        <div className="flex items-center gap-2">
+          <IconoHombre className="w-4 h-7 text-blue-500 shrink-0" />
+          <div className="flex items-center justify-between flex-1">
+            <span className="text-xs text-slate-500">Hombres</span>
+            <div className="text-right">
+              <span className="text-sm font-bold text-blue-600">{hombres}</span>
+              <span className="text-[10px] text-blue-400 ml-1">{pctH}%</span>
+            </div>
           </div>
         </div>
-
-        {/* Leyenda con íconos */}
-        <div className="flex flex-col gap-4 flex-1">
-
-          {/* Hombres */}
-          <div className="flex items-center gap-3">
-            <IconoHombre className="w-7 h-14 text-blue-500 shrink-0" />
-            <div>
-              <p className="text-2xl font-bold text-blue-600 leading-none">{hombres}</p>
-              <p className="text-xs text-slate-500">Hombres</p>
-              <div className="flex items-center gap-1 mt-0.5">
-                <div className="w-2 h-2 rounded-full bg-blue-500" />
-                <span className="text-xs font-semibold text-blue-600">{pctH}%</span>
-              </div>
+        <div className="flex items-center gap-2">
+          <IconoMujer className="w-4 h-7 text-violet-500 shrink-0" />
+          <div className="flex items-center justify-between flex-1">
+            <span className="text-xs text-slate-500">Mujeres</span>
+            <div className="text-right">
+              <span className="text-sm font-bold text-violet-600">{mujeres}</span>
+              <span className="text-[10px] text-violet-400 ml-1">{pctM}%</span>
             </div>
           </div>
-
-          {/* Mujeres */}
-          <div className="flex items-center gap-3">
-            <IconoMujer className="w-7 h-14 text-violet-500 shrink-0" />
-            <div>
-              <p className="text-2xl font-bold text-violet-600 leading-none">{mujeres}</p>
-              <p className="text-xs text-slate-500">Mujeres</p>
-              <div className="flex items-center gap-1 mt-0.5">
-                <div className="w-2 h-2 rounded-full bg-violet-500" />
-                <span className="text-xs font-semibold text-violet-600">{pctM}%</span>
-              </div>
-            </div>
-          </div>
-
         </div>
       </div>
     </div>
