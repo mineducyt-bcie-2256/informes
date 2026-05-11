@@ -574,13 +574,9 @@ export default async function DashboardPage({
                 <div className="flex items-center justify-around gap-4">
                   {/* Hombres */}
                   <div className="flex flex-col items-center gap-1">
-                    <svg viewBox="0 0 64 80" className="w-12 h-14 text-blue-600" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="32" cy="16" r="12" />
-                      <path d="M10 72 c0-20 44-20 44 0" />
-                      <line x1="32" y1="28" x2="32" y2="52" />
-                      <line x1="18" y1="38" x2="46" y2="38" />
-                      <line x1="32" y1="52" x2="20" y2="68" />
-                      <line x1="32" y1="52" x2="44" y2="68" />
+                    <svg viewBox="0 0 64 80" className="w-12 h-14 text-blue-600" fill="currentColor">
+                      <circle cx="32" cy="18" r="13" opacity="0.9"/>
+                      <path d="M12 72 C12 52 20 46 32 46 C44 46 52 52 52 72 Z" opacity="0.9"/>
                     </svg>
                     <p className="text-2xl font-bold text-blue-700 leading-none">{totalHombres.toLocaleString()}</p>
                     <p className="text-xs text-slate-500">Hombres</p>
@@ -601,10 +597,10 @@ export default async function DashboardPage({
 
                   {/* Mujeres */}
                   <div className="flex flex-col items-center gap-1">
-                    <svg viewBox="0 0 64 80" className="w-12 h-14 text-violet-600" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="32" cy="16" r="12" />
-                      <path d="M16 40 Q16 72 32 72 Q48 72 48 40 Q48 28 32 28 Q16 28 16 40Z" />
-                      <line x1="24" y1="55" x2="40" y2="55" />
+                    <svg viewBox="0 0 64 80" className="w-12 h-14 text-violet-600" fill="currentColor">
+                      <circle cx="32" cy="18" r="13" opacity="0.9"/>
+                      <path d="M14 74 L20 46 C22 42 26 40 32 40 C38 40 42 42 44 46 L50 74 Z" opacity="0.9"/>
+                      <ellipse cx="32" cy="56" rx="14" ry="5" opacity="0.3"/>
                     </svg>
                     <p className="text-2xl font-bold text-violet-700 leading-none">{totalMujeres.toLocaleString()}</p>
                     <p className="text-xs text-slate-500">Mujeres</p>
