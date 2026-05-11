@@ -7,6 +7,7 @@ import {
   UserCheck, UserX, Activity, ShieldAlert,
 } from 'lucide-react'
 import Link from 'next/link'
+import PersonalDonut from '@/components/dashboard/PersonalDonut'
 
 // ── Tipos internos ─────────────────────────────────────────────────
 type Escuela = {
@@ -566,66 +567,9 @@ export default async function DashboardPage({
 
           <div className="p-5 space-y-5">
 
-            {/* Personal */}
+            {/* Personal + Accidentes */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Bloque visual hombres vs mujeres */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Personal en obra</p>
-                <div className="flex items-center justify-around gap-4">
-                  {/* Hombres */}
-                  <div className="flex flex-col items-center gap-1">
-                    <svg viewBox="0 0 64 80" className="w-12 h-14 text-blue-600" fill="currentColor">
-                      <circle cx="32" cy="18" r="13" opacity="0.9"/>
-                      <path d="M12 72 C12 52 20 46 32 46 C44 46 52 52 52 72 Z" opacity="0.9"/>
-                    </svg>
-                    <p className="text-2xl font-bold text-blue-700 leading-none">{totalHombres.toLocaleString()}</p>
-                    <p className="text-xs text-slate-500">Hombres</p>
-                    <p className="text-xs font-semibold text-blue-600">
-                      {totalPersonal > 0 ? Math.round((totalHombres / totalPersonal) * 100) : 0}%
-                    </p>
-                  </div>
-
-                  {/* Divisor */}
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-px h-16 bg-slate-200" />
-                    <div className="text-center">
-                      <p className="text-xs text-slate-400">Total</p>
-                      <p className="text-xl font-bold text-slate-700">{totalPersonal.toLocaleString()}</p>
-                    </div>
-                    <div className="w-px h-16 bg-slate-200" />
-                  </div>
-
-                  {/* Mujeres */}
-                  <div className="flex flex-col items-center gap-1">
-                    <svg viewBox="0 0 64 80" className="w-12 h-14 text-violet-600" fill="currentColor">
-                      <circle cx="32" cy="18" r="13" opacity="0.9"/>
-                      <path d="M14 74 L20 46 C22 42 26 40 32 40 C38 40 42 42 44 46 L50 74 Z" opacity="0.9"/>
-                      <ellipse cx="32" cy="56" rx="14" ry="5" opacity="0.3"/>
-                    </svg>
-                    <p className="text-2xl font-bold text-violet-700 leading-none">{totalMujeres.toLocaleString()}</p>
-                    <p className="text-xs text-slate-500">Mujeres</p>
-                    <p className="text-xs font-semibold text-violet-600">
-                      {totalPersonal > 0 ? Math.round((totalMujeres / totalPersonal) * 100) : 0}%
-                    </p>
-                  </div>
-                </div>
-
-                {/* Barra proporcional */}
-                {totalPersonal > 0 && (
-                  <div className="mt-3">
-                    <div className="w-full h-2 rounded-full overflow-hidden bg-violet-200">
-                      <div
-                        className="h-full bg-blue-500 rounded-full transition-all"
-                        style={{ width: `${Math.round((totalHombres / totalPersonal) * 100)}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
-                      <span>Hombres {Math.round((totalHombres / totalPersonal) * 100)}%</span>
-                      <span>Mujeres {Math.round((totalMujeres / totalPersonal) * 100)}%</span>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <PersonalDonut hombres={totalHombres} mujeres={totalMujeres} total={totalPersonal} />
 
               {/* Accidentes resumen */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
