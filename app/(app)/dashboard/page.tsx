@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createAdmin } from '@supabase/supabase-js'
-import { unstable_cache } from 'next/cache'
 import { MESES } from '@/types'
 import {
   Building2, School, FileText, CheckCircle, Clock,
@@ -52,39 +51,6 @@ type Informe = {
   periodo_mes: number
   periodo_anio: number
 }
-
-// ── Funciones cacheadas (datos que cambian poco) ───────────────────
-const adminUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const adminKey  = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const getEscuelas = unstable_cache(
-  async (soloDemo: boolean) => {
-    const admin = createAdmin(adminUrl, adminKey)
-    const q = admin.from('escuelas')
-      .select('id, nombre, empresa_supervision, numero_contrato, etapa, grupos(nombre)')
-      .eq('activa', true)
-    if (soloDemo) q.eq('es_demo', true)
-    const { data } = await q
-    return (data ?? []) as Escuela[]
-  },
-  ['escuelas-dashboard'],
-  { revalidate: 300 } // 5 minutos
-)
-
-const getEmpresas = unstable_cache(
-  async () => {
-    const admin = createAdmin(adminUrl, adminKey)
-    const { data } = await admin.from('escuelas')
-      .select('empresa_supervision')
-      .eq('activa', true)
-      .eq('etapa', 'Construcción')
-      .neq('numero_contrato', 'SIN ADJUDICAR')
-      .not('numero_contrato', 'is', null)
-    return (data ?? []) as { empresa_supervision: string }[]
-  },
-  ['empresas-dashboard'],
-  { revalidate: 300 } // 5 minutos
-)
 
 // ── Helpers ────────────────────────────────────────────────────────
 function esConContrato(e: Escuela) {
@@ -156,21 +122,22 @@ export default async function DashboardPage({
 
   // ── Queries base en paralelo ───────────────────────────────────
   const [
-    todasEscuelas,
-    rawInformesMes,
-    rawInformesAnio,
-    rawEmpresas,
+    { data: rawEscuelas },
+    { data: rawInformesMes },
+    { data: rawInformesAnio },
+    { data: rawEmpresas },
   ] = await Promise.all([
-    // Escuelas — cacheadas 5 minutos
-    getEscuelas(esVisitante),
+    // Escuelas activas con grupo — visitante solo ve demo
+    esVisitante
+      ? admin.from('escuelas').select('id, nombre, empresa_supervision, numero_contrato, etapa, grupos(nombre)').eq('activa', true).eq('es_demo', true)
+      : admin.from('escuelas').select('id, nombre, empresa_supervision, numero_contrato, etapa, grupos(nombre)').eq('activa', true),
 
     // Informes del mes seleccionado
     admin
       .from('informes')
       .select('id, escuela_id, estado, periodo_mes, periodo_anio')
       .eq('periodo_mes', mesSel)
-      .eq('periodo_anio', anio)
-      .then(r => r.data ?? []),
+      .eq('periodo_anio', anio),
 
     // Informes del año actual
     nivel === 'escuela'
@@ -180,31 +147,36 @@ export default async function DashboardPage({
           .eq('escuela_id', escuelaIdEfectivo!)
           .eq('periodo_anio', anio)
           .order('periodo_mes', { ascending: false })
-          .then(r => r.data ?? [])
       : admin
           .from('informes')
           .select('id, escuela_id, estado, periodo_mes, periodo_anio')
-          .eq('periodo_anio', anio)
-          .then(r => r.data ?? []),
+          .eq('periodo_anio', anio),
 
-    // Empresas — cacheadas 5 minutos
-    getEmpresas(),
+    // Lista de empresas distintas para el selector
+    admin
+      .from('escuelas')
+      .select('empresa_supervision')
+      .eq('activa', true)
+      .eq('etapa', 'Construcción')
+      .neq('numero_contrato', 'SIN ADJUDICAR')
+      .not('numero_contrato', 'is', null),
   ])
 
-  const informesMes  = rawInformesMes  as Informe[]
-  const informesAnio = rawInformesAnio as Informe[]
+  const todasEscuelas  = (rawEscuelas   ?? []) as Escuela[]
+  const informesMes    = (rawInformesMes ?? []) as Informe[]
+  const informesAnio   = (rawInformesAnio ?? []) as Informe[]
 
   // Empresas únicas para el selector
   const empresasUnicas = Array.from(
-    new Set(rawEmpresas.map((e: any) => e.empresa_supervision).filter(Boolean))
+    new Set((rawEmpresas ?? []).map((e: any) => e.empresa_supervision).filter(Boolean))
   ).sort() as string[]
 
   // Filtrar escuelas: activas, con contrato, en construcción
   const escuelasBase = todasEscuelas.filter(e => esConContrato(e) && esConstruccion(e))
 
-  // Escuelas de la empresa seleccionada (si aplica) — solo construcción con contrato
+  // Escuelas de la empresa seleccionada — todas las activas de esa empresa (para el dropdown)
   const escuelasEmpresa = empresaEfectiva
-    ? escuelasBase.filter(e => e.empresa_supervision === empresaEfectiva)
+    ? todasEscuelas.filter(e => e.empresa_supervision === empresaEfectiva)
     : escuelasBase
 
   // Escuela seleccionada (si aplica)
