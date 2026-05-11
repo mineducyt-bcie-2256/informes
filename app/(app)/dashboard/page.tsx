@@ -555,106 +555,104 @@ export default async function DashboardPage({
 
       {/* ── Bloque 3: HSSO consolidado ── */}
       {hssoData.length > 0 && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+        <div>
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <ShieldAlert size={13} className="text-slate-400" />
+            HSSO consolidado — {periodoLabel}
+          </h2>
 
-          {/* Header */}
-          <div className="px-5 py-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
-            <ShieldAlert size={14} className="text-slate-500" />
-            <h2 className="text-xs font-semibold text-slate-600 uppercase tracking-widest">
-              HSSO consolidado — {periodoLabel}
-            </h2>
-          </div>
+          {/* Dos columnas: Personal | Accidentes e incidentes */}
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4 items-start">
 
-          <div className="p-5 space-y-5">
+            {/* ── Columna izquierda: Personal en obra ── */}
+            <PersonalDonut hombres={totalHombres} mujeres={totalMujeres} total={totalPersonal} />
 
-            {/* Fila principal: Personal | Accidentes | Gravedad | Causas | Lesiones */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1.5fr_1.5fr_1.5fr] gap-3 items-start">
+            {/* ── Columna derecha: Accidentes e incidentes ── */}
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
 
-              {/* Personal donut */}
-              <div className="lg:col-span-1">
-                <PersonalDonut hombres={totalHombres} mujeres={totalMujeres} total={totalPersonal} />
+              {/* Header + contadores */}
+              <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Accidentes e incidentes</p>
+                {totalEventos === 0 && (
+                  <span className="flex items-center gap-1 text-xs text-green-700 bg-green-100 border border-green-200 rounded-full px-2 py-0.5">
+                    <CheckCircle size={11} /> Sin eventos reportados
+                  </span>
+                )}
               </div>
 
-              {/* Accidentes e incidentes — vertical */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Eventos</p>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between px-2 py-1.5 bg-white border border-slate-200 rounded-lg">
-                    <span className="text-xs text-slate-500">Total</span>
-                    <span className="text-sm font-bold text-slate-700">{totalEventos}</span>
+              {/* Fila de totales */}
+              <div className="grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100">
+                <div className="px-4 py-3 text-center">
+                  <p className="text-2xl font-bold text-orange-600 leading-none">{totalAccidentes}</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Accidentes</p>
+                </div>
+                <div className="px-4 py-3 text-center">
+                  <p className="text-2xl font-bold text-amber-500 leading-none">{totalIncidentes}</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Incidentes</p>
+                </div>
+                <div className="px-4 py-3 text-center">
+                  <p className="text-2xl font-bold text-slate-700 leading-none">{totalEventos}</p>
+                  <p className="text-[11px] text-slate-500 mt-1">Total eventos</p>
+                </div>
+              </div>
+
+              {/* Tres columnas: Gravedad | Causas | Tipos de lesión */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-slate-100">
+
+                {/* Gravedad */}
+                <div className="p-4">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Gravedad</p>
+                  <div className="space-y-1.5">
+                    {(['Sin daño', 'Leve', 'Grave (incapacitante)', 'Mortal'] as const).map(grav => (
+                      <div key={grav} className={`flex items-center justify-between px-2 py-1.5 rounded-lg border ${
+                        grav === 'Mortal'                ? 'bg-red-50 border-red-100'      :
+                        grav === 'Grave (incapacitante)' ? 'bg-orange-50 border-orange-100':
+                        grav === 'Leve'                  ? 'bg-amber-50 border-amber-100'  :
+                                                           'bg-green-50 border-green-100'
+                      }`}>
+                        <span className="text-xs text-slate-600">{grav === 'Grave (incapacitante)' ? 'Grave' : grav}</span>
+                        <span className={`text-sm font-bold shrink-0 ${
+                          grav === 'Mortal'                ? 'text-red-700'    :
+                          grav === 'Grave (incapacitante)' ? 'text-orange-700' :
+                          grav === 'Leve'                  ? 'text-amber-700'  : 'text-green-700'
+                        }`}>{gravedades[grav] ?? 0}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div className="flex items-center justify-between px-2 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
-                    <span className="text-xs text-slate-500">Accidentes</span>
-                    <span className="text-sm font-bold text-orange-600">{totalAccidentes}</span>
+                </div>
+
+                {/* Causas */}
+                <div className="p-4">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Causas</p>
+                  <div className="space-y-1.5">
+                    {topCausas.length > 0 ? topCausas.map(([causa, count]) => (
+                      <div key={causa} className="flex items-center justify-between px-2 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
+                        <span className="text-xs text-slate-600 truncate">{causa}</span>
+                        <span className="text-xs font-bold text-orange-700 ml-2 shrink-0">{count}</span>
+                      </div>
+                    )) : (
+                      <p className="text-xs text-slate-400 italic">Sin datos</p>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between px-2 py-1.5 bg-amber-50 border border-amber-100 rounded-lg">
-                    <span className="text-xs text-slate-500">Incidentes</span>
-                    <span className="text-sm font-bold text-amber-600">{totalIncidentes}</span>
+                </div>
+
+                {/* Tipos de lesión */}
+                <div className="p-4">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Tipos de lesión</p>
+                  <div className="space-y-1.5">
+                    {topLesiones.length > 0 ? topLesiones.map(([lesion, count]) => (
+                      <div key={lesion} className="flex items-center justify-between px-2 py-1.5 bg-red-50 border border-red-100 rounded-lg">
+                        <span className="text-xs text-slate-600 truncate">{lesion}</span>
+                        <span className="text-xs font-bold text-red-700 ml-2 shrink-0">{count}</span>
+                      </div>
+                    )) : (
+                      <p className="text-xs text-slate-400 italic">Sin datos</p>
+                    )}
                   </div>
                 </div>
-              </div>
 
-              {/* Gravedad — vertical */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Gravedad</p>
-                <div className="space-y-1.5">
-                  {(['Sin daño', 'Leve', 'Grave (incapacitante)', 'Mortal'] as const).map(grav => (
-                    <div key={grav} className={`flex items-center justify-between px-2 py-1.5 rounded-lg border ${
-                      grav === 'Mortal'                ? 'bg-red-50 border-red-100'      :
-                      grav === 'Grave (incapacitante)' ? 'bg-orange-50 border-orange-100':
-                      grav === 'Leve'                  ? 'bg-amber-50 border-amber-100'  :
-                                                         'bg-green-50 border-green-100'
-                    }`}>
-                      <span className="text-xs text-slate-600 truncate">{grav === 'Grave (incapacitante)' ? 'Grave' : grav}</span>
-                      <span className={`text-sm font-bold shrink-0 ml-1 ${
-                        grav === 'Mortal'                ? 'text-red-700'    :
-                        grav === 'Grave (incapacitante)' ? 'text-orange-700' :
-                        grav === 'Leve'                  ? 'text-amber-700'  : 'text-green-700'
-                      }`}>{gravedades[grav] ?? 0}</span>
-                    </div>
-                  ))}
-                </div>
               </div>
-
-              {/* Causas — vertical */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Causas</p>
-                <div className="space-y-1.5">
-                  {topCausas.length > 0 ? topCausas.map(([causa, count]) => (
-                    <div key={causa} className="flex items-center justify-between px-2 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
-                      <span className="text-xs text-slate-600 truncate">{causa}</span>
-                      <span className="text-xs font-bold text-orange-700 ml-1 shrink-0">{count}</span>
-                    </div>
-                  )) : (
-                    <p className="text-xs text-slate-400 italic">Sin datos</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Tipo de lesión — vertical */}
-              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tipo de lesión</p>
-                <div className="space-y-1.5">
-                  {topLesiones.length > 0 ? topLesiones.map(([lesion, count]) => (
-                    <div key={lesion} className="flex items-center justify-between px-2 py-1.5 bg-red-50 border border-red-100 rounded-lg">
-                      <span className="text-xs text-slate-600 truncate">{lesion}</span>
-                      <span className="text-xs font-bold text-red-700 ml-1 shrink-0">{count}</span>
-                    </div>
-                  )) : (
-                    <p className="text-xs text-slate-400 italic">Sin datos</p>
-                  )}
-                </div>
-              </div>
-
             </div>
-
-            {totalEventos === 0 && (
-              <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                <CheckCircle size={13} className="shrink-0" />
-                Sin accidentes ni incidentes reportados en el periodo
-              </div>
-            )}
-
           </div>
         </div>
       )}
