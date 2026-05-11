@@ -568,7 +568,7 @@ export default async function DashboardPage({
           <div className="p-5 space-y-5">
 
             {/* Fila principal: Personal | Accidentes | Gravedad | Causas | Lesiones */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-start">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1.5fr_1.5fr_1.5fr] gap-3 items-start">
 
               {/* Personal donut */}
               <div className="lg:col-span-1">

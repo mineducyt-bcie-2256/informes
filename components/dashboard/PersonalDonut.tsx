@@ -50,8 +50,9 @@ export default function PersonalDonut({ hombres, mujeres, total }: Props) {
     <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 h-full">
       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Personal en obra</p>
 
-      {/* Donut centrado */}
-      <div className="relative w-24 h-24 mx-auto">
+      {/* Donut + leyenda en fila */}
+      <div className="flex items-center gap-3">
+      <div className="relative w-24 h-24 shrink-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -82,29 +83,27 @@ export default function PersonalDonut({ hombres, mujeres, total }: Props) {
         </div>
       </div>
 
-      {/* Hombres y Mujeres */}
-      <div className="mt-2 space-y-1.5">
-        <div className="flex items-center gap-2">
-          <IconoHombre className="w-4 h-7 text-blue-500 shrink-0" />
-          <div className="flex items-center justify-between flex-1">
-            <span className="text-xs text-slate-500">Hombres</span>
-            <div className="text-right">
-              <span className="text-sm font-bold text-blue-600">{hombres}</span>
-              <span className="text-[10px] text-blue-400 ml-1">{pctH}%</span>
+        {/* Leyenda al lado del donut */}
+        <div className="flex flex-col gap-3 flex-1">
+          <div className="flex items-center gap-2">
+            <IconoHombre className="w-5 h-9 text-blue-500 shrink-0" />
+            <div>
+              <p className="text-lg font-bold text-blue-600 leading-none">{hombres}</p>
+              <p className="text-[10px] text-slate-500">Hombres</p>
+              <p className="text-[10px] font-semibold text-blue-400">{pctH}%</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <IconoMujer className="w-5 h-9 text-violet-500 shrink-0" />
+            <div>
+              <p className="text-lg font-bold text-violet-600 leading-none">{mujeres}</p>
+              <p className="text-[10px] text-slate-500">Mujeres</p>
+              <p className="text-[10px] font-semibold text-violet-400">{pctM}%</p>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <IconoMujer className="w-4 h-7 text-violet-500 shrink-0" />
-          <div className="flex items-center justify-between flex-1">
-            <span className="text-xs text-slate-500">Mujeres</span>
-            <div className="text-right">
-              <span className="text-sm font-bold text-violet-600">{mujeres}</span>
-              <span className="text-[10px] text-violet-400 ml-1">{pctM}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
+
+      </div>{/* cierra flex donut+leyenda */}
     </div>
   )
 }
