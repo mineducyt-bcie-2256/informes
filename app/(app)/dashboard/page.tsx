@@ -246,20 +246,12 @@ export default async function DashboardPage({
   const formulariosMap: Record<string, Set<string>> = {}
 
   if (idsParaAnalisis.length > 0) {
-    const seccionQueries = SECCIONES.map(sec =>
-      supabase
-        .from(sec.tabla as any)
-        .select('informe_id')
-        .in('informe_id', idsParaAnalisis)
-        .then(({ data }) => ({ key: sec.key, ids: (data ?? []).map((r: any) => r.informe_id) }))
-    )
-    const resultados = await Promise.all(seccionQueries)
-
-    for (const { key, ids } of resultados) {
-      for (const id of ids) {
-        if (!formulariosMap[id]) formulariosMap[id] = new Set()
-        formulariosMap[id].add(key)
-      }
+    const { data: seccionesData } = await admin.rpc('get_secciones_completadas', {
+      informe_ids: idsParaAnalisis,
+    })
+    for (const row of seccionesData ?? []) {
+      if (!formulariosMap[row.informe_id]) formulariosMap[row.informe_id] = new Set()
+      formulariosMap[row.informe_id].add(row.seccion)
     }
   }
 
