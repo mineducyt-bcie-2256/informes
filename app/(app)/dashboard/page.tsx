@@ -566,14 +566,80 @@ export default async function DashboardPage({
 
           <div className="p-5 space-y-5">
 
-            {/* Personal + Accidentes en una sola fila */}
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-              <MiniStat label="Hombres"       value={totalHombres}   color="blue"   />
-              <MiniStat label="Mujeres"        value={totalMujeres}   color="violet" />
-              <MiniStat label="Total personal" value={totalPersonal}  color="slate"  />
-              <MiniStat label="Total eventos"  value={totalEventos}   color="slate"  />
-              <MiniStat label="Accidentes"     value={totalAccidentes} color="orange" />
-              <MiniStat label="Incidentes"     value={totalIncidentes} color="amber"  />
+            {/* Personal */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Bloque visual hombres vs mujeres */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Personal en obra</p>
+                <div className="flex items-center justify-around gap-4">
+                  {/* Hombres */}
+                  <div className="flex flex-col items-center gap-1">
+                    <svg viewBox="0 0 64 80" className="w-12 h-14 text-blue-600" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="32" cy="16" r="12" />
+                      <path d="M10 72 c0-20 44-20 44 0" />
+                      <line x1="32" y1="28" x2="32" y2="52" />
+                      <line x1="18" y1="38" x2="46" y2="38" />
+                      <line x1="32" y1="52" x2="20" y2="68" />
+                      <line x1="32" y1="52" x2="44" y2="68" />
+                    </svg>
+                    <p className="text-2xl font-bold text-blue-700 leading-none">{totalHombres.toLocaleString()}</p>
+                    <p className="text-xs text-slate-500">Hombres</p>
+                    <p className="text-xs font-semibold text-blue-600">
+                      {totalPersonal > 0 ? Math.round((totalHombres / totalPersonal) * 100) : 0}%
+                    </p>
+                  </div>
+
+                  {/* Divisor */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-px h-16 bg-slate-200" />
+                    <div className="text-center">
+                      <p className="text-xs text-slate-400">Total</p>
+                      <p className="text-xl font-bold text-slate-700">{totalPersonal.toLocaleString()}</p>
+                    </div>
+                    <div className="w-px h-16 bg-slate-200" />
+                  </div>
+
+                  {/* Mujeres */}
+                  <div className="flex flex-col items-center gap-1">
+                    <svg viewBox="0 0 64 80" className="w-12 h-14 text-violet-600" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="32" cy="16" r="12" />
+                      <path d="M16 40 Q16 72 32 72 Q48 72 48 40 Q48 28 32 28 Q16 28 16 40Z" />
+                      <line x1="24" y1="55" x2="40" y2="55" />
+                    </svg>
+                    <p className="text-2xl font-bold text-violet-700 leading-none">{totalMujeres.toLocaleString()}</p>
+                    <p className="text-xs text-slate-500">Mujeres</p>
+                    <p className="text-xs font-semibold text-violet-600">
+                      {totalPersonal > 0 ? Math.round((totalMujeres / totalPersonal) * 100) : 0}%
+                    </p>
+                  </div>
+                </div>
+
+                {/* Barra proporcional */}
+                {totalPersonal > 0 && (
+                  <div className="mt-3">
+                    <div className="w-full h-2 rounded-full overflow-hidden bg-violet-200">
+                      <div
+                        className="h-full bg-blue-500 rounded-full transition-all"
+                        style={{ width: `${Math.round((totalHombres / totalPersonal) * 100)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                      <span>Hombres {Math.round((totalHombres / totalPersonal) * 100)}%</span>
+                      <span>Mujeres {Math.round((totalMujeres / totalPersonal) * 100)}%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Accidentes resumen */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Accidentes e incidentes</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <MiniStat label="Total eventos"  value={totalEventos}    color="slate"  />
+                  <MiniStat label="Accidentes"      value={totalAccidentes} color="orange" />
+                  <MiniStat label="Incidentes"      value={totalIncidentes} color="amber"  />
+                </div>
+              </div>
             </div>
 
             {totalEventos > 0 && (
