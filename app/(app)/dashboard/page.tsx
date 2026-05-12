@@ -679,78 +679,54 @@ export default async function DashboardPage({
 
 // ── Componentes auxiliares ─────────────────────────────────────────
 
-// Gradientes modo claro (imagen 1) + colores modo oscuro (imagen 2)
+// Colores hardcodeados para evitar purge de Tailwind en clases dinámicas
 const COLOR_MAP: Record<string, {
-  gradient: string   // fondo tarjeta modo claro
-  darkBg: string     // fondo tarjeta modo oscuro
-  iconLight: string  // ícono modo claro
-  iconDark: string   // ícono modo oscuro
-  border: string
-  darkBorder: string
+  gradient: string    // CSS gradient para el card (ambos modos)
+  gradientIcon: string // CSS gradient para el ícono
   ring: string
+  textAccent: string
 }> = {
-  orange: {
-    gradient:   'from-violet-600 to-violet-500',
-    darkBg:     'bg-[#1a1040]',
-    iconLight:  'text-white',
-    iconDark:   'text-violet-400',
-    border:     'border-violet-400',
-    darkBorder: 'border-violet-700',
-    ring:       'ring-violet-400',
+  orange: { // CEs en construcción → violeta
+    gradient:     'linear-gradient(135deg, #7c3aed, #6d28d9)',
+    gradientIcon: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+    ring:         '#7c3aed',
+    textAccent:   '#c4b5fd',
   },
-  slate: {
-    gradient:   'from-cyan-500 to-sky-500',
-    darkBg:     'bg-[#0a2040]',
-    iconLight:  'text-white',
-    iconDark:   'text-cyan-400',
-    border:     'border-cyan-400',
-    darkBorder: 'border-cyan-700',
-    ring:       'ring-cyan-400',
+  slate: { // Informes del mes → cyan
+    gradient:     'linear-gradient(135deg, #0891b2, #0e7490)',
+    gradientIcon: 'linear-gradient(135deg, #22d3ee, #0891b2)',
+    ring:         '#0891b2',
+    textAccent:   '#67e8f9',
   },
-  blue: {
-    gradient:   'from-emerald-500 to-teal-500',
-    darkBg:     'bg-[#0a2a24]',
-    iconLight:  'text-white',
-    iconDark:   'text-emerald-400',
-    border:     'border-emerald-400',
-    darkBorder: 'border-emerald-700',
-    ring:       'ring-emerald-400',
+  blue: { // Presentados → teal/esmeralda
+    gradient:     'linear-gradient(135deg, #059669, #0d9488)',
+    gradientIcon: 'linear-gradient(135deg, #34d399, #059669)',
+    ring:         '#059669',
+    textAccent:   '#6ee7b7',
   },
-  green: {
-    gradient:   'from-green-500 to-lime-500',
-    darkBg:     'bg-[#0a2a10]',
-    iconLight:  'text-white',
-    iconDark:   'text-green-400',
-    border:     'border-green-400',
-    darkBorder: 'border-green-700',
-    ring:       'ring-green-400',
+  green: { // Aprobados → verde lima
+    gradient:     'linear-gradient(135deg, #16a34a, #15803d)',
+    gradientIcon: 'linear-gradient(135deg, #4ade80, #16a34a)',
+    ring:         '#16a34a',
+    textAccent:   '#86efac',
   },
-  amber: {
-    gradient:   'from-orange-500 to-amber-500',
-    darkBg:     'bg-[#2a1800]',
-    iconLight:  'text-white',
-    iconDark:   'text-amber-400',
-    border:     'border-amber-400',
-    darkBorder: 'border-amber-700',
-    ring:       'ring-amber-400',
+  amber: { // Sin informe → naranja-rojo
+    gradient:     'linear-gradient(135deg, #ea580c, #dc2626)',
+    gradientIcon: 'linear-gradient(135deg, #fb923c, #ea580c)',
+    ring:         '#ea580c',
+    textAccent:   '#fdba74',
   },
   violet: {
-    gradient:   'from-purple-600 to-pink-500',
-    darkBg:     'bg-[#1a0a30]',
-    iconLight:  'text-white',
-    iconDark:   'text-purple-400',
-    border:     'border-purple-400',
-    darkBorder: 'border-purple-700',
-    ring:       'ring-purple-400',
+    gradient:     'linear-gradient(135deg, #7c3aed, #db2777)',
+    gradientIcon: 'linear-gradient(135deg, #a78bfa, #7c3aed)',
+    ring:         '#7c3aed',
+    textAccent:   '#c4b5fd',
   },
   red: {
-    gradient:   'from-red-500 to-rose-500',
-    darkBg:     'bg-[#2a0a0a]',
-    iconLight:  'text-white',
-    iconDark:   'text-red-400',
-    border:     'border-red-400',
-    darkBorder: 'border-red-700',
-    ring:       'ring-red-400',
+    gradient:     'linear-gradient(135deg, #dc2626, #be185d)',
+    gradientIcon: 'linear-gradient(135deg, #f87171, #dc2626)',
+    ring:         '#dc2626',
+    textAccent:   '#fca5a5',
   },
 }
 
@@ -763,12 +739,12 @@ function StatCard({ icon: Icon, color, value, label }: {
   const c = COLOR_MAP[color] ?? COLOR_MAP.slate
   return (
     <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br ${c.gradient} dark:${c.darkBg}`}>
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: c.gradientIcon }}>
         <Icon size={20} className="text-white" />
       </div>
       <div>
-        <p className="text-xl font-bold text-[#1e2a45] dark:text-white leading-none">{value.toLocaleString()}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">{label}</p>
+        <p className="text-xl font-bold leading-none" style={{ color: 'var(--foreground)' }}>{value.toLocaleString()}</p>
+        <p className="text-xs mt-0.5 leading-tight" style={{ color: 'var(--muted)' }}>{label}</p>
       </div>
     </div>
   )
@@ -777,7 +753,7 @@ function StatCard({ icon: Icon, color, value, label }: {
 function MiniStat({ label, value, color }: { label: string; value: number; color: string }) {
   const c = COLOR_MAP[color] ?? COLOR_MAP.slate
   return (
-    <div className={`rounded-xl border px-3 py-2 text-center bg-gradient-to-br ${c.gradient} dark:${c.darkBg} dark:border-0`}>
+    <div className="rounded-xl px-3 py-2 text-center" style={{ background: c.gradient }}>
       <p className="text-lg font-bold text-white leading-none">{value.toLocaleString()}</p>
       <p className="text-xs text-white/80 mt-0.5 leading-tight">{label}</p>
     </div>
@@ -796,26 +772,28 @@ function DetalleCard({ href, icon: Icon, color, value, label, active }: {
   return (
     <Link
       href={href}
-      className={`rounded-2xl p-5 flex flex-col gap-3 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden ${
-        active ? `ring-2 ${c.ring}` : ''
-      }`}
-      style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
+      className="rounded-2xl p-5 flex flex-col gap-3 hover:scale-[1.02] hover:shadow-xl transition-all cursor-pointer relative overflow-hidden"
+      style={{
+        background: c.gradient,
+        boxShadow: active ? `0 0 0 3px ${c.ring}` : undefined,
+      }}
     >
-      {/* Ícono con gradiente en claro, sólido en oscuro */}
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${c.gradient}`}>
+      {/* Ícono blanco semitransparente */}
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.2)' }}>
         <Icon size={18} className="text-white" />
       </div>
       <div>
-        <p className="text-3xl font-extrabold text-[#1e2a45] dark:text-white leading-none">{value.toLocaleString()}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-tight font-medium">{label}</p>
+        <p className="text-3xl font-extrabold text-white leading-none">{value.toLocaleString()}</p>
+        <p className="text-xs text-white/80 mt-1.5 leading-tight font-medium">{label}</p>
       </div>
       {active && (
-        <div className={`text-[11px] font-semibold flex items-center gap-0.5 ${c.iconLight} dark:${c.iconDark}`}>
+        <div className="text-[11px] font-semibold flex items-center gap-0.5 text-white/90">
           Ver listado <ChevronRight size={11} />
         </div>
       )}
-      {/* Decoración esquina */}
-      <div className={`absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-10 bg-gradient-to-br ${c.gradient}`} />
+      {/* Círculo decorativo esquina */}
+      <div className="absolute -right-6 -bottom-6 w-24 h-24 rounded-full" style={{ background: 'rgba(255,255,255,0.12)' }} />
+      <div className="absolute -right-2 -bottom-10 w-16 h-16 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }} />
     </Link>
   )
 }
