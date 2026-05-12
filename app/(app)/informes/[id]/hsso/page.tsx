@@ -6,6 +6,7 @@ import FormWrapper from '@/components/forms/FormWrapper'
 import EscuelaInfoHeader from '@/components/forms/EscuelaInfoHeader'
 import DescripcionCondicion from '@/components/forms/DescripcionCondicion'
 import AccidentesSection from '@/components/forms/AccidentesSection'
+import EnfermedadesProfesionalesSection, { type EnfermedadItem } from '@/components/forms/EnfermedadesProfesionalesSection'
 import CapacitacionesSection from '@/components/forms/CapacitacionesSection'
 import RegistroFotografico, { type Foto } from '@/components/forms/RegistroFotografico'
 import { Plus, Trash2 } from 'lucide-react'
@@ -32,6 +33,8 @@ const INIT = {
   epp_items: [] as EppItem[],
   tiene_accidentes: '',
   accidentes: [] as any[],
+  tiene_enfermedades_profesionales: '',
+  enfermedades_profesionales: [] as EnfermedadItem[],
   tiene_capacitaciones: '',
   capacitaciones_list: [] as any[],
   fotos: [] as Foto[],
@@ -327,6 +330,13 @@ export default function HssoPage() {
           accidentes={data.accidentes}
           onChangeTiene={v => set('tiene_accidentes', v)}
           onChangeAccidentes={v => set('accidentes', v)}
+        />
+
+        <EnfermedadesProfesionalesSection
+          tieneEnfermedades={data.tiene_enfermedades_profesionales}
+          enfermedades={data.enfermedades_profesionales}
+          onChangeTiene={v => set('tiene_enfermedades_profesionales', v)}
+          onChangeEnfermedades={v => set('enfermedades_profesionales', v)}
         />
 
         <CapacitacionesSection
