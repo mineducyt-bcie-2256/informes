@@ -88,7 +88,7 @@ export default function PersonalDonut({ hombres, mujeres, total }: Props) {
       <div className="flex gap-3 mt-4">
         {/* Hombres */}
         <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)' }}>
-          <IconoHombre className="w-6 h-10 shrink-0" style={{ color: '#3b82f6' }} />
+          <IconoHombre className="w-6 h-10 shrink-0 text-blue-500" />
           <div>
             <p className="text-2xl font-extrabold leading-none" style={{ color: '#3b82f6' }}>{hombres}</p>
             <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted)' }}>Hombres</p>
@@ -97,7 +97,7 @@ export default function PersonalDonut({ hombres, mujeres, total }: Props) {
         </div>
         {/* Mujeres */}
         <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)' }}>
-          <IconoMujer className="w-6 h-10 shrink-0" style={{ color: '#8b5cf6' }} />
+          <IconoMujer className="w-6 h-10 shrink-0 text-violet-500" />
           <div>
             <p className="text-2xl font-extrabold leading-none" style={{ color: '#8b5cf6' }}>{mujeres}</p>
             <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted)' }}>Mujeres</p>
