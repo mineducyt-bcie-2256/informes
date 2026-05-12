@@ -2,19 +2,27 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f0f2f8;
+  --background: #f0f4ff;
   --foreground: #1e2a45;
   --card-bg: #ffffff;
   --card-border: #e2e8f0;
+  --card-border-rgb: 226,232,240;
   --muted: #64748b;
+  --pill-bg: #f8fafc;
+  --pill-border: #e2e8f0;
+  --text-secondary: #475569;
 }
 
 .dark {
-  --background: #080f1e;
+  --background: #07101f;
   --foreground: #e2e8f0;
-  --card-bg: #0f1f3d;
-  --card-border: #1e3a5f;
-  --muted: #94a3b8;
+  --card-bg: #0e1e35;
+  --card-border: #1a3050;
+  --card-border-rgb: 26,48,80;
+  --muted: #7a9abf;
+  --pill-bg: #0a1828;
+  --pill-border: #1a3050;
+  --text-secondary: #94b4d4;
 }
 
 body {

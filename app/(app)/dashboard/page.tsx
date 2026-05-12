@@ -576,15 +576,21 @@ export default async function DashboardPage({
               </div>
 
               <div className="p-4">
-                <div className="flex gap-3 items-stretch">
+                <div className="flex gap-4 items-stretch">
 
                   {/* ── Bloque izquierdo: Accidentes + 3 subcols ── */}
-                  <div className="flex-1 min-w-0 space-y-3">
+                  <div className="flex-1 min-w-0 space-y-4">
 
-                    {/* Contador Accidentes */}
-                    <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-xl px-4 py-3">
-                      <p className="text-4xl font-extrabold text-orange-600 dark:text-orange-400 leading-none">{totalAccidentes}</p>
-                      <p className="text-sm font-semibold text-orange-500 dark:text-orange-500 uppercase tracking-wide">Accidentes</p>
+                    {/* Contador Accidentes — gradiente llamativo */}
+                    <div className="flex items-center gap-4 rounded-2xl px-5 py-4" style={{
+                      background: 'linear-gradient(135deg, #f97316, #ef4444)',
+                      boxShadow: '0 4px 20px rgba(249,115,22,0.3)',
+                    }}>
+                      <p className="text-5xl font-black text-white leading-none">{totalAccidentes}</p>
+                      <div>
+                        <p className="text-white font-bold text-sm uppercase tracking-widest">Accidentes</p>
+                        <p className="text-white/70 text-xs mt-0.5">registrados en el periodo</p>
+                      </div>
                     </div>
 
                     {/* Tres columnas */}
@@ -592,52 +598,54 @@ export default async function DashboardPage({
 
                       {/* Gravedad */}
                       <div>
-                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Gravedad</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>Gravedad</p>
                         <div className="space-y-1.5">
-                          {(['Sin daño', 'Leve', 'Grave (incapacitante)', 'Mortal'] as const).map(grav => (
-                            <div key={grav} className={`flex items-center justify-between px-2 py-1.5 rounded-lg border ${
-                              grav === 'Mortal'                ? 'bg-red-50 dark:bg-red-950 border-red-100 dark:border-red-900'          :
-                              grav === 'Grave (incapacitante)' ? 'bg-orange-50 dark:bg-orange-950 border-orange-100 dark:border-orange-900' :
-                              grav === 'Leve'                  ? 'bg-amber-50 dark:bg-amber-950 border-amber-100 dark:border-amber-900'   :
-                                                                 'bg-green-50 dark:bg-green-950 border-green-100 dark:border-green-900'
-                            }`}>
-                              <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{grav === 'Grave (incapacitante)' ? 'Grave' : grav}</span>
-                              <span className={`text-sm font-bold shrink-0 ml-1 ${
-                                grav === 'Mortal'                ? 'text-red-700 dark:text-red-400'       :
-                                grav === 'Grave (incapacitante)' ? 'text-orange-700 dark:text-orange-400' :
-                                grav === 'Leve'                  ? 'text-amber-700 dark:text-amber-400'   : 'text-green-700 dark:text-green-400'
-                              }`}>{gravedades[grav] ?? 0}</span>
-                            </div>
-                          ))}
+                          {([
+                            { label: 'Sin daño', color: '#10b981', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.25)' },
+                            { label: 'Leve',     color: '#f59e0b', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.25)' },
+                            { label: 'Grave',    color: '#f97316', bg: 'rgba(249,115,22,0.08)', border: 'rgba(249,115,22,0.25)' },
+                            { label: 'Mortal',   color: '#ef4444', bg: 'rgba(239,68,68,0.08)',  border: 'rgba(239,68,68,0.25)'  },
+                          ]).map(({ label, color, bg, border }) => {
+                            const key = label === 'Grave' ? 'Grave (incapacitante)' : label
+                            return (
+                              <div key={label} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: bg, border: `1px solid ${border}` }}>
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                                  <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>{label}</span>
+                                </div>
+                                <span className="text-sm font-bold shrink-0" style={{ color }}>{gravedades[key] ?? 0}</span>
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
 
                       {/* Causas */}
                       <div>
-                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Causas</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>Causas</p>
                         <div className="space-y-1.5">
                           {topCausas.length > 0 ? topCausas.map(([causa, count]) => (
-                            <div key={causa} className="flex items-center justify-between px-2 py-1.5 bg-orange-50 dark:bg-orange-950 border border-orange-100 dark:border-orange-900 rounded-lg">
-                              <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{causa}</span>
-                              <span className="text-xs font-bold text-orange-700 dark:text-orange-400 ml-1 shrink-0">{count}</span>
+                            <div key={causa} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                              <span className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>{causa}</span>
+                              <span className="text-sm font-bold ml-2 shrink-0" style={{ color: '#818cf8' }}>{count}</span>
                             </div>
                           )) : (
-                            <p className="text-xs text-slate-400 italic">Sin datos</p>
+                            <p className="text-xs italic" style={{ color: 'var(--muted)' }}>Sin datos</p>
                           )}
                         </div>
                       </div>
 
                       {/* Tipo de lesión */}
                       <div>
-                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Tipo de lesión</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--muted)' }}>Tipo de lesión</p>
                         <div className="space-y-1.5">
                           {topLesiones.length > 0 ? topLesiones.map(([lesion, count]) => (
-                            <div key={lesion} className="flex items-center justify-between px-2 py-1.5 bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-900 rounded-lg">
-                              <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{lesion}</span>
-                              <span className="text-xs font-bold text-red-700 dark:text-red-400 ml-1 shrink-0">{count}</span>
+                            <div key={lesion} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: 'rgba(236,72,153,0.08)', border: '1px solid rgba(236,72,153,0.2)' }}>
+                              <span className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>{lesion}</span>
+                              <span className="text-sm font-bold ml-2 shrink-0" style={{ color: '#f472b6' }}>{count}</span>
                             </div>
                           )) : (
-                            <p className="text-xs text-slate-400 italic">Sin datos</p>
+                            <p className="text-xs italic" style={{ color: 'var(--muted)' }}>Sin datos</p>
                           )}
                         </div>
                       </div>
@@ -647,13 +655,19 @@ export default async function DashboardPage({
 
                   {/* ── Columna derecha: Total + Incidentes ── */}
                   <div className="flex flex-col gap-3 w-32 shrink-0">
-                    <div className="flex-1 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-4">
-                      <p className="text-3xl font-extrabold text-slate-700 dark:text-slate-200 leading-none">{totalEventos}</p>
-                      <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-1.5 uppercase tracking-wide text-center leading-tight">Total<br/>eventos</p>
+                    <div className="flex-1 flex flex-col items-center justify-center rounded-2xl px-3 py-4" style={{
+                      background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                      boxShadow: '0 4px 16px rgba(99,102,241,0.25)',
+                    }}>
+                      <p className="text-4xl font-black text-white leading-none">{totalEventos}</p>
+                      <p className="text-[10px] font-semibold text-white/80 mt-1.5 uppercase tracking-wide text-center leading-tight">Total<br/>eventos</p>
                     </div>
-                    <div className="flex-1 flex flex-col items-center justify-center bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-4">
-                      <p className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 leading-none">{totalIncidentes}</p>
-                      <p className="text-[10px] font-semibold text-amber-500 dark:text-amber-500 mt-1.5 uppercase tracking-wide text-center leading-tight">Incidentes</p>
+                    <div className="flex-1 flex flex-col items-center justify-center rounded-2xl px-3 py-4" style={{
+                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                      boxShadow: '0 4px 16px rgba(245,158,11,0.25)',
+                    }}>
+                      <p className="text-4xl font-black text-white leading-none">{totalIncidentes}</p>
+                      <p className="text-[10px] font-semibold text-white/80 mt-1.5 uppercase tracking-wide text-center leading-tight">Incidentes</p>
                     </div>
                   </div>
 
@@ -661,7 +675,7 @@ export default async function DashboardPage({
 
                 {/* Mensaje sin eventos */}
                 {totalEventos === 0 && (
-                  <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mt-3">
+                  <div className="flex items-center gap-2 text-xs rounded-xl px-3 py-2.5 mt-4" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)', color: '#10b981' }}>
                     <CheckCircle size={13} className="shrink-0" />
                     Sin accidentes ni incidentes reportados en el periodo
                   </div>

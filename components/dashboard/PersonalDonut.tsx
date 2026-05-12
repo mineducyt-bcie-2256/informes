@@ -87,21 +87,21 @@ export default function PersonalDonut({ hombres, mujeres, total }: Props) {
       {/* Iconos con datos abajo */}
       <div className="flex gap-3 mt-4">
         {/* Hombres */}
-        <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'linear-gradient(135deg,#3b82f615,#3b82f608)', border: '1px solid #3b82f630' }}>
-          <IconoHombre className="w-6 h-10 text-blue-500 dark:text-blue-400 shrink-0" />
+        <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.25)' }}>
+          <IconoHombre className="w-6 h-10 shrink-0" style={{ color: '#3b82f6' }} />
           <div>
-            <p className="text-2xl font-extrabold text-blue-600 dark:text-blue-400 leading-none">{hombres}</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Hombres</p>
-            <p className="text-[10px] font-semibold text-blue-400 dark:text-blue-500">{pctH}%</p>
+            <p className="text-2xl font-extrabold leading-none" style={{ color: '#3b82f6' }}>{hombres}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted)' }}>Hombres</p>
+            <p className="text-[10px] font-semibold" style={{ color: '#60a5fa' }}>{pctH}%</p>
           </div>
         </div>
         {/* Mujeres */}
-        <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'linear-gradient(135deg,#8b5cf615,#8b5cf608)', border: '1px solid #8b5cf630' }}>
-          <IconoMujer className="w-6 h-10 text-violet-500 dark:text-violet-400 shrink-0" />
+        <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.25)' }}>
+          <IconoMujer className="w-6 h-10 shrink-0" style={{ color: '#8b5cf6' }} />
           <div>
-            <p className="text-2xl font-extrabold text-violet-600 dark:text-violet-400 leading-none">{mujeres}</p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Mujeres</p>
-            <p className="text-[10px] font-semibold text-violet-400 dark:text-violet-500">{pctM}%</p>
+            <p className="text-2xl font-extrabold leading-none" style={{ color: '#8b5cf6' }}>{mujeres}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: 'var(--muted)' }}>Mujeres</p>
+            <p className="text-[10px] font-semibold" style={{ color: '#a78bfa' }}>{pctM}%</p>
           </div>
         </div>
       </div>
