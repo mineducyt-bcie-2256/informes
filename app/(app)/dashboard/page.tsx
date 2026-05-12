@@ -575,83 +575,85 @@ export default async function DashboardPage({
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Accidentes e incidentes</p>
               </div>
 
-              <div className="p-4 space-y-4">
-
-                {/* Fila superior: Accidentes (grande izq) + Total eventos (pequeño der-arriba) + Incidentes (pequeño der-abajo) */}
+              <div className="p-4">
                 <div className="flex gap-3 items-stretch">
 
-                  {/* Accidentes — caja grande */}
-                  <div className="flex-1 flex flex-col items-center justify-center bg-orange-50 border-2 border-orange-200 rounded-xl px-4 py-4">
-                    <p className="text-4xl font-extrabold text-orange-600 leading-none">{totalAccidentes}</p>
-                    <p className="text-xs font-semibold text-orange-500 mt-1.5 uppercase tracking-wide">Accidentes</p>
-                  </div>
+                  {/* ── Bloque izquierdo: Accidentes + 3 subcols ── */}
+                  <div className="flex-1 min-w-0 space-y-3">
 
-                  {/* Columna derecha: Total arriba + Incidentes abajo */}
-                  <div className="flex flex-col gap-3 w-36 shrink-0">
-                    <div className="flex-1 flex flex-col items-center justify-center bg-slate-100 border border-slate-200 rounded-xl px-3 py-3">
-                      <p className="text-2xl font-extrabold text-slate-700 leading-none">{totalEventos}</p>
-                      <p className="text-[10px] font-semibold text-slate-500 mt-1 uppercase tracking-wide text-center">Total eventos</p>
+                    {/* Contador Accidentes */}
+                    <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+                      <p className="text-4xl font-extrabold text-orange-600 leading-none">{totalAccidentes}</p>
+                      <p className="text-sm font-semibold text-orange-500 uppercase tracking-wide">Accidentes</p>
                     </div>
-                    <div className="flex-1 flex flex-col items-center justify-center bg-amber-50 border border-amber-200 rounded-xl px-3 py-3">
-                      <p className="text-2xl font-extrabold text-amber-600 leading-none">{totalIncidentes}</p>
-                      <p className="text-[10px] font-semibold text-amber-500 mt-1 uppercase tracking-wide text-center">Incidentes</p>
-                    </div>
-                  </div>
 
-                </div>
+                    {/* Tres columnas */}
+                    <div className="grid grid-cols-3 gap-3">
 
-                {/* Tres columnas: Gravedad | Causas | Tipo de lesión */}
-                <div className="grid grid-cols-3 gap-3">
-
-                  {/* Gravedad */}
-                  <div>
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Gravedad</p>
-                    <div className="space-y-1.5">
-                      {(['Sin daño', 'Leve', 'Grave (incapacitante)', 'Mortal'] as const).map(grav => (
-                        <div key={grav} className={`flex items-center justify-between px-2 py-1.5 rounded-lg border ${
-                          grav === 'Mortal'                ? 'bg-red-50 border-red-100'       :
-                          grav === 'Grave (incapacitante)' ? 'bg-orange-50 border-orange-100' :
-                          grav === 'Leve'                  ? 'bg-amber-50 border-amber-100'   :
-                                                             'bg-green-50 border-green-100'
-                        }`}>
-                          <span className="text-xs text-slate-600 truncate">{grav === 'Grave (incapacitante)' ? 'Grave' : grav}</span>
-                          <span className={`text-sm font-bold shrink-0 ml-1 ${
-                            grav === 'Mortal'                ? 'text-red-700'    :
-                            grav === 'Grave (incapacitante)' ? 'text-orange-700' :
-                            grav === 'Leve'                  ? 'text-amber-700'  : 'text-green-700'
-                          }`}>{gravedades[grav] ?? 0}</span>
+                      {/* Gravedad */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Gravedad</p>
+                        <div className="space-y-1.5">
+                          {(['Sin daño', 'Leve', 'Grave (incapacitante)', 'Mortal'] as const).map(grav => (
+                            <div key={grav} className={`flex items-center justify-between px-2 py-1.5 rounded-lg border ${
+                              grav === 'Mortal'                ? 'bg-red-50 border-red-100'       :
+                              grav === 'Grave (incapacitante)' ? 'bg-orange-50 border-orange-100' :
+                              grav === 'Leve'                  ? 'bg-amber-50 border-amber-100'   :
+                                                                 'bg-green-50 border-green-100'
+                            }`}>
+                              <span className="text-xs text-slate-600 truncate">{grav === 'Grave (incapacitante)' ? 'Grave' : grav}</span>
+                              <span className={`text-sm font-bold shrink-0 ml-1 ${
+                                grav === 'Mortal'                ? 'text-red-700'    :
+                                grav === 'Grave (incapacitante)' ? 'text-orange-700' :
+                                grav === 'Leve'                  ? 'text-amber-700'  : 'text-green-700'
+                              }`}>{gravedades[grav] ?? 0}</span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Causas */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Causas</p>
+                        <div className="space-y-1.5">
+                          {topCausas.length > 0 ? topCausas.map(([causa, count]) => (
+                            <div key={causa} className="flex items-center justify-between px-2 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
+                              <span className="text-xs text-slate-600 truncate">{causa}</span>
+                              <span className="text-xs font-bold text-orange-700 ml-1 shrink-0">{count}</span>
+                            </div>
+                          )) : (
+                            <p className="text-xs text-slate-400 italic">Sin datos</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Tipo de lesión */}
+                      <div>
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Tipo de lesión</p>
+                        <div className="space-y-1.5">
+                          {topLesiones.length > 0 ? topLesiones.map(([lesion, count]) => (
+                            <div key={lesion} className="flex items-center justify-between px-2 py-1.5 bg-red-50 border border-red-100 rounded-lg">
+                              <span className="text-xs text-slate-600 truncate">{lesion}</span>
+                              <span className="text-xs font-bold text-red-700 ml-1 shrink-0">{count}</span>
+                            </div>
+                          )) : (
+                            <p className="text-xs text-slate-400 italic">Sin datos</p>
+                          )}
+                        </div>
+                      </div>
+
                     </div>
                   </div>
 
-                  {/* Causas */}
-                  <div>
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Causas</p>
-                    <div className="space-y-1.5">
-                      {topCausas.length > 0 ? topCausas.map(([causa, count]) => (
-                        <div key={causa} className="flex items-center justify-between px-2 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
-                          <span className="text-xs text-slate-600 truncate">{causa}</span>
-                          <span className="text-xs font-bold text-orange-700 ml-1 shrink-0">{count}</span>
-                        </div>
-                      )) : (
-                        <p className="text-xs text-slate-400 italic">Sin datos</p>
-                      )}
+                  {/* ── Columna derecha: Total + Incidentes ── */}
+                  <div className="flex flex-col gap-3 w-32 shrink-0">
+                    <div className="flex-1 flex flex-col items-center justify-center bg-slate-100 border border-slate-200 rounded-xl px-3 py-4">
+                      <p className="text-3xl font-extrabold text-slate-700 leading-none">{totalEventos}</p>
+                      <p className="text-[10px] font-semibold text-slate-500 mt-1.5 uppercase tracking-wide text-center leading-tight">Total<br/>eventos</p>
                     </div>
-                  </div>
-
-                  {/* Tipo de lesión */}
-                  <div>
-                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Tipo de lesión</p>
-                    <div className="space-y-1.5">
-                      {topLesiones.length > 0 ? topLesiones.map(([lesion, count]) => (
-                        <div key={lesion} className="flex items-center justify-between px-2 py-1.5 bg-red-50 border border-red-100 rounded-lg">
-                          <span className="text-xs text-slate-600 truncate">{lesion}</span>
-                          <span className="text-xs font-bold text-red-700 ml-1 shrink-0">{count}</span>
-                        </div>
-                      )) : (
-                        <p className="text-xs text-slate-400 italic">Sin datos</p>
-                      )}
+                    <div className="flex-1 flex flex-col items-center justify-center bg-amber-50 border border-amber-200 rounded-xl px-3 py-4">
+                      <p className="text-3xl font-extrabold text-amber-600 leading-none">{totalIncidentes}</p>
+                      <p className="text-[10px] font-semibold text-amber-500 mt-1.5 uppercase tracking-wide text-center leading-tight">Incidentes</p>
                     </div>
                   </div>
 
@@ -659,7 +661,7 @@ export default async function DashboardPage({
 
                 {/* Mensaje sin eventos */}
                 {totalEventos === 0 && (
-                  <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                  <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2 mt-3">
                     <CheckCircle size={13} className="shrink-0" />
                     Sin accidentes ni incidentes reportados en el periodo
                   </div>
