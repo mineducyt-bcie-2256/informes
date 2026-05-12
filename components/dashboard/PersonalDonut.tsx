@@ -50,21 +50,21 @@ export default function PersonalDonut({ hombres, mujeres, total }: Props) {
     <div className="rounded-2xl p-4 h-full flex flex-col" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
       <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Personal en obra</p>
 
-      {/* Donut centrado arriba */}
-      <div className="flex justify-center">
-        <div className="relative w-32 h-32">
+      {/* Donut centrado arriba — ocupa casi todo el ancho */}
+      <div className="flex justify-center flex-1">
+        <div className="relative w-full" style={{ height: '180px' }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
                 data={data}
                 cx="50%"
                 cy="50%"
-                innerRadius={34}
-                outerRadius={52}
+                innerRadius={55}
+                outerRadius={82}
                 startAngle={90}
                 endAngle={-270}
                 dataKey="value"
-                strokeWidth={2}
+                strokeWidth={3}
                 stroke="#fff"
               >
                 {data.map((_, i) => (
@@ -78,8 +78,8 @@ export default function PersonalDonut({ hombres, mujeres, total }: Props) {
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <p className="text-xl font-bold text-[#1e2a45] dark:text-white leading-none">{total}</p>
-            <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">Total</p>
+            <p className="text-3xl font-black leading-none" style={{ color: 'var(--foreground)' }}>{total}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Total</p>
           </div>
         </div>
       </div>
