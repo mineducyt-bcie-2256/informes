@@ -304,20 +304,20 @@ export default async function DashboardPage({
 
       {/* ── Encabezado ── */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800">Dashboard</h1>
-        <p className="text-slate-500 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Dashboard</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
           {periodoLabel} — Programa Mi Nueva Escuela BCIE
         </p>
       </div>
 
       {/* ── Bloque 1: Filtros ── */}
       {!esVisitante && (
-        <form method="GET" className="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap items-end gap-3">
+        <form method="GET" className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 flex flex-wrap items-end gap-3">
           {/* Empresa */}
           {esRestringido ? (
             <>
               <input type="hidden" name="empresa" value={empresaEfectiva ?? ''} />
-              <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 rounded-lg px-3 py-2 text-sm text-blue-800 min-w-[220px]">
+              <div className="flex items-center gap-2 border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-950 rounded-lg px-3 py-2 text-sm text-blue-800 dark:text-blue-300 min-w-[220px]">
                 <Building2 size={14} className="text-blue-500 shrink-0" />
                 <span className="font-medium truncate">{empresaEfectiva}</span>
               </div>
@@ -330,7 +330,7 @@ export default async function DashboardPage({
               <select
                 name="empresa"
                 defaultValue={empresaEfectiva ?? ''}
-                className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300 min-w-[220px]"
+                className="text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 min-w-[220px]"
               >
                 <option value="">— Todas las empresas —</option>
                 {empresasUnicas.map(emp => (
@@ -349,7 +349,7 @@ export default async function DashboardPage({
               <select
                 name="escuela_id"
                 defaultValue={escuelaParam ?? ''}
-                className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300 min-w-[280px]"
+                className="text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 min-w-[280px]"
               >
                 <option value="">— Todas las escuelas —</option>
                 {escuelasDeEmpresa.map(esc => (
@@ -365,7 +365,7 @@ export default async function DashboardPage({
             <select
               name="mes"
               defaultValue={mesSel}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
               {MESES.map((mes, i) => (
                 <option key={i + 1} value={i + 1}>{mes}</option>
@@ -379,7 +379,7 @@ export default async function DashboardPage({
             <select
               name="mes_desde"
               defaultValue={mesDesde ?? ''}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
               <option value="">—</option>
               {MESES.map((mes, i) => (
@@ -394,7 +394,7 @@ export default async function DashboardPage({
             <select
               name="mes_hasta"
               defaultValue={mesHasta ?? ''}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-300"
+              className="text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
             >
               <option value="">—</option>
               {MESES.map((mes, i) => (
@@ -415,7 +415,7 @@ export default async function DashboardPage({
           {/* Limpiar filtros */}
           <Link
             href="/dashboard"
-            className="text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 self-center"
+            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline underline-offset-2 self-center"
           >
             Limpiar filtros
           </Link>
@@ -424,7 +424,7 @@ export default async function DashboardPage({
 
       {/* ── Bloque 2: Tarjetas de resumen ── */}
       <div>
-        <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3">
+        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">
           Resumen — {periodoLabel}
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -473,9 +473,9 @@ export default async function DashboardPage({
 
       {/* ── Detalle expandido ── */}
       {detalleSel && (detalleEscuelas.length > 0 || detalleInformes.length > 0) && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
               {detalleSel === 'construccion' && 'Centros escolares en construcción'}
               {detalleSel === 'informes'     && 'Informes del periodo'}
               {detalleSel === 'presentados'  && 'Informes presentados (enviado / aprobado)'}
@@ -493,19 +493,19 @@ export default async function DashboardPage({
           {/* Tabla de escuelas */}
           {detalleEscuelas.length > 0 && (
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Escuela</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Empresa supervisora</th>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Etapa</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">Escuela</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">Empresa supervisora</th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">Etapa</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {detalleEscuelas.map(esc => (
-                  <tr key={esc.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-slate-700">{esc.nombre}</td>
-                    <td className="px-4 py-3 text-slate-500">{esc.empresa_supervision ?? '—'}</td>
-                    <td className="px-4 py-3 text-slate-500">{esc.etapa ?? '—'}</td>
+                  <tr key={esc.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
+                    <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">{esc.nombre}</td>
+                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{esc.empresa_supervision ?? '—'}</td>
+                    <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{esc.etapa ?? '—'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -515,21 +515,21 @@ export default async function DashboardPage({
           {/* Tabla de informes */}
           {detalleInformes.length > 0 && (
             <table className="w-full text-sm">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-slate-600">Escuela</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600">Período</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600">Estado</th>
-                  <th className="text-center px-4 py-3 font-semibold text-slate-600"></th>
+                  <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">Escuela</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">Período</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">Estado</th>
+                  <th className="text-center px-4 py-3 font-semibold text-slate-600 dark:text-slate-300"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {detalleInformes.map(inf => (
-                  <tr key={inf.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-4 py-3 font-medium text-slate-700">
+                  <tr key={inf.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
+                    <td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-200">
                       {escuelaNombreMap[inf.escuela_id] ?? inf.escuela_id}
                     </td>
-                    <td className="px-4 py-3 text-center text-slate-500">
+                    <td className="px-4 py-3 text-center text-slate-500 dark:text-slate-400">
                       {MESES[inf.periodo_mes - 1]} {inf.periodo_anio}
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -556,7 +556,7 @@ export default async function DashboardPage({
       {/* ── Bloque 3: HSSO consolidado ── */}
       {hssoData.length > 0 && (
         <div>
-          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+          <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
             <ShieldAlert size={13} className="text-slate-400" />
             HSSO consolidado — {periodoLabel}
           </h2>
@@ -568,11 +568,11 @@ export default async function DashboardPage({
             <PersonalDonut hombres={totalHombres} mujeres={totalMujeres} total={totalPersonal} />
 
             {/* ── Columna derecha: Accidentes e incidentes ── */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
 
               {/* Título */}
-              <div className="px-4 py-2.5 border-b border-slate-100 bg-slate-50">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Accidentes e incidentes</p>
+              <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80">
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Accidentes e incidentes</p>
               </div>
 
               <div className="p-4">
@@ -582,9 +582,9 @@ export default async function DashboardPage({
                   <div className="flex-1 min-w-0 space-y-3">
 
                     {/* Contador Accidentes */}
-                    <div className="flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
-                      <p className="text-4xl font-extrabold text-orange-600 leading-none">{totalAccidentes}</p>
-                      <p className="text-sm font-semibold text-orange-500 uppercase tracking-wide">Accidentes</p>
+                    <div className="flex items-center gap-3 bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-xl px-4 py-3">
+                      <p className="text-4xl font-extrabold text-orange-600 dark:text-orange-400 leading-none">{totalAccidentes}</p>
+                      <p className="text-sm font-semibold text-orange-500 dark:text-orange-500 uppercase tracking-wide">Accidentes</p>
                     </div>
 
                     {/* Tres columnas */}
@@ -592,20 +592,20 @@ export default async function DashboardPage({
 
                       {/* Gravedad */}
                       <div>
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Gravedad</p>
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Gravedad</p>
                         <div className="space-y-1.5">
                           {(['Sin daño', 'Leve', 'Grave (incapacitante)', 'Mortal'] as const).map(grav => (
                             <div key={grav} className={`flex items-center justify-between px-2 py-1.5 rounded-lg border ${
-                              grav === 'Mortal'                ? 'bg-red-50 border-red-100'       :
-                              grav === 'Grave (incapacitante)' ? 'bg-orange-50 border-orange-100' :
-                              grav === 'Leve'                  ? 'bg-amber-50 border-amber-100'   :
-                                                                 'bg-green-50 border-green-100'
+                              grav === 'Mortal'                ? 'bg-red-50 dark:bg-red-950 border-red-100 dark:border-red-900'          :
+                              grav === 'Grave (incapacitante)' ? 'bg-orange-50 dark:bg-orange-950 border-orange-100 dark:border-orange-900' :
+                              grav === 'Leve'                  ? 'bg-amber-50 dark:bg-amber-950 border-amber-100 dark:border-amber-900'   :
+                                                                 'bg-green-50 dark:bg-green-950 border-green-100 dark:border-green-900'
                             }`}>
-                              <span className="text-xs text-slate-600 truncate">{grav === 'Grave (incapacitante)' ? 'Grave' : grav}</span>
+                              <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{grav === 'Grave (incapacitante)' ? 'Grave' : grav}</span>
                               <span className={`text-sm font-bold shrink-0 ml-1 ${
-                                grav === 'Mortal'                ? 'text-red-700'    :
-                                grav === 'Grave (incapacitante)' ? 'text-orange-700' :
-                                grav === 'Leve'                  ? 'text-amber-700'  : 'text-green-700'
+                                grav === 'Mortal'                ? 'text-red-700 dark:text-red-400'       :
+                                grav === 'Grave (incapacitante)' ? 'text-orange-700 dark:text-orange-400' :
+                                grav === 'Leve'                  ? 'text-amber-700 dark:text-amber-400'   : 'text-green-700 dark:text-green-400'
                               }`}>{gravedades[grav] ?? 0}</span>
                             </div>
                           ))}
@@ -614,12 +614,12 @@ export default async function DashboardPage({
 
                       {/* Causas */}
                       <div>
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Causas</p>
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Causas</p>
                         <div className="space-y-1.5">
                           {topCausas.length > 0 ? topCausas.map(([causa, count]) => (
-                            <div key={causa} className="flex items-center justify-between px-2 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
-                              <span className="text-xs text-slate-600 truncate">{causa}</span>
-                              <span className="text-xs font-bold text-orange-700 ml-1 shrink-0">{count}</span>
+                            <div key={causa} className="flex items-center justify-between px-2 py-1.5 bg-orange-50 dark:bg-orange-950 border border-orange-100 dark:border-orange-900 rounded-lg">
+                              <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{causa}</span>
+                              <span className="text-xs font-bold text-orange-700 dark:text-orange-400 ml-1 shrink-0">{count}</span>
                             </div>
                           )) : (
                             <p className="text-xs text-slate-400 italic">Sin datos</p>
@@ -629,12 +629,12 @@ export default async function DashboardPage({
 
                       {/* Tipo de lesión */}
                       <div>
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-2">Tipo de lesión</p>
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Tipo de lesión</p>
                         <div className="space-y-1.5">
                           {topLesiones.length > 0 ? topLesiones.map(([lesion, count]) => (
-                            <div key={lesion} className="flex items-center justify-between px-2 py-1.5 bg-red-50 border border-red-100 rounded-lg">
-                              <span className="text-xs text-slate-600 truncate">{lesion}</span>
-                              <span className="text-xs font-bold text-red-700 ml-1 shrink-0">{count}</span>
+                            <div key={lesion} className="flex items-center justify-between px-2 py-1.5 bg-red-50 dark:bg-red-950 border border-red-100 dark:border-red-900 rounded-lg">
+                              <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{lesion}</span>
+                              <span className="text-xs font-bold text-red-700 dark:text-red-400 ml-1 shrink-0">{count}</span>
                             </div>
                           )) : (
                             <p className="text-xs text-slate-400 italic">Sin datos</p>
@@ -647,13 +647,13 @@ export default async function DashboardPage({
 
                   {/* ── Columna derecha: Total + Incidentes ── */}
                   <div className="flex flex-col gap-3 w-32 shrink-0">
-                    <div className="flex-1 flex flex-col items-center justify-center bg-slate-100 border border-slate-200 rounded-xl px-3 py-4">
-                      <p className="text-3xl font-extrabold text-slate-700 leading-none">{totalEventos}</p>
-                      <p className="text-[10px] font-semibold text-slate-500 mt-1.5 uppercase tracking-wide text-center leading-tight">Total<br/>eventos</p>
+                    <div className="flex-1 flex flex-col items-center justify-center bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl px-3 py-4">
+                      <p className="text-3xl font-extrabold text-slate-700 dark:text-slate-200 leading-none">{totalEventos}</p>
+                      <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mt-1.5 uppercase tracking-wide text-center leading-tight">Total<br/>eventos</p>
                     </div>
-                    <div className="flex-1 flex flex-col items-center justify-center bg-amber-50 border border-amber-200 rounded-xl px-3 py-4">
-                      <p className="text-3xl font-extrabold text-amber-600 leading-none">{totalIncidentes}</p>
-                      <p className="text-[10px] font-semibold text-amber-500 mt-1.5 uppercase tracking-wide text-center leading-tight">Incidentes</p>
+                    <div className="flex-1 flex flex-col items-center justify-center bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-xl px-3 py-4">
+                      <p className="text-3xl font-extrabold text-amber-600 dark:text-amber-400 leading-none">{totalIncidentes}</p>
+                      <p className="text-[10px] font-semibold text-amber-500 dark:text-amber-500 mt-1.5 uppercase tracking-wide text-center leading-tight">Incidentes</p>
                     </div>
                   </div>
 
@@ -697,13 +697,13 @@ function StatCard({ icon: Icon, color, value, label }: {
 }) {
   const c = COLOR_MAP[color] ?? COLOR_MAP.slate
   return (
-    <div className={`bg-white rounded-xl border ${c.border} p-4 flex items-center gap-3`}>
+    <div className={`bg-white dark:bg-slate-800 rounded-xl border ${c.border} p-4 flex items-center gap-3`}>
       <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${c.bg}`}>
         <Icon size={20} className={c.icon} />
       </div>
       <div>
-        <p className="text-xl font-bold text-slate-800 leading-none">{value.toLocaleString()}</p>
-        <p className="text-xs text-slate-500 mt-0.5 leading-tight">{label}</p>
+        <p className="text-xl font-bold text-slate-800 dark:text-slate-100 leading-none">{value.toLocaleString()}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">{label}</p>
       </div>
     </div>
   )
@@ -714,7 +714,7 @@ function MiniStat({ label, value, color }: { label: string; value: number; color
   return (
     <div className={`rounded-lg border ${c.border} ${c.bg} px-3 py-2 text-center`}>
       <p className={`text-lg font-bold ${c.icon} leading-none`}>{value.toLocaleString()}</p>
-      <p className="text-xs text-slate-500 mt-0.5 leading-tight">{label}</p>
+      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">{label}</p>
     </div>
   )
 }
@@ -731,16 +731,16 @@ function DetalleCard({ href, icon: Icon, color, value, label, active }: {
   return (
     <Link
       href={href}
-      className={`bg-white rounded-xl border p-4 flex flex-col gap-2 hover:shadow-md transition-all cursor-pointer ${
-        active ? `${c.border} ring-2 ${c.ring}` : 'border-slate-200 hover:border-slate-300'
+      className={`bg-white dark:bg-slate-800 rounded-xl border p-4 flex flex-col gap-2 hover:shadow-md transition-all cursor-pointer ${
+        active ? `${c.border} ring-2 ${c.ring}` : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
       }`}
     >
       <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${c.bg}`}>
         <Icon size={18} className={c.icon} />
       </div>
       <div>
-        <p className="text-2xl font-bold text-slate-800 leading-none">{value.toLocaleString()}</p>
-        <p className="text-xs text-slate-500 mt-1 leading-tight">{label}</p>
+        <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none">{value.toLocaleString()}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-tight">{label}</p>
       </div>
       {active && (
         <div className={`text-[10px] font-semibold ${c.icon} flex items-center gap-0.5`}>

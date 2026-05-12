@@ -47,8 +47,8 @@ export default function PersonalDonut({ hombres, mujeres, total }: Props) {
   ]
 
   return (
-    <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 h-full flex flex-col">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Personal en obra</p>
+    <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 h-full flex flex-col">
+      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Personal en obra</p>
 
       {/* Donut centrado arriba */}
       <div className="flex justify-center">
@@ -78,8 +78,8 @@ export default function PersonalDonut({ hombres, mujeres, total }: Props) {
             </PieChart>
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-            <p className="text-xl font-bold text-slate-800 leading-none">{total}</p>
-            <p className="text-[9px] text-slate-400 mt-0.5">Total</p>
+            <p className="text-xl font-bold text-slate-800 dark:text-slate-100 leading-none">{total}</p>
+            <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5">Total</p>
           </div>
         </div>
       </div>
@@ -87,21 +87,21 @@ export default function PersonalDonut({ hombres, mujeres, total }: Props) {
       {/* Iconos con datos abajo */}
       <div className="flex gap-3 mt-4">
         {/* Hombres */}
-        <div className="flex-1 flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2.5">
+        <div className="flex-1 flex items-center gap-2 bg-blue-50 dark:bg-blue-950 border border-blue-100 dark:border-blue-800 rounded-xl px-3 py-2.5">
           <IconoHombre className="w-6 h-10 text-blue-500 shrink-0" />
           <div>
-            <p className="text-2xl font-extrabold text-blue-600 leading-none">{hombres}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">Hombres</p>
-            <p className="text-[10px] font-semibold text-blue-400">{pctH}%</p>
+            <p className="text-2xl font-extrabold text-blue-600 dark:text-blue-400 leading-none">{hombres}</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Hombres</p>
+            <p className="text-[10px] font-semibold text-blue-400 dark:text-blue-500">{pctH}%</p>
           </div>
         </div>
         {/* Mujeres */}
-        <div className="flex-1 flex items-center gap-2 bg-violet-50 border border-violet-100 rounded-xl px-3 py-2.5">
+        <div className="flex-1 flex items-center gap-2 bg-violet-50 dark:bg-violet-950 border border-violet-100 dark:border-violet-800 rounded-xl px-3 py-2.5">
           <IconoMujer className="w-6 h-10 text-violet-500 shrink-0" />
           <div>
-            <p className="text-2xl font-extrabold text-violet-600 leading-none">{mujeres}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">Mujeres</p>
-            <p className="text-[10px] font-semibold text-violet-400">{pctM}%</p>
+            <p className="text-2xl font-extrabold text-violet-600 dark:text-violet-400 leading-none">{mujeres}</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Mujeres</p>
+            <p className="text-[10px] font-semibold text-violet-400 dark:text-violet-500">{pctM}%</p>
           </div>
         </div>
       </div>

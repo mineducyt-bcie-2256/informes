@@ -6,6 +6,7 @@ import {
   LayoutDashboard, School, FileText, Users, LogOut, ChevronRight
 } from 'lucide-react'
 import type { Profile } from '@/types'
+import ThemeToggle from '@/components/ThemeToggle'
 
 const ALL_NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['programador', 'administrador', 'visitante'] },
@@ -85,13 +86,16 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
             </div>
           </div>
         )}
-        <button
-          onClick={handleLogout}
-          className="flex items-center gap-2 w-full px-3 py-2 rounded-lg text-blue-200 hover:bg-blue-800 hover:text-white text-sm transition-colors"
-        >
-          <LogOut size={16} />
-          Cerrar sesión
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 flex-1 px-3 py-2 rounded-lg text-blue-200 hover:bg-blue-800 hover:text-white text-sm transition-colors"
+          >
+            <LogOut size={16} />
+            Cerrar sesión
+          </button>
+          <ThemeToggle />
+        </div>
       </div>
     </aside>
   )
