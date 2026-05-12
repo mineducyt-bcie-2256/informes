@@ -37,7 +37,7 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
   }
 
   return (
-    <aside className="w-64 h-full flex-shrink-0 flex flex-col overflow-y-auto" style={{ backgroundColor: '#1e3a5f' }}>
+    <aside className="w-64 h-full flex-shrink-0 flex flex-col overflow-y-auto" style={{ backgroundColor: '#0d1b3e' }}>
       {/* Logo */}
       <div className="px-5 py-4 border-b border-blue-800">
         <div className="flex items-center gap-2 mb-3">

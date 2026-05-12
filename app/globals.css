@@ -2,13 +2,19 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --background: #f0f2f8;
+  --foreground: #1e2a45;
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --muted: #64748b;
 }
 
 .dark {
-  --background: #0f172a;
-  --foreground: #f1f5f9;
+  --background: #080f1e;
+  --foreground: #e2e8f0;
+  --card-bg: #0f1f3d;
+  --card-border: #1e3a5f;
+  --muted: #94a3b8;
 }
 
 body {

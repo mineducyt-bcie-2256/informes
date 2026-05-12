@@ -64,9 +64,9 @@ function buildSearchParams(
 
 // ── Colores de estado ──────────────────────────────────────────────
 const ESTADO_BADGE: Record<string, string> = {
-  aprobado: 'bg-green-100 text-green-700',
-  enviado:  'bg-blue-100 text-blue-700',
-  borrador: 'bg-amber-100 text-amber-700',
+  aprobado: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400',
+  enviado:  'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-400',
+  borrador: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
 }
 const ESTADO_LABEL: Record<string, string> = {
   aprobado: 'Aprobado',
@@ -300,11 +300,11 @@ export default async function DashboardPage({
 
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className="p-6 lg:p-8 space-y-8 max-w-screen-xl mx-auto">
+    <div className="p-6 lg:p-8 space-y-6 max-w-screen-xl mx-auto">
 
       {/* ── Encabezado ── */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-[#1e2a45] dark:text-white">Dashboard</h1>
         <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
           {periodoLabel} — Programa Mi Nueva Escuela BCIE
         </p>
@@ -312,7 +312,7 @@ export default async function DashboardPage({
 
       {/* ── Bloque 1: Filtros ── */}
       {!esVisitante && (
-        <form method="GET" className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 flex flex-wrap items-end gap-3">
+        <form method="GET" className="rounded-2xl border p-4 flex flex-wrap items-end gap-3" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
           {/* Empresa */}
           {esRestringido ? (
             <>
@@ -424,7 +424,7 @@ export default async function DashboardPage({
 
       {/* ── Bloque 2: Tarjetas de resumen ── */}
       <div>
-        <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: 'var(--muted)' }}>
           Resumen — {periodoLabel}
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -473,9 +473,9 @@ export default async function DashboardPage({
 
       {/* ── Detalle expandido ── */}
       {detalleSel && (detalleEscuelas.length > 0 || detalleInformes.length > 0) && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+        <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+          <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: 'var(--card-border)' }}>
+            <h3 className="text-sm font-semibold text-[#1e2a45] dark:text-slate-200">
               {detalleSel === 'construccion' && 'Centros escolares en construcción'}
               {detalleSel === 'informes'     && 'Informes del periodo'}
               {detalleSel === 'presentados'  && 'Informes presentados (enviado / aprobado)'}
@@ -556,7 +556,7 @@ export default async function DashboardPage({
       {/* ── Bloque 3: HSSO consolidado ── */}
       {hssoData.length > 0 && (
         <div>
-          <h2 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+          <h2 className="text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
             <ShieldAlert size={13} className="text-slate-400" />
             HSSO consolidado — {periodoLabel}
           </h2>
@@ -568,10 +568,10 @@ export default async function DashboardPage({
             <PersonalDonut hombres={totalHombres} mujeres={totalMujeres} total={totalPersonal} />
 
             {/* ── Columna derecha: Accidentes e incidentes ── */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="rounded-2xl overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
 
               {/* Título */}
-              <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80">
+              <div className="px-4 py-2.5 border-b" style={{ borderColor: 'var(--card-border)' }}>
                 <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Accidentes e incidentes</p>
               </div>
 
@@ -679,14 +679,79 @@ export default async function DashboardPage({
 
 // ── Componentes auxiliares ─────────────────────────────────────────
 
-const COLOR_MAP: Record<string, { bg: string; icon: string; border: string; ring: string }> = {
-  blue:   { bg: 'bg-blue-50',   icon: 'text-blue-600',   border: 'border-blue-200',   ring: 'ring-blue-400'   },
-  green:  { bg: 'bg-green-50',  icon: 'text-green-600',  border: 'border-green-200',  ring: 'ring-green-400'  },
-  amber:  { bg: 'bg-amber-50',  icon: 'text-amber-600',  border: 'border-amber-200',  ring: 'ring-amber-400'  },
-  orange: { bg: 'bg-orange-50', icon: 'text-orange-600', border: 'border-orange-200', ring: 'ring-orange-400' },
-  violet: { bg: 'bg-violet-50', icon: 'text-violet-600', border: 'border-violet-200', ring: 'ring-violet-400' },
-  slate:  { bg: 'bg-slate-50',  icon: 'text-slate-600',  border: 'border-slate-200',  ring: 'ring-slate-400'  },
-  red:    { bg: 'bg-red-50',    icon: 'text-red-600',    border: 'border-red-200',    ring: 'ring-red-400'    },
+// Gradientes modo claro (imagen 1) + colores modo oscuro (imagen 2)
+const COLOR_MAP: Record<string, {
+  gradient: string   // fondo tarjeta modo claro
+  darkBg: string     // fondo tarjeta modo oscuro
+  iconLight: string  // ícono modo claro
+  iconDark: string   // ícono modo oscuro
+  border: string
+  darkBorder: string
+  ring: string
+}> = {
+  orange: {
+    gradient:   'from-violet-600 to-violet-500',
+    darkBg:     'bg-[#1a1040]',
+    iconLight:  'text-white',
+    iconDark:   'text-violet-400',
+    border:     'border-violet-400',
+    darkBorder: 'border-violet-700',
+    ring:       'ring-violet-400',
+  },
+  slate: {
+    gradient:   'from-cyan-500 to-sky-500',
+    darkBg:     'bg-[#0a2040]',
+    iconLight:  'text-white',
+    iconDark:   'text-cyan-400',
+    border:     'border-cyan-400',
+    darkBorder: 'border-cyan-700',
+    ring:       'ring-cyan-400',
+  },
+  blue: {
+    gradient:   'from-emerald-500 to-teal-500',
+    darkBg:     'bg-[#0a2a24]',
+    iconLight:  'text-white',
+    iconDark:   'text-emerald-400',
+    border:     'border-emerald-400',
+    darkBorder: 'border-emerald-700',
+    ring:       'ring-emerald-400',
+  },
+  green: {
+    gradient:   'from-green-500 to-lime-500',
+    darkBg:     'bg-[#0a2a10]',
+    iconLight:  'text-white',
+    iconDark:   'text-green-400',
+    border:     'border-green-400',
+    darkBorder: 'border-green-700',
+    ring:       'ring-green-400',
+  },
+  amber: {
+    gradient:   'from-orange-500 to-amber-500',
+    darkBg:     'bg-[#2a1800]',
+    iconLight:  'text-white',
+    iconDark:   'text-amber-400',
+    border:     'border-amber-400',
+    darkBorder: 'border-amber-700',
+    ring:       'ring-amber-400',
+  },
+  violet: {
+    gradient:   'from-purple-600 to-pink-500',
+    darkBg:     'bg-[#1a0a30]',
+    iconLight:  'text-white',
+    iconDark:   'text-purple-400',
+    border:     'border-purple-400',
+    darkBorder: 'border-purple-700',
+    ring:       'ring-purple-400',
+  },
+  red: {
+    gradient:   'from-red-500 to-rose-500',
+    darkBg:     'bg-[#2a0a0a]',
+    iconLight:  'text-white',
+    iconDark:   'text-red-400',
+    border:     'border-red-400',
+    darkBorder: 'border-red-700',
+    ring:       'ring-red-400',
+  },
 }
 
 function StatCard({ icon: Icon, color, value, label }: {
@@ -697,12 +762,12 @@ function StatCard({ icon: Icon, color, value, label }: {
 }) {
   const c = COLOR_MAP[color] ?? COLOR_MAP.slate
   return (
-    <div className={`bg-white dark:bg-slate-800 rounded-xl border ${c.border} p-4 flex items-center gap-3`}>
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${c.bg}`}>
-        <Icon size={20} className={c.icon} />
+    <div className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-gradient-to-br ${c.gradient} dark:${c.darkBg}`}>
+        <Icon size={20} className="text-white" />
       </div>
       <div>
-        <p className="text-xl font-bold text-slate-800 dark:text-slate-100 leading-none">{value.toLocaleString()}</p>
+        <p className="text-xl font-bold text-[#1e2a45] dark:text-white leading-none">{value.toLocaleString()}</p>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">{label}</p>
       </div>
     </div>
@@ -712,9 +777,9 @@ function StatCard({ icon: Icon, color, value, label }: {
 function MiniStat({ label, value, color }: { label: string; value: number; color: string }) {
   const c = COLOR_MAP[color] ?? COLOR_MAP.slate
   return (
-    <div className={`rounded-lg border ${c.border} ${c.bg} px-3 py-2 text-center`}>
-      <p className={`text-lg font-bold ${c.icon} leading-none`}>{value.toLocaleString()}</p>
-      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">{label}</p>
+    <div className={`rounded-xl border px-3 py-2 text-center bg-gradient-to-br ${c.gradient} dark:${c.darkBg} dark:border-0`}>
+      <p className="text-lg font-bold text-white leading-none">{value.toLocaleString()}</p>
+      <p className="text-xs text-white/80 mt-0.5 leading-tight">{label}</p>
     </div>
   )
 }
@@ -731,22 +796,26 @@ function DetalleCard({ href, icon: Icon, color, value, label, active }: {
   return (
     <Link
       href={href}
-      className={`bg-white dark:bg-slate-800 rounded-xl border p-4 flex flex-col gap-2 hover:shadow-md transition-all cursor-pointer ${
-        active ? `${c.border} ring-2 ${c.ring}` : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+      className={`rounded-2xl p-5 flex flex-col gap-3 hover:shadow-lg transition-all cursor-pointer group relative overflow-hidden ${
+        active ? `ring-2 ${c.ring}` : ''
       }`}
+      style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}
     >
-      <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${c.bg}`}>
-        <Icon size={18} className={c.icon} />
+      {/* Ícono con gradiente en claro, sólido en oscuro */}
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br ${c.gradient}`}>
+        <Icon size={18} className="text-white" />
       </div>
       <div>
-        <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none">{value.toLocaleString()}</p>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-tight">{label}</p>
+        <p className="text-3xl font-extrabold text-[#1e2a45] dark:text-white leading-none">{value.toLocaleString()}</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-tight font-medium">{label}</p>
       </div>
       {active && (
-        <div className={`text-[10px] font-semibold ${c.icon} flex items-center gap-0.5`}>
+        <div className={`text-[11px] font-semibold flex items-center gap-0.5 ${c.iconLight} dark:${c.iconDark}`}>
           Ver listado <ChevronRight size={11} />
         </div>
       )}
+      {/* Decoración esquina */}
+      <div className={`absolute -right-4 -top-4 w-16 h-16 rounded-full opacity-10 bg-gradient-to-br ${c.gradient}`} />
     </Link>
   )
 }

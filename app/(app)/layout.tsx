@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     return (
       <div className="flex h-full overflow-hidden">
         <Sidebar profile={DEV_PROFILE} />
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900">
+        <main className="flex-1 overflow-y-auto" style={{ background: 'var(--background)' }}>
           <SinPermisoToast />
           {children}
         </main>
@@ -41,7 +41,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex h-full overflow-hidden">
       <Sidebar profile={profile} />
-      <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900">
+      <main className="flex-1 overflow-y-auto" style={{ background: 'var(--background)' }}>
         <SinPermisoToast />
         {children}
       </main>
