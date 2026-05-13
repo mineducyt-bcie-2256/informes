@@ -199,27 +199,14 @@ export default function NuevoUsuario({ miRol }: { miRol: string }) {
                     </div>
                   </div>
 
-                  {/* Campos según rol */}
-                  {form.rol === 'administrador' && (
-                    <div>
-                      <label className={lbl}>
-                        Institución
-                        {miRol !== 'programador' && (
-                          <span className="ml-2 text-xs font-normal text-slate-400">(solo el programador puede editar)</span>
-                        )}
-                      </label>
-                      <input
-                        value={form.institucion}
-                        onChange={e => set('institucion', e.target.value)}
-                        placeholder="Ej: BCIE, Ministerio de Educación..."
-                        disabled={miRol !== 'programador'}
-                        className={`${inp} ${miRol !== 'programador' ? 'bg-slate-50 text-slate-400 cursor-not-allowed' : ''}`}
-                      />
-                    </div>
-                  )}
-                  {form.rol === 'usuario' && (
-                    <div>
-                      <label className={lbl}>Empresa de Supervisión</label>
+                  {/* Empresa / Institución — visible para todos los roles */}
+                  <div>
+                    <label className={lbl}>
+                      {form.rol === 'usuario' ? 'Empresa de Supervisión' : 'Empresa / Institución'}
+                    </label>
+
+                    {form.rol === 'usuario' ? (
+                      /* Usuario → select con empresas de supervisión */
                       <select
                         value={form.empresa_supervision}
                         onChange={e => set('empresa_supervision', e.target.value)}
@@ -228,8 +215,22 @@ export default function NuevoUsuario({ miRol }: { miRol: string }) {
                         <option value="">Sin empresa asignada</option>
                         {supervisiones.map(s => <option key={s} value={s}>{s}</option>)}
                       </select>
-                    </div>
-                  )}
+                    ) : (
+                      /* Otros roles → campo libre */
+                      <input
+                        value={form.empresa_supervision || form.institucion}
+                        onChange={e => {
+                          set('empresa_supervision', e.target.value)
+                          set('institucion', e.target.value)
+                        }}
+                        placeholder="Ej: BCIE, MINEDUCYT, empresa contratista..."
+                        className={inp}
+                      />
+                    )}
+                    <p className="text-xs text-slate-400 mt-1">
+                      Empresa o institución a la que pertenece el usuario
+                    </p>
+                  </div>
 
                   {/* Estado */}
                   <div className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3">
