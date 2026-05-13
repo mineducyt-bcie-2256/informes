@@ -29,7 +29,7 @@ export default function NuevoInformePage() {
   const [error,            setError]            = useState('')
   const [miEmpresa,        setMiEmpresa]        = useState<string | null>(null) // empresa fija del usuario
 
-  const inp = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
+  const inp = 'w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500'
 
   // ── Cargar perfil del usuario logueado ───────────────────────────────
   useEffect(() => {
@@ -149,18 +149,18 @@ export default function NuevoInformePage() {
 
   return (
     <div className="p-8 max-w-lg">
-      <h1 className="text-2xl font-bold text-slate-800 mb-2">Nuevo informe</h1>
-      <p className="text-slate-500 text-sm mb-6">Selecciona la escuela y el periodo mensual</p>
+      <h1 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">Nuevo informe</h1>
+      <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Selecciona la escuela y el periodo mensual</p>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
         <form onSubmit={handleSubmit} className="space-y-5">
 
           {/* ── Empresa de Supervisión ────────────────────────── */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Empresa de Supervisión</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Empresa de Supervisión</label>
             {miEmpresa ? (
               // Usuario restringido: empresa fija, no editable
-              <div className="flex items-center gap-2 border border-blue-200 bg-blue-50 rounded-lg px-3 py-2 text-sm text-blue-800">
+              <div className="flex items-center gap-2 border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/30 rounded-lg px-3 py-2 text-sm text-blue-800 dark:text-blue-300">
                 <span className="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
                 <span className="font-medium">{miEmpresa}</span>
               </div>
@@ -174,13 +174,13 @@ export default function NuevoInformePage() {
 
           {/* ── Centro Educativo (solo si hay supervisión) ───── */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Centro Educativo</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Centro Educativo</label>
             <select
               value={escuelaId}
               onChange={e => setEscuelaId(e.target.value)}
               required
               disabled={!supervision}
-              className={`${inp} disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed`}
+              className={`${inp} disabled:bg-slate-50 dark:disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed`}
             >
               <option value="">
                 {supervision ? 'Seleccionar centro educativo...' : 'Selecciona primero una empresa'}
@@ -212,30 +212,30 @@ export default function NuevoInformePage() {
           </div>
 
           {/* ── Elaborado por ────────────────────────────────── */}
-          <div className="border-t border-slate-100 pt-5">
+          <div className="border-t border-slate-100 dark:border-slate-700 pt-5">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Elaborado por</p>
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Elaborado por</p>
               <button
                 type="button"
                 onClick={agregarElaborador}
-                className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 font-medium border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors"
+                className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium border border-blue-200 dark:border-blue-700 hover:border-blue-400 px-3 py-1.5 rounded-lg transition-colors"
               >
                 <UserPlus size={13} /> Agregar especialista
               </button>
             </div>
 
             {elaboradores.length === 0 && (
-              <p className="text-xs text-slate-400 italic text-center py-3 border-2 border-dashed border-slate-200 rounded-xl">
+              <p className="text-xs text-slate-400 dark:text-slate-500 italic text-center py-3 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
                 Haz clic en "Agregar especialista" para incluir elaboradores del informe
               </p>
             )}
 
             <div className="space-y-3">
               {elaboradores.map((elab, idx) => (
-                <div key={idx} className="border border-slate-200 rounded-xl overflow-hidden">
+                <div key={idx} className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
                   {/* Header tarjeta */}
-                  <div className="flex items-center justify-between bg-slate-50 px-3 py-2 border-b border-slate-200">
-                    <span className="text-xs font-semibold text-slate-600">Especialista {idx + 1}</span>
+                  <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-700/50 px-3 py-2 border-b border-slate-200 dark:border-slate-700">
+                    <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">Especialista {idx + 1}</span>
                     <button type="button" onClick={() => eliminarElaborador(idx)}
                       className="p-1 text-slate-400 hover:text-red-500 rounded transition-colors">
                       <Trash2 size={13} />
@@ -245,7 +245,7 @@ export default function NuevoInformePage() {
                   <div className="p-3 space-y-3">
                     {/* Selector de perfil */}
                     <div>
-                      <label className="text-xs text-slate-500 mb-1 block">Seleccionar usuario del sistema</label>
+                      <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">Seleccionar usuario del sistema</label>
                       <select
                         value={elab.id}
                         onChange={e => seleccionarPerfil(idx, e.target.value)}
@@ -263,7 +263,7 @@ export default function NuevoInformePage() {
                     {/* Cargo (editable, auto-llenado desde perfil) */}
                     {elab.id && (
                       <div>
-                        <label className="text-xs text-slate-500 mb-1 block">Cargo</label>
+                        <label className="text-xs text-slate-500 dark:text-slate-400 mb-1 block">Cargo</label>
                         <input
                           value={elab.cargo}
                           onChange={e => actualizarElaborador(idx, { cargo: e.target.value })}
@@ -291,7 +291,7 @@ export default function NuevoInformePage() {
                           )}
                         </div>
                         <div>
-                          <span className="text-sm text-slate-700 font-medium flex items-center gap-1">
+                          <span className="text-sm text-slate-700 dark:text-slate-200 font-medium flex items-center gap-1">
                             <Star size={11} className="text-amber-400" />
                             Aparecer en portada
                           </span>
@@ -310,12 +310,12 @@ export default function NuevoInformePage() {
           </div>
 
           {error && (
-            <p className="text-red-500 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
+            <p className="text-red-500 text-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{error}</p>
           )}
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={() => router.back()}
-              className="flex-1 border border-slate-300 text-slate-700 py-2.5 rounded-lg text-sm hover:bg-slate-50">
+              className="flex-1 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 py-2.5 rounded-lg text-sm hover:bg-slate-50 dark:hover:bg-slate-700">
               Cancelar
             </button>
             <button type="submit" disabled={loading}

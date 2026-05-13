@@ -30,3 +30,9 @@ body {
   color: var(--foreground);
   font-family: system-ui, sans-serif;
 }
+
+/* Forzar texto oscuro en opciones nativas del select (ambos modos) */
+select option {
+  background: #ffffff;
+  color: #1e293b;
+}
