@@ -36,3 +36,42 @@ select option {
   background: #ffffff;
   color: #1e293b;
 }
+
+/* ── Dark mode: override global de colores de texto slate ───────────
+   Cubre todos los componentes sin necesidad de agregar dark: en cada archivo */
+.dark .text-slate-900 { color: #f8fafc !important; }
+.dark .text-slate-800 { color: #f1f5f9 !important; }
+.dark .text-slate-700 { color: #e2e8f0 !important; }
+.dark .text-slate-600 { color: #cbd5e1 !important; }
+.dark .text-slate-500 { color: #94a3b8 !important; }
+.dark .text-slate-400 { color: #64748b !important; }
+
+/* Fondos de cards y contenedores */
+.dark .bg-white          { background-color: #0e1e35 !important; }
+.dark .bg-slate-50       { background-color: #0a1828 !important; }
+.dark .bg-slate-100      { background-color: #0f1f38 !important; }
+
+/* Bordes */
+.dark .border-slate-100  { border-color: #1a3050 !important; }
+.dark .border-slate-200  { border-color: #1a3050 !important; }
+.dark .border-slate-300  { border-color: #254060 !important; }
+
+/* Tablas */
+.dark thead.bg-slate-50,
+.dark .bg-slate-50.border-b { background-color: #0f1f38 !important; }
+
+/* Hover en filas de tabla */
+.dark .hover\:bg-slate-50:hover { background-color: #1a2f4a !important; }
+.dark tr.bg-white                { background-color: #0e1e35 !important; }
+.dark tr.bg-slate-50             { background-color: #0a1828 !important; }
+
+/* Inputs y selects sin dark: explícito */
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
+  background-color: #0f1f38;
+  color: #e2e8f0;
+  border-color: #1a3050;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #4a6a8a; }
