@@ -37,7 +37,9 @@
       "Bash(taskkill /PID 304 /F)",
       "Bash(curl -s -I http://localhost:3000)",
       "PowerShell(Stop-Process -Id 304 -Force -ErrorAction SilentlyContinue)",
-      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)"
+      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }

@@ -69,6 +69,7 @@ export default async function UsuariosPage() {
               <th className="text-left px-4 py-3 font-medium text-slate-600">Correo</th>
               <th className="text-left px-4 py-3 font-medium text-slate-600">Rol</th>
               <th className="text-left px-4 py-3 font-medium text-slate-600">Cargo</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600">Empresa supervisora</th>
               <th className="text-left px-4 py-3 font-medium text-slate-600">Estado</th>
               <th className="px-4 py-3" />
             </tr>
@@ -87,6 +88,12 @@ export default async function UsuariosPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-slate-500 text-xs">{u.cargo ?? '—'}</td>
+                <td className="px-4 py-3 text-slate-500 text-xs max-w-48">
+                  {u.empresa_supervision
+                    ? <span className="text-blue-600 font-medium">{u.empresa_supervision}</span>
+                    : <span className="text-slate-300 italic">—</span>
+                  }
+                </td>
                 <td className="px-4 py-3">
                   <span className={`text-xs px-2 py-1 rounded-full font-medium ${u.activo ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'}`}>
                     {u.activo ? 'Activo' : 'Inactivo'}
