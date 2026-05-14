@@ -1905,10 +1905,11 @@ function SeccionPPPI({ data }: { data: any }) {
 
   // Combina partes fijas + custom, tomando el label guardado para custom
   const PARTES_FIJAS_PDF = [
-    { key: 'alumnos', label: 'Alumnos' },
+    { key: 'alumnos',    label: 'Alumnos' },
     { key: 'profesores', label: 'Profesores' },
-    { key: 'director', label: 'Director' },
-    { key: 'cde', label: 'CDE' },
+    { key: 'director',   label: 'Director' },
+    { key: 'cde',        label: 'CDE' },
+    { key: 'personal',   label: 'Personal del proyecto / trabajadores' },
   ]
   const todasPartesKeys = [
     ...PARTES_FIJAS_PDF.map(p => ({ key: p.key, label: p.label })),
