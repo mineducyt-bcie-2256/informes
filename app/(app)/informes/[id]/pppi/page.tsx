@@ -7,7 +7,8 @@ import EscuelaInfoHeader from '@/components/forms/EscuelaInfoHeader'
 import DescripcionCondicion from '@/components/forms/DescripcionCondicion'
 import CapacitacionesSection from '@/components/forms/CapacitacionesSection'
 import RegistroFotografico, { type Foto } from '@/components/forms/RegistroFotografico'
-import { Users, AlertTriangle, Bell, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle, Bell, CheckCircle2 } from 'lucide-react'
+import PartesInteresadasSection from '@/components/forms/PartesInteresadasSection'
 import SeccionIndicadoresImpacto, {
   INDICADORES_INIT, type IndicadoresImpacto,
 } from '@/components/forms/IndicadoresImpacto'
@@ -20,23 +21,15 @@ function parseAvance(val: string | null): number {
   return n <= 1 ? Math.round(n * 100) : Math.round(n)
 }
 
-// ── Partes Interesadas ───────────────────────────────────────────
-const PARTES_FIJAS = [
-  { key: 'alumnos',    label: 'Alumnos' },
-  { key: 'profesores', label: 'Profesores' },
-  { key: 'director',   label: 'Director' },
-  { key: 'cde',        label: 'CDE' },
-]
-
-// PartesMap acepta claves fijas + claves custom_N con label opcional
-type ParteVal = { activa: boolean; hombres: number; mujeres: number; label?: string }
-type PartesMap = Record<string, ParteVal>
+// ── Tipos y constantes ───────────────────────────────────────────
+type PartesMap = Record<string, { activa: boolean; hombres: number; mujeres: number; label?: string }>
 
 const PARTES_INIT: PartesMap = {
   alumnos:    { activa: false, hombres: 0, mujeres: 0 },
   profesores: { activa: false, hombres: 0, mujeres: 0 },
   director:   { activa: false, hombres: 0, mujeres: 0 },
   cde:        { activa: false, hombres: 0, mujeres: 0 },
+  personal:   { activa: false, hombres: 0, mujeres: 0 },
 }
 
 // ── Estado inicial ───────────────────────────────────────────────
@@ -54,115 +47,6 @@ const INIT = {
 }
 
 const inputCls = 'w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500'
-const numCls = 'w-full border rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors'
-
-// ── Sección Partes Interesadas ───────────────────────────────────
-function SeccionPartesInteresadas({ partes, onChange }: { partes: PartesMap; onChange: (v: PartesMap) => void }) {
-  // Claves custom (las que no están en PARTES_FIJAS)
-  const fijaKeys = PARTES_FIJAS.map(p => p.key)
-  const customKeys = Object.keys(partes).filter(k => !fijaKeys.includes(k))
-
-  // Todas las entradas activas para el total
-  const todasActivas = Object.entries(partes).filter(([, v]) => v.activa)
-  const totalH = todasActivas.reduce((s, [, v]) => s + (v.hombres ?? 0), 0)
-  const totalM = todasActivas.reduce((s, [, v]) => s + (v.mujeres ?? 0), 0)
-  const hayActivas = todasActivas.length > 0
-
-  function setVal(key: string, field: keyof ParteVal, val: any) {
-    onChange({ ...partes, [key]: { ...partes[key], [field]: val } })
-  }
-  function addCustom() {
-    const newKey = `custom_${Date.now()}`
-    onChange({ ...partes, [newKey]: { activa: true, hombres: 0, mujeres: 0, label: '' } })
-  }
-  function removeCustom(key: string) {
-    const next = { ...partes }
-    delete next[key]
-    onChange(next)
-  }
-
-  function FilaParte({ parteKey, label, editable = false }: { parteKey: string; label: string; editable?: boolean }) {
-    const p = partes[parteKey] ?? { activa: false, hombres: 0, mujeres: 0 }
-    const total = (p.hombres ?? 0) + (p.mujeres ?? 0)
-    return (
-      <div className={`grid gap-0 items-center px-4 py-3 transition-colors ${editable ? 'grid-cols-[1fr_90px_90px_80px_32px]' : 'grid-cols-[1fr_90px_90px_80px]'} ${p.activa ? 'bg-white' : 'bg-slate-50/50'}`}>
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input type="checkbox" checked={!!p.activa} onChange={() => setVal(parteKey, 'activa', !p.activa)}
-            className="w-4 h-4 text-blue-600 rounded shrink-0" />
-          {editable ? (
-            <input type="text" value={p.label ?? ''} placeholder="Nombre del grupo..."
-              onChange={e => setVal(parteKey, 'label', e.target.value)}
-              className="text-sm border-b border-dashed border-slate-300 focus:outline-none focus:border-blue-500 bg-transparent flex-1" />
-          ) : (
-            <span className={`text-sm font-medium ${p.activa ? 'text-slate-800' : 'text-slate-400'}`}>{label}</span>
-          )}
-        </label>
-        <div className="px-2">
-          <input type="number" min={0} value={p.activa ? (p.hombres || '') : ''} disabled={!p.activa}
-            onChange={e => setVal(parteKey, 'hombres', Math.max(0, parseInt(e.target.value) || 0))} placeholder="0"
-            className={`${numCls} ${p.activa ? 'border-slate-300 bg-white text-slate-800' : 'border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed'}`} />
-        </div>
-        <div className="px-2">
-          <input type="number" min={0} value={p.activa ? (p.mujeres || '') : ''} disabled={!p.activa}
-            onChange={e => setVal(parteKey, 'mujeres', Math.max(0, parseInt(e.target.value) || 0))} placeholder="0"
-            className={`${numCls} ${p.activa ? 'border-slate-300 bg-white text-slate-800' : 'border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed'}`} />
-        </div>
-        <div className="px-2 text-center">
-          {p.activa
-            ? <span className={`inline-block min-w-[40px] px-2 py-1.5 rounded-lg text-sm font-semibold ${total > 0 ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-400'}`}>{total}</span>
-            : <span className="text-slate-300 text-sm">—</span>}
-        </div>
-        {editable && (
-          <button type="button" onClick={() => removeCustom(parteKey)}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors text-xs">✕</button>
-        )}
-      </div>
-    )
-  }
-
-  return (
-    <section>
-      <div className="mb-4 pb-2 border-b border-slate-100">
-        <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Partes Interesadas</h3>
-      </div>
-      <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-5">
-        <Users size={16} className="text-blue-500 shrink-0 mt-0.5" />
-        <p className="text-sm text-blue-800">Registre las partes interesadas presentes en el periodo, indicando la cantidad de participantes por género.</p>
-      </div>
-
-      <div className="rounded-xl border border-slate-200 overflow-hidden">
-        <div className="grid grid-cols-[1fr_90px_90px_80px] gap-0 bg-slate-50 border-b border-slate-200 px-4 py-2">
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Parte interesada</span>
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-center">Hombres</span>
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-center">Mujeres</span>
-          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide text-center">Total</span>
-        </div>
-        <div className="divide-y divide-slate-100">
-          {PARTES_FIJAS.map(({ key, label }) => (
-            <FilaParte key={key} parteKey={key} label={label} />
-          ))}
-          {customKeys.map(k => (
-            <FilaParte key={k} parteKey={k} label={partes[k]?.label ?? ''} editable />
-          ))}
-        </div>
-        {hayActivas && (
-          <div className="grid grid-cols-[1fr_90px_90px_80px] gap-0 items-center px-4 py-2.5 bg-blue-600 border-t border-blue-700">
-            <span className="text-xs font-bold text-white uppercase tracking-wide">Total general</span>
-            <div className="px-2 text-center"><span className="text-sm font-bold text-white">{totalH}</span></div>
-            <div className="px-2 text-center"><span className="text-sm font-bold text-white">{totalM}</span></div>
-            <div className="px-2 text-center"><span className="text-sm font-bold text-white bg-white/20 px-2 py-1 rounded-lg">{totalH + totalM}</span></div>
-          </div>
-        )}
-      </div>
-
-      {/* Botón agregar otro */}
-      <button type="button" onClick={addCustom}
-        className="mt-3 flex items-center gap-2 px-4 py-2 border border-dashed border-slate-300 rounded-xl text-sm text-slate-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors w-full justify-center">
-        <span className="text-lg leading-none">+</span> Agregar otro grupo
-      </button>
-    </section>
-  )
-}
 
 // ════════════════════════════════════════════════════════════════
 // PÁGINA PRINCIPAL
@@ -316,8 +200,8 @@ export default function PppiPage() {
           onChange={v => set('descripcion_condicion', v)}
         />
 
-        <SeccionPartesInteresadas
-          partes={data.partes_interesadas}
+        <PartesInteresadasSection
+          value={data.partes_interesadas}
           onChange={v => set('partes_interesadas', v)}
         />
 
