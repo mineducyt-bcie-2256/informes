@@ -238,7 +238,7 @@ export default async function DashboardPage({
   if (informeIds.length > 0) {
     const { data: rawHsso } = await admin
       .from('informe_hsso')
-      .select('informe_id, personal_hombres, personal_mujeres, personal_total, tiene_accidentes, accidentes')
+      .select('informe_id, personal_hombres, personal_mujeres, personal_total, tiene_accidentes, accidentes, tiene_enfermedades_profesionales, enfermedades_profesionales')
       .in('informe_id', informeIds)
     hssoData = (rawHsso ?? []) as InformeHsso[]
   }
@@ -276,6 +276,22 @@ export default async function DashboardPage({
     if (ev.tipo_lesion) lesiones[ev.tipo_lesion] = (lesiones[ev.tipo_lesion] ?? 0) + 1
   }
   const topLesiones = Object.entries(lesiones).sort(([, a], [, b]) => b - a)
+
+  // ── Enfermedades profesionales ─────────────────────────────────
+  interface EnfItem { grupo_agente: string; enfermedad: string; actividad_riesgo: string }
+  const todasEnfermedades: EnfItem[] = hssoData.flatMap(h =>
+    (h as any).tiene_enfermedades_profesionales === 'Sí'
+      ? ((h as any).enfermedades_profesionales ?? [])
+      : []
+  )
+  // Agrupar por grupo_agente
+  const enfermedadesPorGrupo: Record<string, EnfItem[]> = {}
+  for (const enf of todasEnfermedades) {
+    const g = enf.grupo_agente || 'Otro'
+    if (!enfermedadesPorGrupo[g]) enfermedadesPorGrupo[g] = []
+    enfermedadesPorGrupo[g].push(enf)
+  }
+  const hayEnfermedades = todasEnfermedades.length > 0
 
   // ── Periodo label ──────────────────────────────────────────────
   let periodoLabel: string
@@ -684,6 +700,51 @@ export default async function DashboardPage({
               </div>
             </div>
           </div>
+
+          {/* ── Enfermedades Profesionales ── */}
+          <div className="mt-4 rounded-2xl overflow-hidden" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+            <div className="px-4 py-2.5 border-b flex items-center gap-2" style={{ borderColor: 'var(--card-border)' }}>
+              <span className="w-2 h-2 rounded-full bg-orange-400 shrink-0" />
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Enfermedades Profesionales</p>
+            </div>
+
+            <div className="p-4">
+              {hayEnfermedades ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {Object.entries(enfermedadesPorGrupo).map(([grupo, enfs]) => {
+                    const colores: Record<string, { bg: string; border: string; dot: string; text: string }> = {
+                      'Químicos':      { bg: 'rgba(249,115,22,0.08)',  border: 'rgba(249,115,22,0.25)',  dot: '#f97316', text: '#f97316' },
+                      'Físicos':       { bg: 'rgba(59,130,246,0.08)',  border: 'rgba(59,130,246,0.25)',  dot: '#3b82f6', text: '#3b82f6' },
+                      'Biológicos':    { bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.25)',  dot: '#10b981', text: '#10b981' },
+                      'Psicosociales': { bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.25)', dot: '#8b5cf6', text: '#8b5cf6' },
+                      'Carcinógenos':  { bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.25)',   dot: '#ef4444', text: '#ef4444' },
+                    }
+                    const c = colores[grupo] ?? { bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.25)', dot: '#64748b', text: '#64748b' }
+                    return (
+                      <div key={grupo} className="rounded-xl p-3 space-y-2" style={{ background: c.bg, border: `1px solid ${c.border}` }}>
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: c.dot }} />
+                          <p className="text-xs font-bold" style={{ color: c.text }}>{grupo}</p>
+                          <span className="ml-auto text-xs font-bold" style={{ color: c.text }}>{enfs.length}</span>
+                        </div>
+                        <div className="space-y-1">
+                          {enfs.map((enf, i) => (
+                            <p key={i} className="text-xs text-slate-600 dark:text-slate-300 leading-tight">• {enf.enfermedad}</p>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-500 py-1">
+                  <span className="text-green-500">✓</span>
+                  En este mes no se reportan enfermedades profesionales.
+                </div>
+              )}
+            </div>
+          </div>
+
         </div>
       )}
 
