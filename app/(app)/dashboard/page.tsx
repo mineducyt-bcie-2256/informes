@@ -358,6 +358,67 @@ export default async function DashboardPage({
   const totalConstruccion = Object.values(pgrConstruccion).reduce((s, v) => s + v, 0)
   const hayPgr = totalDemolicion > 0 || totalConstruccion > 0
 
+  // ── MCEAR: calidad de aire y emisiones ────────────────────────
+  interface MedicionAire    { clasificacion: string; actividades: string[]; no_registrado: boolean; pm10: string; pm25: string; ica: string; co2: string }
+  interface MedicionAcustica { clasificacion: string; fuentes: string[]; db: string; no_registrado: boolean }
+  let mcearData: { mediciones_aire: MedicionAire[]; mediciones_acustica: MedicionAcustica[] }[] = []
+  if (informeIds.length > 0) {
+    const { data: rawMcear } = await admin
+      .from('informe_mcear')
+      .select('mediciones_aire, mediciones_acustica')
+      .in('informe_id', informeIds)
+    mcearData = (rawMcear ?? []) as any[]
+  }
+
+  const todasMedAire     = mcearData.flatMap(m => m.mediciones_aire     ?? [])
+  const todasMedAcustica = mcearData.flatMap(m => m.mediciones_acustica ?? [])
+
+  // Helper: promedio de campo numérico
+  function promedio(items: MedicionAire[], key: 'pm10' | 'pm25' | 'ica' | 'co2') {
+    const vals = items.map(m => parseFloat(m[key])).filter(v => !isNaN(v) && v > 0)
+    return vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : null
+  }
+
+  // Calidad de aire por clasificación
+  const aireMp  = todasMedAire.filter(m => m.clasificacion === 'material_particulado' && !m.no_registrado)
+  const aireEm  = todasMedAire.filter(m => m.clasificacion === 'emisiones'            && !m.no_registrado)
+  const aireCov = todasMedAire.filter(m => m.clasificacion === 'cov')
+
+  const mpPm10 = promedio(aireMp, 'pm10'); const mpPm25 = promedio(aireMp, 'pm25'); const mpIca = promedio(aireMp, 'ica')
+  const emCo2  = promedio(aireEm, 'co2');  const emIca  = promedio(aireEm, 'ica')
+
+  // Actividades por clasificación (únicas)
+  const actMp  = Array.from(new Set(aireMp.flatMap(m => m.actividades ?? [])))
+  const actEm  = Array.from(new Set(aireEm.flatMap(m => m.actividades ?? [])))
+  const covRegistrado = aireCov.some(m => !m.no_registrado)
+  const covNoRegistrado = aireCov.every(m => m.no_registrado)
+
+  // Acústica
+  const acGeneral = todasMedAcustica.filter(m => m.clasificacion === 'acustica_general' && !m.no_registrado)
+  const fuentesUnicas = Array.from(new Set(acGeneral.flatMap(m => m.fuentes ?? [])))
+  const dbVals = acGeneral.map(m => parseFloat(m.db)).filter(v => !isNaN(v) && v > 0)
+  const dbPromedio = dbVals.length > 0 ? dbVals.reduce((s, v) => s + v, 0) / dbVals.length : null
+
+  function clasificarRuidoDash(v: number) {
+    if (v <= 40)  return { label: 'Muy silencioso',                color: '#10b981' }
+    if (v <= 50)  return { label: 'Silencioso',                    color: '#84cc16' }
+    if (v <= 60)  return { label: 'Nivel aceptable',               color: '#eab308' }
+    if (v <= 70)  return { label: 'Algo molesto',                  color: '#f97316' }
+    if (v <= 85)  return { label: 'Molesto / Riesgo prolongado',   color: '#ef4444' }
+    if (v <= 100) return { label: 'Riesgo para la salud auditiva', color: '#a855f7' }
+    return               { label: 'Dolor / Daño inmediato',        color: '#78716c' }
+  }
+  function clasificarIcaDash(v: number) {
+    if (v <= 50)  return { label: 'Buena',                         color: '#10b981' }
+    if (v <= 100) return { label: 'Moderada',                      color: '#eab308' }
+    if (v <= 150) return { label: 'No saludable sensibles',        color: '#f97316' }
+    if (v <= 200) return { label: 'No saludable',                  color: '#ef4444' }
+    if (v <= 300) return { label: 'Muy no saludable',              color: '#a855f7' }
+    return               { label: 'Peligrosa',                     color: '#78716c' }
+  }
+
+  const hayMcear = todasMedAire.length > 0 || todasMedAcustica.length > 0
+
   // ── Periodo label ──────────────────────────────────────────────
   let periodoLabel: string
   if (mesDesde && mesHasta && mesDesde !== mesHasta) {
@@ -963,6 +1024,166 @@ export default async function DashboardPage({
                   )
                 })}
               </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── Bloque 6: MCEAR — Calidad del Aire y Emisiones ── */}
+      {hayMcear && (
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-widest mb-1 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
+            <span>🌬️</span>
+            MCEAR — Monitoreo de Calidad del Aire y Emisiones · {periodoLabel}
+          </h2>
+
+          {/* Calidad del aire */}
+          <p className="text-sm font-semibold mb-3 mt-1" style={{ color: 'var(--foreground)' }}>Calidad del aire</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+
+            {/* Tarjeta: Material particulado */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Material particulado</p>
+              {aireMp.length === 0 ? (
+                <p className="text-xs italic" style={{ color: 'var(--muted)' }}>Sin registros en el periodo</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { label: 'PM10', val: mpPm10, unit: 'µg/m³' },
+                      { label: 'PM2.5', val: mpPm25, unit: 'µg/m³' },
+                      { label: 'ICA', val: mpIca, unit: '' },
+                    ].map(({ label, val, unit }) => (
+                      <div key={label} className="rounded-xl px-2 py-2 text-center" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.15)' }}>
+                        <p className="text-xs font-medium text-blue-400">{label}</p>
+                        <p className="text-base font-bold" style={{ color: 'var(--foreground)' }}>
+                          {val !== null ? val.toFixed(1) : '—'}
+                        </p>
+                        {unit && <p className="text-xs" style={{ color: 'var(--muted)' }}>{unit}</p>}
+                        {label === 'ICA' && val !== null && (
+                          <p className="text-xs font-semibold mt-0.5" style={{ color: clasificarIcaDash(val).color }}>
+                            {clasificarIcaDash(val).label}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {actMp.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {actMp.map(a => (
+                        <span key={a} className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(59,130,246,0.1)', color: '#60a5fa' }}>{a}</span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Tarjeta: Emisiones y fuentes móviles */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Emisiones y fuentes móviles</p>
+              {aireEm.length === 0 ? (
+                <p className="text-xs italic" style={{ color: 'var(--muted)' }}>Sin registros en el periodo</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: 'ICA', val: emIca },
+                      { label: 'CO₂ (ppm)', val: emCo2 },
+                    ].map(({ label, val }) => (
+                      <div key={label} className="rounded-xl px-2 py-2 text-center" style={{ background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)' }}>
+                        <p className="text-xs font-medium text-yellow-400">{label}</p>
+                        <p className="text-base font-bold" style={{ color: 'var(--foreground)' }}>
+                          {val !== null ? val.toFixed(1) : '—'}
+                        </p>
+                        {label === 'ICA' && val !== null && (
+                          <p className="text-xs font-semibold mt-0.5" style={{ color: clasificarIcaDash(val).color }}>
+                            {clasificarIcaDash(val).label}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  {actEm.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {actEm.map(a => (
+                        <span key={a} className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(234,179,8,0.1)', color: '#fbbf24' }}>{a}</span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Tarjeta: COV */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Compuestos orgánicos volátiles</p>
+              {aireCov.length === 0 ? (
+                <p className="text-xs italic" style={{ color: 'var(--muted)' }}>Sin registros en el periodo</p>
+              ) : covRegistrado ? (
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-2xl">🧪</span>
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>Registrado</p>
+                    <p className="text-xs" style={{ color: 'var(--muted)' }}>Se registraron COV en el periodo</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-2xl">✅</span>
+                  <div>
+                    <p className="text-sm font-bold text-green-400">No registrado</p>
+                    <p className="text-xs" style={{ color: 'var(--muted)' }}>Sin emisiones de COV en el periodo</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+          </div>
+
+          {/* Contaminación acústica */}
+          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground)' }}>Contaminación acústica</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Tarjeta: Fuentes generadoras */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Fuentes generadoras</p>
+              {fuentesUnicas.length === 0 ? (
+                <p className="text-xs italic" style={{ color: 'var(--muted)' }}>Sin registros en el periodo</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {fuentesUnicas.map(f => (
+                    <span key={f} className="text-xs px-3 py-1.5 rounded-full font-medium" style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.25)', color: '#c084fc' }}>{f}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Tarjeta: Nivel de ruido promedio */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Nivel de ruido promedio</p>
+              {dbPromedio === null ? (
+                <p className="text-xs italic" style={{ color: 'var(--muted)' }}>Sin mediciones en el periodo</p>
+              ) : (
+                <>
+                  <div className="flex items-end gap-2">
+                    <span className="text-5xl font-black" style={{ color: clasificarRuidoDash(dbPromedio).color }}>
+                      {dbPromedio.toFixed(1)}
+                    </span>
+                    <span className="text-lg font-semibold mb-1" style={{ color: 'var(--muted)' }}>dB</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: clasificarRuidoDash(dbPromedio).color }} />
+                    <span className="text-sm font-semibold" style={{ color: clasificarRuidoDash(dbPromedio).color }}>
+                      {clasificarRuidoDash(dbPromedio).label}
+                    </span>
+                  </div>
+                  {dbVals.length > 1 && (
+                    <p className="text-xs" style={{ color: 'var(--muted)' }}>Promedio de {dbVals.length} mediciones</p>
+                  )}
+                </>
+              )}
             </div>
 
           </div>
