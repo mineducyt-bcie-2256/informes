@@ -419,6 +419,138 @@ export default async function DashboardPage({
 
   const hayMcear = todasMedAire.length > 0 || todasMedAcustica.length > 0
 
+  // ── PPPI: partes interesadas, socializaciones, indicadores ────
+  interface PppiRow {
+    informe_id: string
+    partes_interesadas: Record<string, { activa: boolean; hombres: number; mujeres: number; label?: string }>
+    socializacion1_fecha: string | null
+    socializacion2_fecha: string | null
+    socializacion3_fecha: string | null
+    indicadores_impacto: {
+      matricula:          { anio: number; ninos: number; ninas: number }[]
+      inasistencias:      { mes: number; anio: number; cantidad: number }[]
+      deserciones:        { mes: number; anio: number; cantidad: number }[]
+      empleos_directos:   { mes: number; anio: number; hombres: number; mujeres: number }[]
+      empleos_indirectos: { mes: number; anio: number; hombres: number; mujeres: number }[]
+    } | null
+  }
+  let pppiData: PppiRow[] = []
+  if (informeIds.length > 0) {
+    const { data: rawPppi } = await admin
+      .from('informe_pppi')
+      .select('informe_id, partes_interesadas, socializacion1_fecha, socializacion2_fecha, socializacion3_fecha, indicadores_impacto')
+      .in('informe_id', informeIds)
+    pppiData = (rawPppi ?? []) as any[]
+  }
+
+  // Partes interesadas: sumar H/M por parte fija + customs
+  const PARTES_FIJAS_DASH = ['alumnos','profesores','director','cde','personal'] as const
+  const PARTES_LABELS: Record<string, string> = {
+    alumnos: 'Alumnos', profesores: 'Profesores', director: 'Director',
+    cde: 'CDE', personal: 'Personal del proyecto',
+  }
+  interface ParteSuma { hombres: number; mujeres: number }
+  const partesTotales: Record<string, ParteSuma> = {}
+  for (const row of pppiData) {
+    const pm = row.partes_interesadas ?? {}
+    for (const [key, val] of Object.entries(pm)) {
+      if (!val?.activa) continue
+      if (!partesTotales[key]) partesTotales[key] = { hombres: 0, mujeres: 0 }
+      partesTotales[key].hombres += val.hombres || 0
+      partesTotales[key].mujeres += val.mujeres || 0
+    }
+  }
+
+  // Socializaciones: cuántos informes tienen fecha registrada
+  const soc1Count = pppiData.filter(r => r.socializacion1_fecha).length
+  const soc2Count = pppiData.filter(r => r.socializacion2_fecha).length
+  const soc3Count = pppiData.filter(r => r.socializacion3_fecha).length
+  const totalPppiInformes = pppiData.length
+
+  // Socializaciones atrasadas: cruzar con avance de escuela
+  // Necesitamos avance por informe_id → escuela_id → porcentaje_avance
+  const informeEscuelaMap = Object.fromEntries(informesFiltrados.map(i => [i.id, i.escuela_id]))
+  const escuelaAvanceMap: Record<string, number> = {}
+  for (const e of escuelasFiltradas) {
+    // porcentaje_avance viene como string "0.85" o "85"
+    const raw = (e as any).porcentaje_avance
+    if (raw == null) continue
+    const n = parseFloat(raw)
+    escuelaAvanceMap[e.id] = isNaN(n) ? 0 : (n <= 1 ? Math.round(n * 100) : Math.round(n))
+  }
+  // Atrasadas: avance > umbral Y fecha no registrada
+  const soc2Atrasadas = pppiData.filter(r => {
+    const esc = informeEscuelaMap[r.informe_id]
+    return escuelaAvanceMap[esc] > 90 && !r.socializacion2_fecha
+  }).length
+  const soc3Atrasadas = pppiData.filter(r => {
+    const esc = informeEscuelaMap[r.informe_id]
+    return escuelaAvanceMap[esc] > 90 && !r.socializacion3_fecha
+  }).length
+
+  // Indicadores: matricula, inasistencias, deserciones, empleos por año
+  const ANIOS_IND = [2024, 2025, 2026]
+
+  function sumIndicadorAnio<T extends { anio: number }>(
+    arr: T[], anio: number, field: keyof T
+  ): number {
+    return arr.filter(r => r.anio === anio).reduce((s, r) => s + ((r[field] as number) || 0), 0)
+  }
+
+  // Matrícula por año
+  const matriculaPorAnio = ANIOS_IND.map(anio => {
+    const ninos = pppiData.reduce((s, r) => {
+      const rows = r.indicadores_impacto?.matricula ?? []
+      return s + sumIndicadorAnio(rows, anio, 'ninos')
+    }, 0)
+    const ninas = pppiData.reduce((s, r) => {
+      const rows = r.indicadores_impacto?.matricula ?? []
+      return s + sumIndicadorAnio(rows, anio, 'ninas')
+    }, 0)
+    return { anio, ninos, ninas, total: ninos + ninas }
+  })
+
+  // Inasistencias por año (suma del periodo)
+  const inasistenciasPorAnio = ANIOS_IND.map(anio => {
+    const total = pppiData.reduce((s, r) => {
+      const rows = (r.indicadores_impacto?.inasistencias ?? []).filter(x => x.anio === anio)
+      return s + rows.reduce((ss, x) => ss + (x.cantidad || 0), 0)
+    }, 0)
+    return { anio, total }
+  })
+
+  // Deserciones por año (suma del periodo)
+  const desercionesPorAnio = ANIOS_IND.map(anio => {
+    const total = pppiData.reduce((s, r) => {
+      const rows = (r.indicadores_impacto?.deserciones ?? []).filter(x => x.anio === anio)
+      return s + rows.reduce((ss, x) => ss + (x.cantidad || 0), 0)
+    }, 0)
+    return { anio, total }
+  })
+
+  // Empleos directos + indirectos por año
+  const empleosPorAnio = ANIOS_IND.map(anio => {
+    const directosH = pppiData.reduce((s, r) => {
+      const rows = (r.indicadores_impacto?.empleos_directos ?? []).filter(x => x.anio === anio)
+      return s + rows.reduce((ss, x) => ss + (x.hombres || 0), 0)
+    }, 0)
+    const directosM = pppiData.reduce((s, r) => {
+      const rows = (r.indicadores_impacto?.empleos_directos ?? []).filter(x => x.anio === anio)
+      return s + rows.reduce((ss, x) => ss + (x.mujeres || 0), 0)
+    }, 0)
+    const indirectosH = pppiData.reduce((s, r) => {
+      const rows = (r.indicadores_impacto?.empleos_indirectos ?? []).filter(x => x.anio === anio)
+      return s + rows.reduce((ss, x) => ss + (x.hombres || 0), 0)
+    }, 0)
+    const indirectosM = pppiData.reduce((s, r) => {
+      const rows = (r.indicadores_impacto?.empleos_indirectos ?? []).filter(x => x.anio === anio)
+      return s + rows.reduce((ss, x) => ss + (x.mujeres || 0), 0)
+    }, 0)
+    return { anio, directos: directosH + directosM, indirectos: indirectosH + indirectosM, total: directosH + directosM + indirectosH + indirectosM }
+  })
+
+  const hayPppi = pppiData.length > 0
+
   // ── Periodo label ──────────────────────────────────────────────
   let periodoLabel: string
   if (mesDesde && mesHasta && mesDesde !== mesHasta) {
@@ -700,7 +832,7 @@ export default async function DashboardPage({
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
             <ShieldAlert size={13} className="text-slate-400" />
-            HSSO consolidado — {periodoLabel}
+            Condición 1 — Implementación del Plan de Higiene, Salud y Seguridad Ocupacional · {periodoLabel}
           </h2>
 
           {/* Dos columnas: Personal | Accidentes e incidentes */}
@@ -879,7 +1011,7 @@ export default async function DashboardPage({
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-widest mb-1 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
             <span>🚽</span>
-            GARO — Gestión de Aguas Residuales Ordinarias · {periodoLabel}
+            Condición 2 — Implementación de la Gestión de Aguas Residuales Ordinarias · {periodoLabel}
           </h2>
           <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground)' }}>Unidades Sanitarias</p>
 
@@ -954,7 +1086,7 @@ export default async function DashboardPage({
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-widest mb-1 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
             <span>♻️</span>
-            PGR — Plan de Gestión de Residuos · {periodoLabel}
+            Condición 3 — Implementación del Plan de Gestión de Residuos · {periodoLabel}
           </h2>
           <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground)' }}>Implementación del plan de gestión de residuos</p>
 
@@ -1035,7 +1167,7 @@ export default async function DashboardPage({
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-widest mb-1 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
             <span>🌬️</span>
-            MCEAR — Monitoreo de Calidad del Aire y Emisiones · {periodoLabel}
+            Condición 4 — Monitoreo de Calidad del Aire y Emisiones · {periodoLabel}
           </h2>
 
           {/* Calidad del aire */}
@@ -1184,6 +1316,205 @@ export default async function DashboardPage({
                   )}
                 </>
               )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── Bloque 7: PPPI — Partes Interesadas ── */}
+      {hayPppi && (
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-widest mb-1 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
+            <span>🤝</span>
+            Condición 5 — Partes Interesadas · {periodoLabel}
+          </h2>
+
+          {/* ── Partes interesadas resumen ── */}
+          <p className="text-sm font-semibold mb-3 mt-1" style={{ color: 'var(--foreground)' }}>Partes interesadas</p>
+          <div className="rounded-2xl overflow-hidden mb-4" style={{ border: '1px solid var(--card-border)' }}>
+            {/* Cabecera */}
+            <div className="grid grid-cols-[1fr_80px_80px_80px] px-4 py-2 text-xs font-semibold uppercase tracking-wide" style={{ background: 'var(--card-bg)', color: 'var(--muted)', borderBottom: '1px solid var(--card-border)' }}>
+              <span>Parte interesada</span>
+              <span className="text-center">Hombres</span>
+              <span className="text-center">Mujeres</span>
+              <span className="text-center">Total</span>
+            </div>
+            {/* Filas fijas */}
+            {PARTES_FIJAS_DASH.map(key => {
+              const vals = partesTotales[key]
+              const h = vals?.hombres ?? 0; const m = vals?.mujeres ?? 0; const t = h + m
+              return (
+                <div key={key} className="grid grid-cols-[1fr_80px_80px_80px] px-4 py-2.5 items-center" style={{ borderBottom: '1px solid var(--card-border)', background: t > 0 ? 'var(--card-bg)' : 'transparent' }}>
+                  <span className="text-sm font-medium" style={{ color: t > 0 ? 'var(--foreground)' : 'var(--muted)' }}>{PARTES_LABELS[key]}</span>
+                  <span className="text-sm text-center" style={{ color: 'var(--foreground)' }}>{t > 0 ? h : '—'}</span>
+                  <span className="text-sm text-center" style={{ color: 'var(--foreground)' }}>{t > 0 ? m : '—'}</span>
+                  <span className="text-sm font-bold text-center" style={{ color: t > 0 ? '#60a5fa' : 'var(--muted)' }}>{t > 0 ? t : '—'}</span>
+                </div>
+              )
+            })}
+            {/* Filas custom */}
+            {Object.entries(partesTotales)
+              .filter(([k]) => !PARTES_FIJAS_DASH.includes(k as any))
+              .map(([key, vals]) => {
+                const h = vals.hombres; const m = vals.mujeres; const t = h + m
+                return (
+                  <div key={key} className="grid grid-cols-[1fr_80px_80px_80px] px-4 py-2.5 items-center" style={{ borderBottom: '1px solid var(--card-border)', background: 'var(--card-bg)' }}>
+                    <span className="text-sm font-medium italic" style={{ color: 'var(--foreground)' }}>{key}</span>
+                    <span className="text-sm text-center" style={{ color: 'var(--foreground)' }}>{h}</span>
+                    <span className="text-sm text-center" style={{ color: 'var(--foreground)' }}>{m}</span>
+                    <span className="text-sm font-bold text-center text-blue-400">{t}</span>
+                  </div>
+                )
+              })}
+            {/* Total general */}
+            {(() => {
+              const th = Object.values(partesTotales).reduce((s, v) => s + v.hombres, 0)
+              const tm = Object.values(partesTotales).reduce((s, v) => s + v.mujeres, 0)
+              return (
+                <div className="grid grid-cols-[1fr_80px_80px_80px] px-4 py-2.5 items-center" style={{ background: 'rgba(59,130,246,0.12)' }}>
+                  <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--foreground)' }}>Total general</span>
+                  <span className="text-sm font-bold text-center text-blue-400">{th}</span>
+                  <span className="text-sm font-bold text-center text-purple-400">{tm}</span>
+                  <span className="text-sm font-bold text-center text-blue-300">{th + tm}</span>
+                </div>
+              )
+            })()}
+          </div>
+
+          {/* ── Socializaciones ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+            {/* Tarjeta: Socializaciones realizadas */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Socializaciones · {totalPppiInformes} informes</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: '1ª Social.', count: soc1Count, color: '#10b981' },
+                  { label: '2ª Social.', count: soc2Count, color: '#60a5fa' },
+                  { label: '3ª Social.', count: soc3Count, color: '#a78bfa' },
+                ].map(({ label, count, color }) => (
+                  <div key={label} className="rounded-xl px-2 py-3 flex flex-col items-center gap-1" style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
+                    <span className="text-xs font-medium" style={{ color: 'var(--muted)' }}>{label}</span>
+                    <span className="text-2xl font-black" style={{ color }}>{count}</span>
+                    <span className="text-xs" style={{ color: 'var(--muted)' }}>de {totalPppiInformes}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Tarjeta: Socializaciones atrasadas */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{
+              background: (soc2Atrasadas + soc3Atrasadas) > 0
+                ? 'linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.06))'
+                : 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.06))',
+              border: `1px solid ${(soc2Atrasadas + soc3Atrasadas) > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`,
+            }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Socializaciones atrasadas</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: '1ª Social.', count: 0, note: 'Sin umbral' },
+                  { label: '2ª Social.', count: soc2Atrasadas, note: '>70% sin registrar' },
+                  { label: '3ª Social.', count: soc3Atrasadas, note: '>90% sin registrar' },
+                ].map(({ label, count, note }) => (
+                  <div key={label} className="rounded-xl px-2 py-3 flex flex-col items-center gap-1" style={{ background: 'rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.1)' }}>
+                    <span className="text-xs font-medium" style={{ color: 'var(--muted)' }}>{label}</span>
+                    <span className="text-2xl font-black" style={{ color: count > 0 ? '#f87171' : '#34d399' }}>{count}</span>
+                    <span className="text-xs text-center" style={{ color: 'var(--muted)' }}>{note}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+
+          {/* ── Indicadores de impacto ── */}
+          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground)' }}>Indicadores de impacto</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+
+            {/* Matrícula escolar */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Matrícula escolar</p>
+              <div className="space-y-2">
+                {matriculaPorAnio.map(({ anio, ninos, ninas, total }) => (
+                  <div key={anio} className="flex items-center gap-2">
+                    <span className="text-xs font-bold w-10 shrink-0" style={{ color: 'var(--muted)' }}>{anio}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(99,102,241,0.12)' }}>
+                      <div className="h-full rounded-full" style={{ width: total > 0 ? '100%' : '0%', background: 'rgba(99,102,241,0.6)' }} />
+                    </div>
+                    <span className="text-sm font-bold w-10 text-right" style={{ color: total > 0 ? 'var(--foreground)' : 'var(--muted)' }}>
+                      {total > 0 ? total : '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-auto grid grid-cols-2 gap-2 text-xs" style={{ color: 'var(--muted)' }}>
+                <div>Niños: {matriculaPorAnio.reduce((s, r) => s + r.ninos, 0)}</div>
+                <div>Niñas: {matriculaPorAnio.reduce((s, r) => s + r.ninas, 0)}</div>
+              </div>
+            </div>
+
+            {/* Inasistencias */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Inasistencias</p>
+              <div className="space-y-2">
+                {inasistenciasPorAnio.map(({ anio, total }) => (
+                  <div key={anio} className="flex items-center gap-2">
+                    <span className="text-xs font-bold w-10 shrink-0" style={{ color: 'var(--muted)' }}>{anio}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(234,179,8,0.12)' }}>
+                      <div className="h-full rounded-full" style={{ width: total > 0 ? '100%' : '0%', background: 'rgba(234,179,8,0.6)' }} />
+                    </div>
+                    <span className="text-sm font-bold w-10 text-right" style={{ color: total > 0 ? '#fbbf24' : 'var(--muted)' }}>
+                      {total > 0 ? total : '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Deserciones */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Deserciones</p>
+              <div className="space-y-2">
+                {desercionesPorAnio.map(({ anio, total }) => (
+                  <div key={anio} className="flex items-center gap-2">
+                    <span className="text-xs font-bold w-10 shrink-0" style={{ color: 'var(--muted)' }}>{anio}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(239,68,68,0.12)' }}>
+                      <div className="h-full rounded-full" style={{ width: total > 0 ? '100%' : '0%', background: 'rgba(239,68,68,0.6)' }} />
+                    </div>
+                    <span className="text-sm font-bold w-10 text-right" style={{ color: total > 0 ? '#f87171' : 'var(--muted)' }}>
+                      {total > 0 ? total : '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Empleos directos e indirectos */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Empleos generados</p>
+              <div className="space-y-2">
+                {empleosPorAnio.map(({ anio, directos, indirectos, total }) => (
+                  <div key={anio} className="flex items-center gap-2">
+                    <span className="text-xs font-bold w-10 shrink-0" style={{ color: 'var(--muted)' }}>{anio}</span>
+                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'rgba(16,185,129,0.12)' }}>
+                      <div className="h-full rounded-full" style={{ width: total > 0 ? '100%' : '0%', background: 'rgba(16,185,129,0.6)' }} />
+                    </div>
+                    <span className="text-sm font-bold w-10 text-right" style={{ color: total > 0 ? '#34d399' : 'var(--muted)' }}>
+                      {total > 0 ? total : '—'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-auto space-y-1">
+                {empleosPorAnio.filter(e => e.total > 0).map(({ anio, directos, indirectos }) => (
+                  <div key={anio} className="flex gap-3 text-xs" style={{ color: 'var(--muted)' }}>
+                    <span className="font-bold" style={{ color: 'var(--foreground)' }}>{anio}:</span>
+                    <span>Directos {directos}</span>
+                    <span>Indirectos {indirectos}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
           </div>
