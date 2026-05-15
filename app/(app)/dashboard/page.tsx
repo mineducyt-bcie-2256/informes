@@ -1330,65 +1330,60 @@ export default async function DashboardPage({
             Condición 5 — Partes Interesadas · {periodoLabel}
           </h2>
 
-          {/* ── Partes interesadas resumen ── */}
-          <p className="text-sm font-semibold mb-3 mt-1" style={{ color: 'var(--foreground)' }}>Partes interesadas</p>
-          <div className="rounded-2xl overflow-hidden mb-4" style={{ border: '1px solid var(--card-border)' }}>
-            {/* Cabecera */}
-            <div className="grid grid-cols-[1fr_80px_80px_80px] px-4 py-2 text-xs font-semibold uppercase tracking-wide" style={{ background: 'var(--card-bg)', color: 'var(--muted)', borderBottom: '1px solid var(--card-border)' }}>
-              <span>Parte interesada</span>
-              <span className="text-center">Hombres</span>
-              <span className="text-center">Mujeres</span>
-              <span className="text-center">Total</span>
-            </div>
-            {/* Filas fijas */}
-            {PARTES_FIJAS_DASH.map(key => {
-              const vals = partesTotales[key]
-              const h = vals?.hombres ?? 0; const m = vals?.mujeres ?? 0; const t = h + m
-              return (
-                <div key={key} className="grid grid-cols-[1fr_80px_80px_80px] px-4 py-2.5 items-center" style={{ borderBottom: '1px solid var(--card-border)', background: t > 0 ? 'var(--card-bg)' : 'transparent' }}>
-                  <span className="text-sm font-medium" style={{ color: t > 0 ? 'var(--foreground)' : 'var(--muted)' }}>{PARTES_LABELS[key]}</span>
-                  <span className="text-sm text-center" style={{ color: 'var(--foreground)' }}>{t > 0 ? h : '—'}</span>
-                  <span className="text-sm text-center" style={{ color: 'var(--foreground)' }}>{t > 0 ? m : '—'}</span>
-                  <span className="text-sm font-bold text-center" style={{ color: t > 0 ? '#60a5fa' : 'var(--muted)' }}>{t > 0 ? t : '—'}</span>
-                </div>
-              )
-            })}
-            {/* Filas custom */}
-            {Object.entries(partesTotales)
-              .filter(([k]) => !PARTES_FIJAS_DASH.includes(k as any))
-              .map(([key, vals]) => {
-                const h = vals.hombres; const m = vals.mujeres; const t = h + m
+          {/* ── Fila: Partes interesadas | Socializaciones | Socializaciones atrasadas ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 mt-1">
+
+            {/* Columna 1: Partes interesadas */}
+            <div className="rounded-2xl overflow-hidden flex flex-col" style={{ border: '1px solid var(--card-border)' }}>
+              <div className="grid grid-cols-[1fr_56px_56px_56px] px-3 py-2 text-xs font-semibold uppercase tracking-wide" style={{ background: 'var(--card-bg)', color: 'var(--muted)', borderBottom: '1px solid var(--card-border)' }}>
+                <span>Partes interesadas</span>
+                <span className="text-center">H</span>
+                <span className="text-center">M</span>
+                <span className="text-center">Total</span>
+              </div>
+              {PARTES_FIJAS_DASH.map(key => {
+                const vals = partesTotales[key]
+                const h = vals?.hombres ?? 0; const m = vals?.mujeres ?? 0; const t = h + m
                 return (
-                  <div key={key} className="grid grid-cols-[1fr_80px_80px_80px] px-4 py-2.5 items-center" style={{ borderBottom: '1px solid var(--card-border)', background: 'var(--card-bg)' }}>
-                    <span className="text-sm font-medium italic" style={{ color: 'var(--foreground)' }}>{key}</span>
-                    <span className="text-sm text-center" style={{ color: 'var(--foreground)' }}>{h}</span>
-                    <span className="text-sm text-center" style={{ color: 'var(--foreground)' }}>{m}</span>
-                    <span className="text-sm font-bold text-center text-blue-400">{t}</span>
+                  <div key={key} className="grid grid-cols-[1fr_56px_56px_56px] px-3 py-2 items-center" style={{ borderBottom: '1px solid var(--card-border)', background: t > 0 ? 'var(--card-bg)' : 'transparent' }}>
+                    <span className="text-xs font-medium" style={{ color: t > 0 ? 'var(--foreground)' : 'var(--muted)' }}>{PARTES_LABELS[key]}</span>
+                    <span className="text-xs text-center" style={{ color: 'var(--foreground)' }}>{t > 0 ? h : '—'}</span>
+                    <span className="text-xs text-center" style={{ color: 'var(--foreground)' }}>{t > 0 ? m : '—'}</span>
+                    <span className="text-xs font-bold text-center" style={{ color: t > 0 ? '#60a5fa' : 'var(--muted)' }}>{t > 0 ? t : '—'}</span>
                   </div>
                 )
               })}
-            {/* Total general */}
-            {(() => {
-              const th = Object.values(partesTotales).reduce((s, v) => s + v.hombres, 0)
-              const tm = Object.values(partesTotales).reduce((s, v) => s + v.mujeres, 0)
-              return (
-                <div className="grid grid-cols-[1fr_80px_80px_80px] px-4 py-2.5 items-center" style={{ background: 'rgba(59,130,246,0.12)' }}>
-                  <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--foreground)' }}>Total general</span>
-                  <span className="text-sm font-bold text-center text-blue-400">{th}</span>
-                  <span className="text-sm font-bold text-center text-purple-400">{tm}</span>
-                  <span className="text-sm font-bold text-center text-blue-300">{th + tm}</span>
-                </div>
-              )
-            })()}
-          </div>
+              {Object.entries(partesTotales)
+                .filter(([k]) => !PARTES_FIJAS_DASH.includes(k as any))
+                .map(([key, vals]) => {
+                  const h = vals.hombres; const m = vals.mujeres; const t = h + m
+                  return (
+                    <div key={key} className="grid grid-cols-[1fr_56px_56px_56px] px-3 py-2 items-center" style={{ borderBottom: '1px solid var(--card-border)', background: 'var(--card-bg)' }}>
+                      <span className="text-xs font-medium italic" style={{ color: 'var(--foreground)' }}>{key}</span>
+                      <span className="text-xs text-center" style={{ color: 'var(--foreground)' }}>{h}</span>
+                      <span className="text-xs text-center" style={{ color: 'var(--foreground)' }}>{m}</span>
+                      <span className="text-xs font-bold text-center text-blue-400">{t}</span>
+                    </div>
+                  )
+                })}
+              {(() => {
+                const th = Object.values(partesTotales).reduce((s, v) => s + v.hombres, 0)
+                const tm = Object.values(partesTotales).reduce((s, v) => s + v.mujeres, 0)
+                return (
+                  <div className="grid grid-cols-[1fr_56px_56px_56px] px-3 py-2 items-center mt-auto" style={{ background: 'rgba(59,130,246,0.12)' }}>
+                    <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--foreground)' }}>Total</span>
+                    <span className="text-xs font-bold text-center text-blue-400">{th}</span>
+                    <span className="text-xs font-bold text-center text-purple-400">{tm}</span>
+                    <span className="text-xs font-bold text-center text-blue-300">{th + tm}</span>
+                  </div>
+                )
+              })()}
+            </div>
 
-          {/* ── Socializaciones ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-
-            {/* Tarjeta: Socializaciones realizadas */}
+            {/* Columna 2: Socializaciones realizadas */}
             <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
               <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Socializaciones · {totalPppiInformes} informes</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2 flex-1">
                 {[
                   { label: '1ª Social.', count: soc1Count, color: '#10b981' },
                   { label: '2ª Social.', count: soc2Count, color: '#60a5fa' },
@@ -1403,7 +1398,7 @@ export default async function DashboardPage({
               </div>
             </div>
 
-            {/* Tarjeta: Socializaciones atrasadas */}
+            {/* Columna 3: Socializaciones atrasadas */}
             <div className="rounded-2xl p-5 flex flex-col gap-3" style={{
               background: (soc2Atrasadas + soc3Atrasadas) > 0
                 ? 'linear-gradient(135deg, rgba(239,68,68,0.1), rgba(220,38,38,0.06))'
@@ -1411,7 +1406,7 @@ export default async function DashboardPage({
               border: `1px solid ${(soc2Atrasadas + soc3Atrasadas) > 0 ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`,
             }}>
               <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Socializaciones atrasadas</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2 flex-1">
                 {[
                   { label: '1ª Social.', count: 0, note: 'Sin umbral' },
                   { label: '2ª Social.', count: soc2Atrasadas, note: '>70% sin registrar' },
