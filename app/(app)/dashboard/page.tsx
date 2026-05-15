@@ -293,6 +293,34 @@ export default async function DashboardPage({
   }
   const hayEnfermedades = todasEnfermedades.length > 0
 
+  // ── GARO: unidades sanitarias ─────────────────────────────────
+  interface UnidadSanitaria { tipo: string; hombres: number; mujeres: number; total: number }
+  let garoData: { unidades_sanitarias: UnidadSanitaria[] }[] = []
+  if (informeIds.length > 0) {
+    const { data: rawGaro } = await admin
+      .from('informe_garo')
+      .select('unidades_sanitarias')
+      .in('informe_id', informeIds)
+    garoData = (rawGaro ?? []) as any[]
+  }
+  const todasUnidades: UnidadSanitaria[] = garoData.flatMap(g => g.unidades_sanitarias ?? [])
+  const totalUnidades  = todasUnidades.reduce((s, u) => s + (u.total || 0), 0)
+  const totalUnidadesH = todasUnidades.reduce((s, u) => s + (u.hombres || 0), 0)
+  const totalUnidadesM = todasUnidades.reduce((s, u) => s + (u.mujeres || 0), 0)
+  // Agrupado por tipo
+  const unidadesPorTipo: Record<string, { hombres: number; mujeres: number; total: number }> = {}
+  for (const u of todasUnidades) {
+    const t = u.tipo || 'Sin tipo'
+    if (!unidadesPorTipo[t]) unidadesPorTipo[t] = { hombres: 0, mujeres: 0, total: 0 }
+    unidadesPorTipo[t].hombres += u.hombres || 0
+    unidadesPorTipo[t].mujeres += u.mujeres || 0
+    unidadesPorTipo[t].total   += u.total   || 0
+  }
+  // Criterio: 1 unidad por cada 20 personas (usando personal HSSO)
+  const personalTotal   = totalPersonal || 0
+  const unidadesMinimas = Math.ceil(personalTotal / 20)
+  const cumpleCriterio  = totalUnidades >= unidadesMinimas && totalUnidadesH > 0 && totalUnidadesM > 0
+
   // ── Periodo label ──────────────────────────────────────────────
   let periodoLabel: string
   if (mesDesde && mesHasta && mesDesde !== mesHasta) {
@@ -745,6 +773,80 @@ export default async function DashboardPage({
             </div>
           </div>
 
+        </div>
+      )}
+
+      {/* ── Bloque 4: GARO — Unidades Sanitarias ── */}
+      {todasUnidades.length > 0 && (
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
+            <span>🚽</span>
+            GARO — Unidades Sanitarias · {periodoLabel}
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* Tarjeta 1: Total instaladas */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Total instaladas</p>
+              <p className="text-5xl font-black" style={{ color: 'var(--foreground)' }}>{totalUnidades}</p>
+              <div className="flex gap-3 mt-auto">
+                <div className="flex-1 rounded-xl px-3 py-2 text-center" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+                  <p className="text-xs text-blue-400 font-medium">Hombres</p>
+                  <p className="text-lg font-bold text-blue-500">{totalUnidadesH}</p>
+                </div>
+                <div className="flex-1 rounded-xl px-3 py-2 text-center" style={{ background: 'rgba(168,85,247,0.08)', border: '1px solid rgba(168,85,247,0.2)' }}>
+                  <p className="text-xs text-purple-400 font-medium">Mujeres</p>
+                  <p className="text-lg font-bold text-purple-500">{totalUnidadesM}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Tarjeta 2: Criterio */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{
+              background: cumpleCriterio
+                ? 'linear-gradient(135deg, rgba(16,185,129,0.12), rgba(5,150,105,0.08))'
+                : 'linear-gradient(135deg, rgba(239,68,68,0.12), rgba(220,38,38,0.08))',
+              border: `1px solid ${cumpleCriterio ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+            }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Criterio 1 ud / 20 personas</p>
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{cumpleCriterio ? '✅' : '⚠️'}</span>
+                <div>
+                  <p className={`text-sm font-bold ${cumpleCriterio ? 'text-green-400' : 'text-red-400'}`}>
+                    {cumpleCriterio ? 'Cumple' : 'No cumple'}
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                    {personalTotal > 0
+                      ? `${totalUnidades} uds. para ${personalTotal} personas (mín. ${unidadesMinimas})`
+                      : 'Sin datos de personal HSSO'}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-auto flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${totalUnidadesH > 0 && totalUnidadesM > 0 ? 'bg-green-400' : 'bg-red-400'}`} />
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>
+                  Separación H/M: {totalUnidadesH > 0 && totalUnidadesM > 0 ? 'Sí' : 'No registrada'}
+                </p>
+              </div>
+            </div>
+
+            {/* Tarjeta 3: Por tipo */}
+            <div className="rounded-2xl p-5 flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--muted)' }}>Por tipo</p>
+              {Object.entries(unidadesPorTipo).map(([tipo, vals]) => (
+                <div key={tipo} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)' }}>
+                  <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>{tipo}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-blue-400">H:{vals.hombres}</span>
+                    <span className="text-xs text-purple-400">M:{vals.mujeres}</span>
+                    <span className="text-xs font-bold" style={{ color: 'var(--foreground)' }}>{vals.total}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+          </div>
         </div>
       )}
 
