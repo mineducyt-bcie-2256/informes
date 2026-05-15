@@ -321,6 +321,43 @@ export default async function DashboardPage({
   const unidadesMinimas = Math.ceil(personalTotal / 20)
   const cumpleCriterio  = totalUnidades >= unidadesMinimas && totalUnidadesH > 0 && totalUnidadesM > 0
 
+  // ── PGR: residuos ─────────────────────────────────────────────
+  interface MaterialResiduos { nombre: string; peso_kg: number; unidad?: string }
+  interface ResiduoReg { categoria: string; materiales: MaterialResiduos[] }
+  let pgrData: { residuos_demolicion: ResiduoReg[]; residuos_construccion: ResiduoReg[] }[] = []
+  if (informeIds.length > 0) {
+    const { data: rawPgr } = await admin
+      .from('informe_pgr')
+      .select('residuos_demolicion, residuos_construccion')
+      .in('informe_id', informeIds)
+    pgrData = (rawPgr ?? []) as any[]
+  }
+
+  const CATEGORIAS_PGR = ['Inertes', 'No Peligrosos', 'Peligrosos'] as const
+  type CategoriaPgr = typeof CATEGORIAS_PGR[number]
+
+  function sumKg(residuos: ResiduoReg[], cat: string) {
+    return residuos
+      .filter(r => r.categoria === cat)
+      .flatMap(r => r.materiales ?? [])
+      .filter(m => !m.unidad || m.unidad === 'kg')
+      .reduce((s, m) => s + (m.peso_kg || 0), 0)
+  }
+
+  const pgrDemolicion: Record<CategoriaPgr, number> = {
+    'Inertes':        pgrData.reduce((s, p) => s + sumKg(p.residuos_demolicion ?? [], 'Inertes'), 0),
+    'No Peligrosos':  pgrData.reduce((s, p) => s + sumKg(p.residuos_demolicion ?? [], 'No Peligrosos'), 0),
+    'Peligrosos':     pgrData.reduce((s, p) => s + sumKg(p.residuos_demolicion ?? [], 'Peligrosos'), 0),
+  }
+  const pgrConstruccion: Record<CategoriaPgr, number> = {
+    'Inertes':        pgrData.reduce((s, p) => s + sumKg(p.residuos_construccion ?? [], 'Inertes'), 0),
+    'No Peligrosos':  pgrData.reduce((s, p) => s + sumKg(p.residuos_construccion ?? [], 'No Peligrosos'), 0),
+    'Peligrosos':     pgrData.reduce((s, p) => s + sumKg(p.residuos_construccion ?? [], 'Peligrosos'), 0),
+  }
+  const totalDemolicion   = Object.values(pgrDemolicion).reduce((s, v) => s + v, 0)
+  const totalConstruccion = Object.values(pgrConstruccion).reduce((s, v) => s + v, 0)
+  const hayPgr = totalDemolicion > 0 || totalConstruccion > 0
+
   // ── Periodo label ──────────────────────────────────────────────
   let periodoLabel: string
   if (mesDesde && mesHasta && mesDesde !== mesHasta) {
@@ -845,6 +882,87 @@ export default async function DashboardPage({
                   </div>
                 </div>
               ))}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── Bloque 5: PGR — Plan de Gestión de Residuos ── */}
+      {hayPgr && (
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-widest mb-1 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
+            <span>♻️</span>
+            PGR — Plan de Gestión de Residuos · {periodoLabel}
+          </h2>
+          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground)' }}>Implementación del plan de gestión de residuos</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            {/* Tarjeta: Demolición */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>
+                  Etapa de demolición y desmontaje
+                </p>
+                <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: 'rgba(100,116,139,0.12)', color: 'var(--muted)' }}>
+                  {totalDemolicion.toLocaleString()} kg
+                </span>
+              </div>
+              <div className="space-y-2 mt-1">
+                {([
+                  { cat: 'Inertes',       color: 'rgba(100,116,139,', border: 'rgba(100,116,139,0.3)', text: '#94a3b8' },
+                  { cat: 'No Peligrosos', color: 'rgba(16,185,129,',  border: 'rgba(16,185,129,0.3)',  text: '#10b981' },
+                  { cat: 'Peligrosos',    color: 'rgba(239,68,68,',   border: 'rgba(239,68,68,0.3)',   text: '#ef4444' },
+                ] as const).map(({ cat, color, border, text }) => {
+                  const kg = pgrDemolicion[cat as CategoriaPgr]
+                  const pct = totalDemolicion > 0 ? Math.round((kg / totalDemolicion) * 100) : 0
+                  return (
+                    <div key={cat} className="flex items-center gap-3">
+                      <span className="text-xs font-semibold w-28 shrink-0" style={{ color: text }}>{cat}</span>
+                      <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: `${color}0.12)` }}>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `${color}0.7)` }} />
+                      </div>
+                      <span className="text-xs font-bold w-20 text-right" style={{ color: 'var(--foreground)' }}>
+                        {kg > 0 ? `${kg.toLocaleString()} kg` : '—'}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Tarjeta: Construcción */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>
+                  Etapa de construcción
+                </p>
+                <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: 'rgba(100,116,139,0.12)', color: 'var(--muted)' }}>
+                  {totalConstruccion.toLocaleString()} kg
+                </span>
+              </div>
+              <div className="space-y-2 mt-1">
+                {([
+                  { cat: 'Inertes',       color: 'rgba(100,116,139,', border: 'rgba(100,116,139,0.3)', text: '#94a3b8' },
+                  { cat: 'No Peligrosos', color: 'rgba(16,185,129,',  border: 'rgba(16,185,129,0.3)',  text: '#10b981' },
+                  { cat: 'Peligrosos',    color: 'rgba(239,68,68,',   border: 'rgba(239,68,68,0.3)',   text: '#ef4444' },
+                ] as const).map(({ cat, color, border, text }) => {
+                  const kg = pgrConstruccion[cat as CategoriaPgr]
+                  const pct = totalConstruccion > 0 ? Math.round((kg / totalConstruccion) * 100) : 0
+                  return (
+                    <div key={cat} className="flex items-center gap-3">
+                      <span className="text-xs font-semibold w-28 shrink-0" style={{ color: text }}>{cat}</span>
+                      <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: `${color}0.12)` }}>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `${color}0.7)` }} />
+                      </div>
+                      <span className="text-xs font-bold w-20 text-right" style={{ color: 'var(--foreground)' }}>
+                        {kg > 0 ? `${kg.toLocaleString()} kg` : '—'}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
           </div>
