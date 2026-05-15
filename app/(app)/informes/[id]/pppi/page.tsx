@@ -172,7 +172,7 @@ export default function PppiPage() {
   )
 
   return (
-    <FormWrapper title="Condición 5 - Partes Interesadas y Código de Conducta" short="PPPI" informeId={id} onSave={onSave} onPreload={handlePreload} isModified={isModified}>
+    <FormWrapper title="Condición 5 - Partes Interesadas" short="PPPI" informeId={id} onSave={onSave} onPreload={handlePreload} isModified={isModified}>
       <div className="space-y-8">
 
         <EscuelaInfoHeader informeId={id} />

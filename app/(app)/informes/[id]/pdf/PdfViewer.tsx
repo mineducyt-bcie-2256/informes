@@ -2020,7 +2020,7 @@ function SeccionPPPI({ data }: { data: any }) {
       <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
       <View style={s.sectionBanner}>
         <Text style={s.sectionNum}>5</Text>
-        <Text style={s.sectionTitle}>Condición 5 — Plan de Participación de Partes Interesadas (PPPI)</Text>
+        <Text style={s.sectionTitle}>Condición 5 — Partes Interesadas</Text>
       </View>
 
       {pppi.sin_cambios_justificacion && (

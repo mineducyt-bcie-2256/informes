@@ -67,7 +67,7 @@ export const CONDICIONES = [
   { key: 'garo',    label: 'Gestión de Aguas Residuales Ordinarias',   short: 'GARO'    },
   { key: 'pgr',     label: 'Plan de Gestión de Residuos',              short: 'PGR'     },
   { key: 'mcear',   label: 'Monitoreo de Emisiones y Ruido',           short: 'MCEAR'   },
-  { key: 'pppi',    label: 'Partes Interesadas y Código de Conducta',  short: 'PPPI'    },
+  { key: 'pppi',    label: 'Partes Interesadas',                       short: 'PPPI'    },
   { key: 'maqr',    label: 'Mecanismo de Quejas y Reclamos',           short: 'MAQR'    },
   { key: 'prt',     label: 'Plan de Reubicación Temporal',             short: 'PRT'     },
   { key: 'cct',     label: 'Código de Conducta de Trabajadores',       short: 'CCT'     },
