@@ -779,10 +779,11 @@ export default async function DashboardPage({
       {/* ── Bloque 4: GARO — Unidades Sanitarias ── */}
       {todasUnidades.length > 0 && (
         <div>
-          <h2 className="text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
+          <h2 className="text-xs font-semibold uppercase tracking-widest mb-1 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
             <span>🚽</span>
-            GARO — Unidades Sanitarias · {periodoLabel}
+            GARO — Gestión de Aguas Residuales Ordinarias · {periodoLabel}
           </h2>
+          <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground)' }}>Unidades Sanitarias</p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
