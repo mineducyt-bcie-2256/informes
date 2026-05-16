@@ -562,13 +562,35 @@ export default async function DashboardPage({
     fecha_resolucion: string | null
   }
   let todasQuejas: QuejaRow[] = []
-  if (informeIds.length > 0) {
-    // Join directo: quejas → informe_maqr → informe_id filtrado por el periodo
-    const { data: rawQuejas } = await admin
-      .from('informe_maqr_quejas')
-      .select('medio, medio_otro, tipo_queja, tipo_queja_otro, origen, origen_otro, nivel_gravedad, estado, fecha_recepcion, fecha_resolucion, informe_maqr!inner(informe_id)')
-      .in('informe_maqr.informe_id', informeIds)
-    todasQuejas = (rawQuejas ?? []) as QuejaRow[]
+  {
+    // Quejas históricas: todas las escuelas filtradas, SIN restricción de periodo
+    // (una queja abierta en marzo sigue vigente en abril/mayo)
+    const escuelaIdsArr = Array.from(escuelaIds)
+    if (escuelaIdsArr.length > 0) {
+      const { data: todosInformesMaqr } = await admin
+        .from('informes')
+        .select('id')
+        .in('escuela_id', escuelaIdsArr)
+
+      const todosInformeIdsMaqr = (todosInformesMaqr ?? []).map((r: any) => r.id)
+
+      if (todosInformeIdsMaqr.length > 0) {
+        const { data: rawMaqr } = await admin
+          .from('informe_maqr')
+          .select('id')
+          .in('informe_id', todosInformeIdsMaqr)
+
+        const maqrIds = (rawMaqr ?? []).map((m: any) => m.id)
+
+        if (maqrIds.length > 0) {
+          const { data: rawQuejas } = await admin
+            .from('informe_maqr_quejas')
+            .select('medio, medio_otro, tipo_queja, tipo_queja_otro, origen, origen_otro, nivel_gravedad, estado, fecha_recepcion, fecha_resolucion')
+            .in('maqr_id', maqrIds)
+          todasQuejas = (rawQuejas ?? []) as QuejaRow[]
+        }
+      }
+    }
   }
 
   const totalQuejas = todasQuejas.length
