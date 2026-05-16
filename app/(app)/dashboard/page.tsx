@@ -650,7 +650,7 @@ export default async function DashboardPage({
 
   const hayMaqr = totalQuejas > 0
 
-  // ── PRT: reubicación temporal ─────────────────────────────────
+  // ── PRT: placeholder (pendiente) ──────────────────────────────
   interface RubroRow { activo: boolean; unidad: string; cantidad: number; costo_unitario: number; nombre: string }
   interface LugarDash {
     est_ninos: number; est_ninas: number
@@ -699,6 +699,15 @@ export default async function DashboardPage({
           .select('modalidad, tipo_continuidad, lugares, virtual, est_ninos, est_ninas, num_estudiantes, doc_hombres, doc_mujeres, num_maestros, historial_costos')
           .in('informe_id', latestInformeIds)
         prtData = (rawPrt ?? []) as any[]
+        console.log('[PRT DEBUG]', JSON.stringify(prtData.map((r:any) => ({
+          tipo_continuidad: r.tipo_continuidad,
+          modalidad: r.modalidad,
+          num_estudiantes: r.num_estudiantes,
+          est_ninos: r.est_ninos,
+          est_ninas: r.est_ninas,
+          num_maestros: r.num_maestros,
+          lugares_count: r.lugares?.length,
+        })), null, 2))
       }
     }
   }
@@ -1905,178 +1914,6 @@ export default async function DashboardPage({
         </div>
       )}
 
-      {/* ══════════════════════════════════════════════════════════════
-          Condición 7 — Plan de Reubicación Temporal
-      ══════════════════════════════════════════════════════════════ */}
-      {hayPrt && (
-        <div className="rounded-2xl border p-6 mb-6" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
-          <h2 className="text-base font-bold mb-5" style={{ color: 'var(--foreground)' }}>
-            Condición 7 — Plan de Reubicación Temporal · {periodoLabel}
-          </h2>
-
-          {/* Fila 1: Modalidad | Sitios presenciales | Escuelas con virtualidad | Estudiantes | Docentes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-
-            {/* Modalidad */}
-            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>
-                Modalidad (escuelas)
-              </p>
-              <div className="flex flex-col gap-2">
-                {[
-                  { label: 'Presencial',  value: prtPresencial,  color: 'bg-blue-100 text-blue-700 border border-blue-200' },
-                  { label: 'Virtual',     value: prtVirtual,     color: 'bg-violet-100 text-violet-700 border border-violet-200' },
-                  { label: 'Multimodal',  value: prtMultimodal,  color: 'bg-teal-100 text-teal-700 border border-teal-200' },
-                ].filter(i => i.value > 0).map(({ label, value, color }) => (
-                  <div key={label} className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{label}</span>
-                    <span className={`text-sm font-bold px-3 py-0.5 rounded-full ${color}`}>{value}</span>
-                  </div>
-                ))}
-                <div className="border-t mt-1 pt-2 flex items-center justify-between" style={{ borderColor: 'var(--card-border)' }}>
-                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Total</span>
-                  <span className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>{prtData.length}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Sitios de reubicación presencial */}
-            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>
-                Sitios de reubicación
-              </p>
-              <p className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>{prtTotalSitios}</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Lugares presenciales registrados</p>
-            </div>
-
-            {/* Escuelas con virtualidad */}
-            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>
-                Con virtualidad
-              </p>
-              <p className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>{prtEscuelasVirtual}</p>
-              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Escuelas con modalidad virtual</p>
-            </div>
-
-            {/* Estudiantes */}
-            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>
-                Estudiantes reubicados
-              </p>
-              <p className="text-3xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>{prtTotalEst.toLocaleString()}</p>
-              <div className="flex gap-3">
-                <div className="text-center">
-                  <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Niños</p>
-                  <span className="text-sm font-semibold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-700 border border-blue-200">{prtTotalNinos}</span>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Niñas</p>
-                  <span className="text-sm font-semibold px-2 py-0.5 rounded-lg bg-pink-100 text-pink-700 border border-pink-200">{prtTotalNinas}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Docentes */}
-            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>
-                Docentes reubicados
-              </p>
-              <p className="text-3xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>{prtTotalDoc.toLocaleString()}</p>
-              <div className="flex gap-3">
-                <div className="text-center">
-                  <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Hombres</p>
-                  <span className="text-sm font-semibold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-700 border border-blue-200">{prtTotalDocH}</span>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Mujeres</p>
-                  <span className="text-sm font-semibold px-2 py-0.5 rounded-lg bg-pink-100 text-pink-700 border border-pink-200">{prtTotalDocM}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Fila 2: Condición de uso | Estimado mensual | Estimado acumulado | Adecuaciones */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-
-            {/* Condición de uso */}
-            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>Condición de uso</p>
-              {Object.keys(prtCondicion).length === 0
-                ? <p className="text-sm" style={{ color: 'var(--muted)' }}>Sin datos</p>
-                : (
-                  <div className="flex flex-col gap-2">
-                    {Object.entries(prtCondicion).map(([cond, cnt]) => (
-                      <div key={cond} className="flex items-center justify-between">
-                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{cond}</span>
-                        <span className="text-sm font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">{cnt}</span>
-                      </div>
-                    ))}
-                  </div>
-                )
-              }
-            </div>
-
-            {/* Estimado mensual */}
-            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>Estimado mensual</p>
-              {prtEstimadoMensual > 0
-                ? (
-                  <>
-                    <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
-                      $ {prtEstimadoMensual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Lugares en alquiler activo</p>
-                  </>
-                )
-                : <p className="text-sm" style={{ color: 'var(--muted)' }}>Sin costo de alquiler</p>
-              }
-            </div>
-
-            {/* Estimado acumulado */}
-            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>Estimado acumulado</p>
-              {prtEstimadoAcumulado > 0
-                ? (
-                  <>
-                    <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
-                      $ {prtEstimadoAcumulado.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Suma historial de costos</p>
-                  </>
-                )
-                : <p className="text-sm" style={{ color: 'var(--muted)' }}>Sin historial de costos</p>
-              }
-            </div>
-
-            {/* Adecuaciones */}
-            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
-              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--muted)' }}>Adecuaciones</p>
-              <p className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
-                {prtSitiosConAdec} {prtSitiosConAdec === 1 ? 'sitio con adecuaciones' : 'sitios con adecuaciones'}
-              </p>
-              {Object.keys(prtAdecItems).length > 0
-                ? (
-                  <div className="flex flex-col gap-1.5">
-                    {Object.entries(prtAdecItems).slice(0, 5).map(([key, cnt]) => (
-                      <div key={key} className="flex items-center justify-between">
-                        <span className="text-xs capitalize" style={{ color: 'var(--text-secondary)' }}>
-                          {key.replace(/_/g, ' ')}
-                        </span>
-                        <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-green-100 text-green-700 border border-green-200">{cnt}</span>
-                      </div>
-                    ))}
-                    {Object.keys(prtAdecItems).length > 5 && (
-                      <p className="text-xs" style={{ color: 'var(--muted)' }}>+{Object.keys(prtAdecItems).length - 5} más</p>
-                    )}
-                  </div>
-                )
-                : <p className="text-xs" style={{ color: 'var(--muted)' }}>Sin adecuaciones registradas</p>
-              }
-            </div>
-
-          </div>
-        </div>
-      )}
 
     </div>
   )
