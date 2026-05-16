@@ -671,29 +671,34 @@ export default async function DashboardPage({
   }
   let prtData: PrtRow[] = []
   {
-    // PRT es histórico: consultamos todos los informes de las escuelas, sin filtro de periodo
+    // PRT: traemos el informe más reciente por escuela (no filtrado por periodo)
     const escuelaIdsArr = Array.from(escuelaIds)
     if (escuelaIdsArr.length > 0) {
       const { data: todosInformesPrt } = await admin
         .from('informes')
-        .select('id')
+        .select('id, escuela_id, periodo_anio, periodo_mes')
         .in('escuela_id', escuelaIdsArr)
-      const todosPrtInformeIds = (todosInformesPrt ?? []).map((r: any) => r.id)
-      if (todosPrtInformeIds.length > 0) {
+        .order('periodo_anio', { ascending: false })
+        .order('periodo_mes',  { ascending: false })
+
+      // Quedarse solo con el informe más reciente por escuela
+      const latestPorEscuela = new Map<string, string>()
+      for (const inf of (todosInformesPrt ?? []) as any[]) {
+        if (!latestPorEscuela.has(inf.escuela_id)) {
+          latestPorEscuela.set(inf.escuela_id, inf.id)
+        }
+      }
+      const latestInformeIds = Array.from(latestPorEscuela.values())
+
+      if (latestInformeIds.length > 0) {
         const { data: rawPrt } = await admin
           .from('informe_prt')
           .select('modalidad, lugares, virtual, est_ninos, est_ninas, doc_hombres, doc_mujeres, historial_costos')
-          .in('informe_id', todosPrtInformeIds)
+          .in('informe_id', latestInformeIds)
         prtData = (rawPrt ?? []) as any[]
-        console.log('[PRT] rawPrt count:', prtData.length, 'modalidades:', prtData.map((r:any) => r.modalidad))
-      } else {
-        console.log('[PRT] sin informe_ids para buscar')
       }
-    } else {
-      console.log('[PRT] sin escuelas')
     }
   }
-  console.log('[PRT] hayPrt:', prtData.length > 0, 'total registros:', prtData.length)
 
   // Normaliza modalidad: puede ser string o array
   function tieneModal(r: PrtRow, m: string): boolean {
