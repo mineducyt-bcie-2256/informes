@@ -685,14 +685,33 @@ export default async function DashboardPage({
           .select('modalidad, lugares, virtual, est_ninos, est_ninas, doc_hombres, doc_mujeres, historial_costos')
           .in('informe_id', todosPrtInformeIds)
         prtData = (rawPrt ?? []) as any[]
+        console.log('[PRT] rawPrt count:', prtData.length, 'modalidades:', prtData.map((r:any) => r.modalidad))
+      } else {
+        console.log('[PRT] sin informe_ids para buscar')
       }
+    } else {
+      console.log('[PRT] sin escuelas')
     }
   }
+  console.log('[PRT] hayPrt:', prtData.length > 0, 'total registros:', prtData.length)
 
-  // Modalidad
-  const prtPresencial  = prtData.filter(r => r.modalidad?.includes('Presencial') && !r.modalidad?.includes('Virtual')).length
-  const prtVirtual     = prtData.filter(r => r.modalidad?.includes('Virtual')    && !r.modalidad?.includes('Presencial')).length
-  const prtMultimodal  = prtData.filter(r => r.modalidad?.includes('Presencial') && r.modalidad?.includes('Virtual')).length
+  // Normaliza modalidad: puede ser string o array
+  function tieneModal(r: PrtRow, m: string): boolean {
+    if (!r.modalidad) return false
+    if (Array.isArray(r.modalidad)) return r.modalidad.includes(m)
+    return (r.modalidad as unknown as string).includes(m)
+  }
+
+  // Modalidad por escuela
+  const prtPresencial  = prtData.filter(r => tieneModal(r, 'Presencial') && !tieneModal(r, 'Virtual')).length
+  const prtVirtual     = prtData.filter(r => tieneModal(r, 'Virtual')    && !tieneModal(r, 'Presencial')).length
+  const prtMultimodal  = prtData.filter(r => tieneModal(r, 'Presencial') && tieneModal(r, 'Virtual')).length
+
+  // Sitios de reubicación presencial (cantidad de lugares[])
+  const prtTotalSitios = prtData.reduce((s, r) => s + (r.lugares?.length ?? 0), 0)
+
+  // Escuelas que implementan virtualidad (Virtual solo o Multimodal)
+  const prtEscuelasVirtual = prtData.filter(r => tieneModal(r, 'Virtual')).length
 
   // Estudiantes y docentes
   const prtTotalNinos   = prtData.reduce((s, r) => s + (r.est_ninos    || 0), 0)
@@ -1884,30 +1903,48 @@ export default async function DashboardPage({
             Condición 7 — Plan de Reubicación Temporal · {periodoLabel}
           </h2>
 
-          {/* Fila 1: Modalidad | Estudiantes | Docentes */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {/* Fila 1: Modalidad | Sitios presenciales | Escuelas con virtualidad | Estudiantes | Docentes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
 
             {/* Modalidad */}
             <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
               <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>
-                Modalidad de reubicación
+                Modalidad (escuelas)
               </p>
               <div className="flex flex-col gap-2">
                 {[
                   { label: 'Presencial',  value: prtPresencial,  color: 'bg-blue-100 text-blue-700 border border-blue-200' },
                   { label: 'Virtual',     value: prtVirtual,     color: 'bg-violet-100 text-violet-700 border border-violet-200' },
                   { label: 'Multimodal',  value: prtMultimodal,  color: 'bg-teal-100 text-teal-700 border border-teal-200' },
-                ].map(({ label, value, color }) => (
+                ].filter(i => i.value > 0).map(({ label, value, color }) => (
                   <div key={label} className="flex items-center justify-between">
                     <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{label}</span>
                     <span className={`text-sm font-bold px-3 py-0.5 rounded-full ${color}`}>{value}</span>
                   </div>
                 ))}
                 <div className="border-t mt-1 pt-2 flex items-center justify-between" style={{ borderColor: 'var(--card-border)' }}>
-                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Total escuelas</span>
+                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Total</span>
                   <span className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>{prtData.length}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Sitios de reubicación presencial */}
+            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>
+                Sitios de reubicación
+              </p>
+              <p className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>{prtTotalSitios}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Lugares presenciales registrados</p>
+            </div>
+
+            {/* Escuelas con virtualidad */}
+            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>
+                Con virtualidad
+              </p>
+              <p className="text-3xl font-bold" style={{ color: 'var(--foreground)' }}>{prtEscuelasVirtual}</p>
+              <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Escuelas con modalidad virtual</p>
             </div>
 
             {/* Estudiantes */}
@@ -1916,7 +1953,7 @@ export default async function DashboardPage({
                 Estudiantes reubicados
               </p>
               <p className="text-3xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>{prtTotalEst.toLocaleString()}</p>
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <div className="text-center">
                   <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Niños</p>
                   <span className="text-sm font-semibold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-700 border border-blue-200">{prtTotalNinos}</span>
@@ -1934,7 +1971,7 @@ export default async function DashboardPage({
                 Docentes reubicados
               </p>
               <p className="text-3xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>{prtTotalDoc.toLocaleString()}</p>
-              <div className="flex gap-4">
+              <div className="flex gap-3">
                 <div className="text-center">
                   <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Hombres</p>
                   <span className="text-sm font-semibold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-700 border border-blue-200">{prtTotalDocH}</span>
@@ -1975,7 +2012,7 @@ export default async function DashboardPage({
                 ? (
                   <>
                     <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
-                      L {prtEstimadoMensual.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      $ {prtEstimadoMensual.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Lugares en alquiler activo</p>
                   </>
@@ -1991,7 +2028,7 @@ export default async function DashboardPage({
                 ? (
                   <>
                     <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
-                      L {prtEstimadoAcumulado.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      $ {prtEstimadoAcumulado.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Suma historial de costos</p>
                   </>
