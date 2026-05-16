@@ -2,15 +2,15 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #f0f4ff;
+  --background: #dde4f0;
   --foreground: #1e2a45;
   --card-bg: #ffffff;
-  --card-border: #e2e8f0;
-  --card-border-rgb: 226,232,240;
-  --muted: #64748b;
-  --pill-bg: #f8fafc;
-  --pill-border: #e2e8f0;
-  --text-secondary: #475569;
+  --card-border: #b8c6d8;
+  --card-border-rgb: 184,198,216;
+  --muted: #4a5c74;
+  --pill-bg: #f0f4fa;
+  --pill-border: #c4d0de;
+  --text-secondary: #374f6b;
 }
 
 .dark {
