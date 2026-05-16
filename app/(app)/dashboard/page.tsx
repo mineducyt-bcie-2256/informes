@@ -650,6 +650,95 @@ export default async function DashboardPage({
 
   const hayMaqr = totalQuejas > 0
 
+  // ── PRT: reubicación temporal ─────────────────────────────────
+  interface RubroRow { activo: boolean; unidad: string; cantidad: number; costo_unitario: number; nombre: string }
+  interface LugarDash {
+    est_ninos: number; est_ninas: number
+    doc_hombres: number; doc_mujeres: number
+    condicion_uso: string; condicion_otros: string
+    rubros: RubroRow[]
+    adec_tiene: string
+    adecuaciones: Record<string, { activa: boolean }>
+    costos_incluidos?: string
+  }
+  interface PrtRow {
+    modalidad: string[]
+    lugares: LugarDash[]
+    virtual: LugarDash | null
+    est_ninos: number; est_ninas: number
+    doc_hombres: number; doc_mujeres: number
+    historial_costos: { total: number }[] | null
+  }
+  let prtData: PrtRow[] = []
+  {
+    // PRT es histórico: consultamos todos los informes de las escuelas, sin filtro de periodo
+    const escuelaIdsArr = Array.from(escuelaIds)
+    if (escuelaIdsArr.length > 0) {
+      const { data: todosInformesPrt } = await admin
+        .from('informes')
+        .select('id')
+        .in('escuela_id', escuelaIdsArr)
+      const todosPrtInformeIds = (todosInformesPrt ?? []).map((r: any) => r.id)
+      if (todosPrtInformeIds.length > 0) {
+        const { data: rawPrt } = await admin
+          .from('informe_prt')
+          .select('modalidad, lugares, virtual, est_ninos, est_ninas, doc_hombres, doc_mujeres, historial_costos')
+          .in('informe_id', todosPrtInformeIds)
+        prtData = (rawPrt ?? []) as any[]
+      }
+    }
+  }
+
+  // Modalidad
+  const prtPresencial  = prtData.filter(r => r.modalidad?.includes('Presencial') && !r.modalidad?.includes('Virtual')).length
+  const prtVirtual     = prtData.filter(r => r.modalidad?.includes('Virtual')    && !r.modalidad?.includes('Presencial')).length
+  const prtMultimodal  = prtData.filter(r => r.modalidad?.includes('Presencial') && r.modalidad?.includes('Virtual')).length
+
+  // Estudiantes y docentes
+  const prtTotalNinos   = prtData.reduce((s, r) => s + (r.est_ninos    || 0), 0)
+  const prtTotalNinas   = prtData.reduce((s, r) => s + (r.est_ninas    || 0), 0)
+  const prtTotalEst     = prtTotalNinos + prtTotalNinas
+  const prtTotalDocH    = prtData.reduce((s, r) => s + (r.doc_hombres  || 0), 0)
+  const prtTotalDocM    = prtData.reduce((s, r) => s + (r.doc_mujeres  || 0), 0)
+  const prtTotalDoc     = prtTotalDocH + prtTotalDocM
+
+  // Todos los lugares (presenciales) de todos los informes
+  const todosLugares: LugarDash[] = prtData.flatMap(r => r.lugares ?? [])
+
+  // Condición de uso
+  const prtCondicion: Record<string, number> = {}
+  for (const l of todosLugares) {
+    const c = l.condicion_uso === 'Otros' && l.condicion_otros ? l.condicion_otros : (l.condicion_uso || 'Sin especificar')
+    prtCondicion[c] = (prtCondicion[c] ?? 0) + 1
+  }
+
+  // Estimado mensual: rubros activos con costo numérico
+  function tieneNumericos(r: RubroRow): boolean {
+    if (!r.activo || !r.unidad) return false
+    if (r.nombre === 'Alquiler de lugar') return r.unidad === 'Alquiler'
+    return r.unidad === 'Pago mensual empresa' || r.unidad === 'Pago mensual CE'
+  }
+  const prtEstimadoMensual = todosLugares.reduce((s, l) => {
+    if (l.condicion_uso !== 'Alquiler' || l.costos_incluidos === 'Sí') return s
+    return s + (l.rubros ?? []).filter(tieneNumericos).reduce((ss, r) => ss + (r.cantidad || 1) * (r.costo_unitario || 0), 0)
+  }, 0)
+
+  // Estimado acumulado: suma de historial_costos
+  const prtEstimadoAcumulado = prtData.reduce((s, r) => {
+    return s + (r.historial_costos ?? []).reduce((ss, h) => ss + (h.total || 0), 0)
+  }, 0)
+
+  // Adecuaciones
+  const prtSitiosConAdec = todosLugares.filter(l => l.adec_tiene === 'Sí').length
+  const prtAdecItems: Record<string, number> = {}
+  for (const l of todosLugares.filter(l => l.adec_tiene === 'Sí')) {
+    for (const [key, val] of Object.entries(l.adecuaciones ?? {})) {
+      if ((val as any)?.activa) prtAdecItems[key] = (prtAdecItems[key] ?? 0) + 1
+    }
+  }
+
+  const hayPrt = prtData.length > 0
+
   // ── Periodo label ──────────────────────────────────────────────
   let periodoLabel: string
   if (mesDesde && mesHasta && mesDesde !== mesHasta) {
@@ -1780,6 +1869,161 @@ export default async function DashboardPage({
                   )
                 })}
               </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          Condición 7 — Plan de Reubicación Temporal
+      ══════════════════════════════════════════════════════════════ */}
+      {hayPrt && (
+        <div className="rounded-2xl border p-6 mb-6" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
+          <h2 className="text-base font-bold mb-5" style={{ color: 'var(--foreground)' }}>
+            Condición 7 — Plan de Reubicación Temporal · {periodoLabel}
+          </h2>
+
+          {/* Fila 1: Modalidad | Estudiantes | Docentes */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+
+            {/* Modalidad */}
+            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>
+                Modalidad de reubicación
+              </p>
+              <div className="flex flex-col gap-2">
+                {[
+                  { label: 'Presencial',  value: prtPresencial,  color: 'bg-blue-100 text-blue-700 border border-blue-200' },
+                  { label: 'Virtual',     value: prtVirtual,     color: 'bg-violet-100 text-violet-700 border border-violet-200' },
+                  { label: 'Multimodal',  value: prtMultimodal,  color: 'bg-teal-100 text-teal-700 border border-teal-200' },
+                ].map(({ label, value, color }) => (
+                  <div key={label} className="flex items-center justify-between">
+                    <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+                    <span className={`text-sm font-bold px-3 py-0.5 rounded-full ${color}`}>{value}</span>
+                  </div>
+                ))}
+                <div className="border-t mt-1 pt-2 flex items-center justify-between" style={{ borderColor: 'var(--card-border)' }}>
+                  <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Total escuelas</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--foreground)' }}>{prtData.length}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Estudiantes */}
+            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>
+                Estudiantes reubicados
+              </p>
+              <p className="text-3xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>{prtTotalEst.toLocaleString()}</p>
+              <div className="flex gap-4">
+                <div className="text-center">
+                  <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Niños</p>
+                  <span className="text-sm font-semibold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-700 border border-blue-200">{prtTotalNinos}</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Niñas</p>
+                  <span className="text-sm font-semibold px-2 py-0.5 rounded-lg bg-pink-100 text-pink-700 border border-pink-200">{prtTotalNinas}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Docentes */}
+            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>
+                Docentes reubicados
+              </p>
+              <p className="text-3xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>{prtTotalDoc.toLocaleString()}</p>
+              <div className="flex gap-4">
+                <div className="text-center">
+                  <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Hombres</p>
+                  <span className="text-sm font-semibold px-2 py-0.5 rounded-lg bg-blue-100 text-blue-700 border border-blue-200">{prtTotalDocH}</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs mb-0.5" style={{ color: 'var(--muted)' }}>Mujeres</p>
+                  <span className="text-sm font-semibold px-2 py-0.5 rounded-lg bg-pink-100 text-pink-700 border border-pink-200">{prtTotalDocM}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Fila 2: Condición de uso | Estimado mensual | Estimado acumulado | Adecuaciones */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+            {/* Condición de uso */}
+            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>Condición de uso</p>
+              {Object.keys(prtCondicion).length === 0
+                ? <p className="text-sm" style={{ color: 'var(--muted)' }}>Sin datos</p>
+                : (
+                  <div className="flex flex-col gap-2">
+                    {Object.entries(prtCondicion).map(([cond, cnt]) => (
+                      <div key={cond} className="flex items-center justify-between">
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{cond}</span>
+                        <span className="text-sm font-bold px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200">{cnt}</span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              }
+            </div>
+
+            {/* Estimado mensual */}
+            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>Estimado mensual</p>
+              {prtEstimadoMensual > 0
+                ? (
+                  <>
+                    <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
+                      L {prtEstimadoMensual.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Lugares en alquiler activo</p>
+                  </>
+                )
+                : <p className="text-sm" style={{ color: 'var(--muted)' }}>Sin costo de alquiler</p>
+              }
+            </div>
+
+            {/* Estimado acumulado */}
+            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--muted)' }}>Estimado acumulado</p>
+              {prtEstimadoAcumulado > 0
+                ? (
+                  <>
+                    <p className="text-2xl font-bold" style={{ color: 'var(--foreground)' }}>
+                      L {prtEstimadoAcumulado.toLocaleString('es-HN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--muted)' }}>Suma historial de costos</p>
+                  </>
+                )
+                : <p className="text-sm" style={{ color: 'var(--muted)' }}>Sin historial de costos</p>
+              }
+            </div>
+
+            {/* Adecuaciones */}
+            <div className="rounded-xl border p-4" style={{ background: 'var(--pill-bg)', borderColor: 'var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--muted)' }}>Adecuaciones</p>
+              <p className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground)' }}>
+                {prtSitiosConAdec} {prtSitiosConAdec === 1 ? 'sitio con adecuaciones' : 'sitios con adecuaciones'}
+              </p>
+              {Object.keys(prtAdecItems).length > 0
+                ? (
+                  <div className="flex flex-col gap-1.5">
+                    {Object.entries(prtAdecItems).slice(0, 5).map(([key, cnt]) => (
+                      <div key={key} className="flex items-center justify-between">
+                        <span className="text-xs capitalize" style={{ color: 'var(--text-secondary)' }}>
+                          {key.replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-green-100 text-green-700 border border-green-200">{cnt}</span>
+                      </div>
+                    ))}
+                    {Object.keys(prtAdecItems).length > 5 && (
+                      <p className="text-xs" style={{ color: 'var(--muted)' }}>+{Object.keys(prtAdecItems).length - 5} más</p>
+                    )}
+                  </div>
+                )
+                : <p className="text-xs" style={{ color: 'var(--muted)' }}>Sin adecuaciones registradas</p>
+              }
             </div>
 
           </div>
