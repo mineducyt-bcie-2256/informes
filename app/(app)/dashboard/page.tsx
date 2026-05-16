@@ -663,10 +663,13 @@ export default async function DashboardPage({
   }
   interface PrtRow {
     modalidad: string[]
+    tipo_continuidad: string | null
     lugares: LugarDash[]
     virtual: LugarDash | null
     est_ninos: number; est_ninas: number
+    num_estudiantes: number | null
     doc_hombres: number; doc_mujeres: number
+    num_maestros: number | null
     historial_costos: { total: number }[] | null
   }
   let prtData: PrtRow[] = []
@@ -693,38 +696,41 @@ export default async function DashboardPage({
       if (latestInformeIds.length > 0) {
         const { data: rawPrt } = await admin
           .from('informe_prt')
-          .select('modalidad, lugares, virtual, est_ninos, est_ninas, doc_hombres, doc_mujeres, historial_costos')
+          .select('modalidad, tipo_continuidad, lugares, virtual, est_ninos, est_ninas, num_estudiantes, doc_hombres, doc_mujeres, num_maestros, historial_costos')
           .in('informe_id', latestInformeIds)
         prtData = (rawPrt ?? []) as any[]
       }
     }
   }
 
-  // Normaliza modalidad: puede ser string o array
+  // Normaliza modalidad: usa tipo_continuidad (string guardado) o modalidad (array)
   function tieneModal(r: PrtRow, m: string): boolean {
+    if (r.tipo_continuidad) return r.tipo_continuidad.includes(m)
     if (!r.modalidad) return false
     if (Array.isArray(r.modalidad)) return r.modalidad.includes(m)
     return (r.modalidad as unknown as string).includes(m)
   }
 
-  // Modalidad por escuela
+  // Modalidad por escuela (Multimodal = ambas)
   const prtPresencial  = prtData.filter(r => tieneModal(r, 'Presencial') && !tieneModal(r, 'Virtual')).length
   const prtVirtual     = prtData.filter(r => tieneModal(r, 'Virtual')    && !tieneModal(r, 'Presencial')).length
   const prtMultimodal  = prtData.filter(r => tieneModal(r, 'Presencial') && tieneModal(r, 'Virtual')).length
 
-  // Sitios de reubicación presencial (cantidad de lugares[])
+  // Sitios presenciales: cantidad de lugares[] por escuela
   const prtTotalSitios = prtData.reduce((s, r) => s + (r.lugares?.length ?? 0), 0)
 
   // Escuelas que implementan virtualidad (Virtual solo o Multimodal)
   const prtEscuelasVirtual = prtData.filter(r => tieneModal(r, 'Virtual')).length
 
-  // Estudiantes y docentes
-  const prtTotalNinos   = prtData.reduce((s, r) => s + (r.est_ninos    || 0), 0)
-  const prtTotalNinas   = prtData.reduce((s, r) => s + (r.est_ninas    || 0), 0)
-  const prtTotalEst     = prtTotalNinos + prtTotalNinas
-  const prtTotalDocH    = prtData.reduce((s, r) => s + (r.doc_hombres  || 0), 0)
-  const prtTotalDocM    = prtData.reduce((s, r) => s + (r.doc_mujeres  || 0), 0)
-  const prtTotalDoc     = prtTotalDocH + prtTotalDocM
+  // Estudiantes: usar num_estudiantes guardado, o sumar est_ninos+est_ninas como respaldo
+  const prtTotalNinos = prtData.reduce((s, r) => s + (r.est_ninos || 0), 0)
+  const prtTotalNinas = prtData.reduce((s, r) => s + (r.est_ninas || 0), 0)
+  const prtTotalEst   = prtData.reduce((s, r) => s + (r.num_estudiantes ?? (r.est_ninos || 0) + (r.est_ninas || 0)), 0)
+
+  // Docentes: usar num_maestros guardado, o sumar como respaldo
+  const prtTotalDocH = prtData.reduce((s, r) => s + (r.doc_hombres || 0), 0)
+  const prtTotalDocM = prtData.reduce((s, r) => s + (r.doc_mujeres || 0), 0)
+  const prtTotalDoc  = prtData.reduce((s, r) => s + (r.num_maestros ?? (r.doc_hombres || 0) + (r.doc_mujeres || 0)), 0)
 
   // Todos los lugares (presenciales) de todos los informes
   const todosLugares: LugarDash[] = prtData.flatMap(r => r.lugares ?? [])
