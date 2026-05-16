@@ -551,6 +551,89 @@ export default async function DashboardPage({
 
   const hayPppi = pppiData.length > 0
 
+  // ── MAQR: quejas y reclamos ───────────────────────────────────
+  interface QuejaRow {
+    medio: string; medio_otro: string
+    tipo_queja: string; tipo_queja_otro: string
+    origen: string; origen_otro: string
+    nivel_gravedad: string
+    estado: string
+    fecha_recepcion: string | null
+    fecha_resolucion: string | null
+  }
+  let todasQuejas: QuejaRow[] = []
+  if (informeIds.length > 0) {
+    const { data: rawMaqr } = await admin
+      .from('informe_maqr')
+      .select('id')
+      .in('informe_id', informeIds)
+    const maqrIds = (rawMaqr ?? []).map((m: any) => m.id)
+    if (maqrIds.length > 0) {
+      const { data: rawQuejas } = await admin
+        .from('informe_maqr_quejas')
+        .select('medio, medio_otro, tipo_queja, tipo_queja_otro, origen, origen_otro, nivel_gravedad, estado, fecha_recepcion, fecha_resolucion')
+        .in('maqr_id', maqrIds)
+      todasQuejas = (rawQuejas ?? []) as QuejaRow[]
+    }
+  }
+
+  const totalQuejas = todasQuejas.length
+
+  // Por estado
+  const ESTADOS_QUEJA = ['En proceso', 'En investigación', 'Resuelto', 'Cerrado']
+  const quejasPorEstado: Record<string, number> = {}
+  for (const q of todasQuejas) {
+    const e = q.estado || 'Sin estado'
+    quejasPorEstado[e] = (quejasPorEstado[e] ?? 0) + 1
+  }
+
+  // Por medio
+  const quejasPorMedio: Record<string, number> = {}
+  for (const q of todasQuejas) {
+    const m = q.medio === 'Otro' && q.medio_otro ? q.medio_otro : (q.medio || 'Sin medio')
+    quejasPorMedio[m] = (quejasPorMedio[m] ?? 0) + 1
+  }
+
+  // Por tipo
+  const quejasPorTipo: Record<string, number> = {}
+  for (const q of todasQuejas) {
+    const t = q.tipo_queja === 'Otro' && q.tipo_queja_otro ? q.tipo_queja_otro : (q.tipo_queja || 'Sin tipo')
+    quejasPorTipo[t] = (quejasPorTipo[t] ?? 0) + 1
+  }
+
+  // Por origen
+  const quejasPorOrigen: Record<string, number> = {}
+  for (const q of todasQuejas) {
+    const o = q.origen === 'Otro' && q.origen_otro ? q.origen_otro : (q.origen || 'Sin origen')
+    quejasPorOrigen[o] = (quejasPorOrigen[o] ?? 0) + 1
+  }
+
+  // Por nivel
+  const NIVELES_QUEJA = ['Nivel 1 (Bajo)', 'Nivel 2 (Medio)', 'Nivel 3 (Alto)']
+  const quejasPorNivel: Record<string, number> = {}
+  for (const q of todasQuejas) {
+    const n = q.nivel_gravedad || 'Sin nivel'
+    quejasPorNivel[n] = (quejasPorNivel[n] ?? 0) + 1
+  }
+
+  // Tiempo promedio de resolución por nivel (solo quejas resueltas con ambas fechas)
+  function diasEntreFechas(desde: string, hasta: string): number {
+    const d1 = new Date(desde + 'T00:00:00')
+    const d2 = new Date(hasta + 'T00:00:00')
+    return Math.max(0, Math.floor((d2.getTime() - d1.getTime()) / 86_400_000))
+  }
+  const tiempoPromedioNivel: Record<string, number | null> = {}
+  for (const nivel of NIVELES_QUEJA) {
+    const resueltas = todasQuejas.filter(q =>
+      q.nivel_gravedad === nivel && q.fecha_recepcion && q.fecha_resolucion
+    )
+    if (resueltas.length === 0) { tiempoPromedioNivel[nivel] = null; continue }
+    const suma = resueltas.reduce((s, q) => s + diasEntreFechas(q.fecha_recepcion!, q.fecha_resolucion!), 0)
+    tiempoPromedioNivel[nivel] = Math.round(suma / resueltas.length)
+  }
+
+  const hayMaqr = totalQuejas > 0
+
   // ── Periodo label ──────────────────────────────────────────────
   let periodoLabel: string
   if (mesDesde && mesHasta && mesDesde !== mesHasta) {
@@ -1509,6 +1592,177 @@ export default async function DashboardPage({
                     <span>Indirectos {indirectos}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── Bloque 8: MAQR — Quejas y Reclamos ── */}
+      {hayMaqr && (
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-widest mb-1 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
+            <span>📋</span>
+            Condición 6 — Mecanismo de Atención de Quejas y Reclamos · {periodoLabel}
+          </h2>
+          <p className="text-sm font-semibold mb-3 mt-1" style={{ color: 'var(--foreground)' }}>Registro de quejas</p>
+
+          {/* Fila 1: Total | Por estado | Por medio */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+
+            {/* Total quejas */}
+            <div className="rounded-2xl p-5 flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Total quejas reportadas</p>
+              <p className="text-6xl font-black mt-1" style={{ color: 'var(--foreground)' }}>{totalQuejas}</p>
+              <div className="flex gap-3 mt-auto flex-wrap">
+                {[
+                  { label: 'Abiertas', count: (quejasPorEstado['En proceso'] ?? 0) + (quejasPorEstado['En investigación'] ?? 0), color: '#f97316' },
+                  { label: 'Resueltas', count: (quejasPorEstado['Resuelto'] ?? 0) + (quejasPorEstado['Cerrado'] ?? 0), color: '#10b981' },
+                ].map(({ label, count, color }) => (
+                  <div key={label} className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                    <span className="text-xs font-semibold" style={{ color }}>{count} {label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Por estado */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Por estado</p>
+              <div className="space-y-2">
+                {([
+                  { estado: 'En proceso',       color: '#60a5fa', bg: 'rgba(96,165,250,0.12)'  },
+                  { estado: 'En investigación',  color: '#fbbf24', bg: 'rgba(251,191,36,0.12)'  },
+                  { estado: 'Resuelto',          color: '#34d399', bg: 'rgba(52,211,153,0.12)'  },
+                  { estado: 'Cerrado',           color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
+                ] as const).map(({ estado, color, bg }) => {
+                  const count = quejasPorEstado[estado] ?? 0
+                  const pct   = totalQuejas > 0 ? Math.round((count / totalQuejas) * 100) : 0
+                  return (
+                    <div key={estado} className="flex items-center gap-2">
+                      <span className="text-xs w-28 shrink-0 font-medium" style={{ color }}>{estado}</span>
+                      <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: bg }}>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+                      </div>
+                      <span className="text-xs font-bold w-6 text-right" style={{ color: 'var(--foreground)' }}>{count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Por medio */}
+            <div className="rounded-2xl p-5 flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--muted)' }}>Medio utilizado</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(quejasPorMedio)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([medio, count]) => (
+                    <div key={medio} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium" style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8' }}>
+                      <span>{medio}</span>
+                      <span className="font-black text-indigo-300">{count}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Fila 2: Por tipo | Por origen | Por nivel | Tiempo promedio */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+
+            {/* Por tipo */}
+            <div className="rounded-2xl p-5 flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--muted)' }}>Tipo de queja</p>
+              <div className="space-y-2">
+                {Object.entries(quejasPorTipo)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([tipo, count]) => {
+                    const pct = totalQuejas > 0 ? Math.round((count / totalQuejas) * 100) : 0
+                    return (
+                      <div key={tipo} className="flex items-center gap-2">
+                        <span className="text-xs flex-1 font-medium truncate" style={{ color: 'var(--foreground)' }} title={tipo}>{tipo}</span>
+                        <div className="w-12 h-1.5 rounded-full overflow-hidden shrink-0" style={{ background: 'rgba(234,179,8,0.15)' }}>
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#fbbf24' }} />
+                        </div>
+                        <span className="text-xs font-bold w-5 text-right shrink-0" style={{ color: '#fbbf24' }}>{count}</span>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+
+            {/* Por origen */}
+            <div className="rounded-2xl p-5 flex flex-col gap-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--muted)' }}>Origen de la queja</p>
+              <div className="space-y-2">
+                {Object.entries(quejasPorOrigen)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([origen, count]) => {
+                    const pct = totalQuejas > 0 ? Math.round((count / totalQuejas) * 100) : 0
+                    return (
+                      <div key={origen} className="flex items-center gap-2">
+                        <span className="text-xs flex-1 font-medium truncate" style={{ color: 'var(--foreground)' }} title={origen}>{origen}</span>
+                        <div className="w-12 h-1.5 rounded-full overflow-hidden shrink-0" style={{ background: 'rgba(168,85,247,0.15)' }}>
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#c084fc' }} />
+                        </div>
+                        <span className="text-xs font-bold w-5 text-right shrink-0" style={{ color: '#c084fc' }}>{count}</span>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+
+            {/* Por nivel de gravedad */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Nivel de gravedad</p>
+              <div className="space-y-3">
+                {([
+                  { nivel: 'Nivel 1 (Bajo)',  color: '#34d399', bg: 'rgba(52,211,153,0.12)'  },
+                  { nivel: 'Nivel 2 (Medio)', color: '#fbbf24', bg: 'rgba(251,191,36,0.12)'  },
+                  { nivel: 'Nivel 3 (Alto)',  color: '#f87171', bg: 'rgba(248,113,113,0.12)' },
+                ] as const).map(({ nivel, color, bg }) => {
+                  const count = quejasPorNivel[nivel] ?? 0
+                  const pct   = totalQuejas > 0 ? Math.round((count / totalQuejas) * 100) : 0
+                  return (
+                    <div key={nivel}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-semibold" style={{ color }}>{nivel}</span>
+                        <span className="text-xs font-bold" style={{ color: 'var(--foreground)' }}>{count}</span>
+                      </div>
+                      <div className="h-2 rounded-full overflow-hidden" style={{ background: bg }}>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Tiempo promedio por nivel */}
+            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Tiempo prom. resolución</p>
+              <div className="space-y-3 mt-1">
+                {([
+                  { nivel: 'Nivel 1 (Bajo)',  color: '#34d399' },
+                  { nivel: 'Nivel 2 (Medio)', color: '#fbbf24' },
+                  { nivel: 'Nivel 3 (Alto)',  color: '#f87171' },
+                ] as const).map(({ nivel, color }) => {
+                  const dias = tiempoPromedioNivel[nivel]
+                  return (
+                    <div key={nivel} className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl" style={{ background: `${color}10`, border: `1px solid ${color}25` }}>
+                      <span className="text-xs font-medium" style={{ color }}>{nivel}</span>
+                      <div className="text-right">
+                        {dias !== null
+                          ? <><span className="text-lg font-black" style={{ color }}>{dias}</span><span className="text-xs ml-1" style={{ color: 'var(--muted)' }}>días</span></>
+                          : <span className="text-xs italic" style={{ color: 'var(--muted)' }}>Sin datos</span>
+                        }
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
