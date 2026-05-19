@@ -747,7 +747,7 @@ export default function CumplimientoAmbientalPage() {
                               rows={3}
                               placeholder="Describa los respaldos o evidencias"
                             />
-                            <p className="text-xs text-blue-600 mt-2">ℹ️ La supervision verifica los respaldos y evidencias y garantiza su legitimidad.</p>
+                            <p className="text-xs text-blue-600 mt-2">ℹ️ La supervision verifica los respaldos y evidencias presentadas ademas garantiza su legitimidad.</p>
                           </div>
                         )}
 
