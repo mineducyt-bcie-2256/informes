@@ -429,8 +429,8 @@ function TarjetaLugar({
           )}
         </div>
 
-        {/* Tabla de costos — solo si Alquiler */}
-        {lugar.condicion_uso === 'Alquiler' && (
+        {/* Tabla de costos — solo si Alquiler o Préstamo */}
+        {(lugar.condicion_uso === 'Alquiler' || lugar.condicion_uso === 'Préstamo') && (
           <div className="space-y-4">
             {/* Pregunta: Costos incluidos en otro sitio */}
             <div>
@@ -721,7 +721,7 @@ export default function PrtPage() {
     const costosMesActual: HistorialCostos[] = []
 
     form.lugares.forEach((lugar, sitioIdx) => {
-      const rubrosActivos = lugar.rubros.filter(r => r.activo && lugar.condicion_uso === 'Alquiler' && lugar.costos_incluidos !== 'Sí')
+      const rubrosActivos = lugar.rubros.filter(r => r.activo && (lugar.condicion_uso === 'Alquiler' || lugar.condicion_uso === 'Préstamo') && lugar.costos_incluidos !== 'Sí')
       rubrosActivos.forEach(rubro => {
         const total = (rubro.cantidad || 1) * (rubro.costo_unitario || 0)
         const esCambio = historialCostos.some(h =>
@@ -813,7 +813,7 @@ export default function PrtPage() {
     const filasCosto: FilaCosto[] = []
     if (esPresencial) {
       form.lugares.forEach((l, i) => {
-        if (l.condicion_uso !== 'Alquiler') return
+        if (l.condicion_uso !== 'Alquiler' && l.condicion_uso !== 'Préstamo') return
         const rubrosActivos = l.rubros.filter(tieneNumericos)
         if (!rubrosActivos.length) return
         filasCosto.push({
