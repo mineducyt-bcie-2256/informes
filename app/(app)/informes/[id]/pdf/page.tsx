@@ -1,7 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { MESES } from '@/types'
 import PdfLoader from './PdfLoader'
+import { FileText, ChevronLeft } from 'lucide-react'
 
 export default async function PdfPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -87,9 +89,18 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Generar PDF</h1>
-        <p className="text-slate-500 text-sm mt-1">{esc?.nombre} · {periodo}</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800">Generar PDF</h1>
+          <p className="text-slate-500 text-sm mt-1">{esc?.nombre} · {periodo}</p>
+        </div>
+        <Link
+          href={`/informes/${id}`}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition"
+        >
+          <FileText size={16} />
+          Formularios de informe
+        </Link>
       </div>
       <PdfLoader data={reportData} />
     </div>
