@@ -788,33 +788,32 @@ export default async function DashboardPage({
   }
   let reubicacionData: ReubicacionRow[] = []
   {
-    // Reubicación: traemos el informe más reciente APROBADO por escuela
+    // Reubicación: traemos el informe más reciente por escuela (con PRT data)
     const escuelaIdsArr = Array.from(escuelaIds)
     if (escuelaIdsArr.length > 0) {
-      // Obtener informes aprobados más recientes por escuela
+      // Obtener informes más recientes por escuela (sin filtro de estado)
       const { data: todosInformesReub } = await admin
         .from('informes')
         .select('id, escuela_id, periodo_anio, periodo_mes, estado')
         .in('escuela_id', escuelaIdsArr)
-        .eq('estado', 'aprobado')
         .order('periodo_anio', { ascending: false })
         .order('periodo_mes',  { ascending: false })
 
-      // Quedarse solo con el informe más reciente APROBADO por escuela
-      const latestAprobadoPorEscuela = new Map<string, string>()
+      // Quedarse solo con el informe más reciente por escuela
+      const latestPorEscuela = new Map<string, string>()
       for (const inf of (todosInformesReub ?? []) as any[]) {
-        if (!latestAprobadoPorEscuela.has(inf.escuela_id)) {
-          latestAprobadoPorEscuela.set(inf.escuela_id, inf.id)
+        if (!latestPorEscuela.has(inf.escuela_id)) {
+          latestPorEscuela.set(inf.escuela_id, inf.id)
         }
       }
-      const latestAprobadoInformeIds = Array.from(latestAprobadoPorEscuela.values())
+      const latestInformeIds = Array.from(latestPorEscuela.values())
 
-      if (latestAprobadoInformeIds.length > 0) {
-        // Obtener PRT data junto con escuela
+      if (latestInformeIds.length > 0) {
+        // Obtener PRT data
         const { data: rawReub } = await admin
           .from('informe_prt')
           .select('informe_id, modalidad, tipo_continuidad')
-          .in('informe_id', latestAprobadoInformeIds)
+          .in('informe_id', latestInformeIds)
 
         // Mapear informe_id a escuela_id
         const informeToEscuelaMap = Object.fromEntries(
@@ -853,6 +852,15 @@ export default async function DashboardPage({
   const reubMultimodal = reubicacionData.filter(r => tieneModalReub(r, 'Presencial') && tieneModalReub(r, 'Virtual'))
 
   const hayReubicacion = reubicacionData.length > 0
+
+  console.log('[REUBICACION DEBUG]', {
+    reubicacionDataLength: reubicacionData.length,
+    reubPresencialLength: reubPresencial.length,
+    reubVirtualLength: reubVirtual.length,
+    reubMultimodalLength: reubMultimodal.length,
+    hayReubicacion,
+    reubicacionDataSample: reubicacionData.slice(0, 2),
+  })
 
   // ── Periodo label ──────────────────────────────────────────────
   let periodoLabel: string
@@ -1991,13 +1999,13 @@ export default async function DashboardPage({
       )}
 
       {/* ── Bloque 9: Reubicación Temporal — Continuidad Educativa ── */}
-      {hayReubicacion && (
-        <div>
-          <h2 className="text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
-            <span>🏫</span>
-            Reubicación Temporal — Modalidad de Continuidad Educativa
-          </h2>
+      <div>
+        <h2 className="text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
+          <span>🏫</span>
+          Reubicación Temporal — Modalidad de Continuidad Educativa
+        </h2>
 
+        {hayReubicacion ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
             {/* Presencial */}
@@ -2034,8 +2042,12 @@ export default async function DashboardPage({
             />
 
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="rounded-2xl p-8 text-center" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+            <p className="text-sm" style={{ color: 'var(--muted)' }}>Sin datos de Reubicación Temporal disponibles</p>
+          </div>
+        )}
+      </div>
 
     </div>
   )
