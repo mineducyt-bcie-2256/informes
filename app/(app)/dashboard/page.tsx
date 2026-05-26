@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import PersonalDonut from '@/components/dashboard/PersonalDonut'
+import { ReubicacionCard } from './ReubicacionCard'
 
 // ── Tipos internos ─────────────────────────────────────────────────
 type Escuela = {
@@ -777,6 +778,81 @@ export default async function DashboardPage({
   }
 
   const hayPrt = prtData.length > 0
+
+  // ── Reubicación Temporal: Modalidad de continuidad educativa ────
+  interface ReubicacionRow {
+    escuela_id: string
+    escuela_nombre: string
+    modalidad: string[]
+    tipo_continuidad: string | null
+  }
+  let reubicacionData: ReubicacionRow[] = []
+  {
+    // Reubicación: traemos el informe más reciente APROBADO por escuela
+    const escuelaIdsArr = Array.from(escuelaIds)
+    if (escuelaIdsArr.length > 0) {
+      // Obtener informes aprobados más recientes por escuela
+      const { data: todosInformesReub } = await admin
+        .from('informes')
+        .select('id, escuela_id, periodo_anio, periodo_mes, estado')
+        .in('escuela_id', escuelaIdsArr)
+        .eq('estado', 'aprobado')
+        .order('periodo_anio', { ascending: false })
+        .order('periodo_mes',  { ascending: false })
+
+      // Quedarse solo con el informe más reciente APROBADO por escuela
+      const latestAprobadoPorEscuela = new Map<string, string>()
+      for (const inf of (todosInformesReub ?? []) as any[]) {
+        if (!latestAprobadoPorEscuela.has(inf.escuela_id)) {
+          latestAprobadoPorEscuela.set(inf.escuela_id, inf.id)
+        }
+      }
+      const latestAprobadoInformeIds = Array.from(latestAprobadoPorEscuela.values())
+
+      if (latestAprobadoInformeIds.length > 0) {
+        // Obtener PRT data junto con escuela
+        const { data: rawReub } = await admin
+          .from('informe_prt')
+          .select('informe_id, modalidad, tipo_continuidad')
+          .in('informe_id', latestAprobadoInformeIds)
+
+        // Mapear informe_id a escuela_id
+        const informeToEscuelaMap = Object.fromEntries(
+          (todosInformesReub ?? []).map((r: any) => [r.id, r.escuela_id])
+        )
+
+        // Agrupar por escuela y obtener nombre
+        for (const prtRow of (rawReub ?? []) as any[]) {
+          const escuelaId = informeToEscuelaMap[prtRow.informe_id]
+          if (escuelaId) {
+            const escuela = todasEscuelas.find(e => e.id === escuelaId)
+            if (escuela) {
+              reubicacionData.push({
+                escuela_id: escuelaId,
+                escuela_nombre: escuela.nombre,
+                modalidad: prtRow.modalidad,
+                tipo_continuidad: prtRow.tipo_continuidad,
+              })
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Categorizar por modalidad
+  function tieneModalReub(r: ReubicacionRow, m: string): boolean {
+    if (r.tipo_continuidad) return r.tipo_continuidad.includes(m)
+    if (!r.modalidad) return false
+    if (Array.isArray(r.modalidad)) return r.modalidad.includes(m)
+    return (r.modalidad as unknown as string).includes(m)
+  }
+
+  const reubPresencial = reubicacionData.filter(r => tieneModalReub(r, 'Presencial') && !tieneModalReub(r, 'Virtual'))
+  const reubVirtual = reubicacionData.filter(r => tieneModalReub(r, 'Virtual') && !tieneModalReub(r, 'Presencial'))
+  const reubMultimodal = reubicacionData.filter(r => tieneModalReub(r, 'Presencial') && tieneModalReub(r, 'Virtual'))
+
+  const hayReubicacion = reubicacionData.length > 0
 
   // ── Periodo label ──────────────────────────────────────────────
   let periodoLabel: string
@@ -1914,6 +1990,52 @@ export default async function DashboardPage({
         </div>
       )}
 
+      {/* ── Bloque 9: Reubicación Temporal — Continuidad Educativa ── */}
+      {hayReubicacion && (
+        <div>
+          <h2 className="text-xs font-semibold uppercase tracking-widest mb-3 flex items-center gap-2" style={{ color: 'var(--muted)' }}>
+            <span>🏫</span>
+            Reubicación Temporal — Modalidad de Continuidad Educativa
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* Presencial */}
+            <ReubicacionCard
+              modalidad="Presencial"
+              color="bg-blue-50 dark:bg-blue-950"
+              borderColor="border-blue-200 dark:border-blue-700"
+              textColor="text-blue-700 dark:text-blue-300"
+              iconColor="text-blue-600"
+              count={reubPresencial.length}
+              centros={reubPresencial.map(r => r.escuela_nombre)}
+            />
+
+            {/* Virtual */}
+            <ReubicacionCard
+              modalidad="Virtual"
+              color="bg-purple-50 dark:bg-purple-950"
+              borderColor="border-purple-200 dark:border-purple-700"
+              textColor="text-purple-700 dark:text-purple-300"
+              iconColor="text-purple-600"
+              count={reubVirtual.length}
+              centros={reubVirtual.map(r => r.escuela_nombre)}
+            />
+
+            {/* Multimodal */}
+            <ReubicacionCard
+              modalidad="Multimodal"
+              color="bg-amber-50 dark:bg-amber-950"
+              borderColor="border-amber-200 dark:border-amber-700"
+              textColor="text-amber-700 dark:text-amber-300"
+              iconColor="text-amber-600"
+              count={reubMultimodal.length}
+              centros={reubMultimodal.map(r => r.escuela_nombre)}
+            />
+
+          </div>
+        </div>
+      )}
 
     </div>
   )
