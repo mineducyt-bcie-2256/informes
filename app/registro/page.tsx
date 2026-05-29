@@ -6,6 +6,7 @@ import { CheckCircle, Eye, EyeOff, ArrowLeft, ChevronDown, Building2, HardHat, L
 const CARGOS = [
   'Especialista Ambiental',
   'Especialista Social',
+  'Especialista Socio - Ambiental',
   'Especialista en Seguridad Ocupacional',
   'Administrador de Contrato',
   'Inspector de Obra',
