@@ -390,7 +390,7 @@ export default async function InformesPage({
               <p className="text-2xl font-bold text-slate-800">{totalEmpresasLista}</p>
             </div>
             <div className="bg-white rounded-lg border border-blue-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-1">Total</p>
+              <p className="text-xs text-slate-500 font-medium uppercase mb-1">Informes Presentados</p>
               <p className="text-2xl font-bold text-blue-600">{totalInformesLista}</p>
             </div>
             <div className="bg-white rounded-lg border border-amber-200 p-4">
