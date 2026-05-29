@@ -313,46 +313,6 @@ export default async function InformesPage({
         </Link>
       </div>
 
-      {/* ── Tarjetas resumen ─────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-orange-200 p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
-            <HardHat size={20} className="text-orange-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-slate-800">{totalHabilitadas ?? 0}</p>
-            <p className="text-xs text-slate-500 leading-tight">CE habilitados para informe</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-slate-50 flex items-center justify-center shrink-0">
-            <FileText size={20} className="text-slate-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-slate-800">{informesMesActual ?? 0}</p>
-            <p className="text-xs text-slate-500 leading-tight">Informes en {MESES[mesActual - 1]}</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-green-200 p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
-            <CheckCircle size={20} className="text-green-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-slate-800">{informesAprobados ?? 0}</p>
-            <p className="text-xs text-slate-500 leading-tight">Aprobados este mes</p>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-amber-200 p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-            <Clock size={20} className="text-amber-600" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-slate-800">{informesBorrador ?? 0}</p>
-            <p className="text-xs text-slate-500 leading-tight">En borrador</p>
-          </div>
-        </div>
-      </div>
-
       <div className="flex gap-1 mb-5 bg-slate-100 p-1 rounded-xl w-fit">
         {[{key:'lista',label:'Lista de informes'},{key:'control',label:'Control mensual'}].map(tab => (
           <Link key={tab.key}
