@@ -4,6 +4,7 @@ import { Plus, HardHat, FileText, CheckCircle, Clock, AlertTriangle, CircleCheck
 import BorrarInforme from './BorrarInforme'
 import { MESES } from '@/types'
 import PendienteCell from './PendienteCell'
+import { PendientesModal } from './PendientesModal'
 
 const ANIO_ACTUAL = new Date().getFullYear()
 
@@ -226,6 +227,9 @@ export default async function InformesPage({
     pendientes: 0,
   }
 
+  // Para el modal de pendientes
+  let ceConInforme: Set<number> = new Set()
+
   // Cargar observaciones para determinar estado visual de cada informe
   const idsLista = informesFiltrados?.map(i => i.id) ?? []
   // informe_id → Set de estados de sus observaciones
@@ -265,7 +269,7 @@ export default async function InformesPage({
     const empresas = new Set(conFiltros.map((inf: any) => inf.escuelas?.empresa_supervision).filter(Boolean))
 
     // Contar CE ÚNICOS que presentaron informe en el mes filtrado
-    const ceConInforme = new Set(conFiltros.map((inf: any) => inf.escuela_id).filter(Boolean))
+    ceConInforme = new Set(conFiltros.map((inf: any) => inf.escuela_id).filter(Boolean))
 
     // Contar por estado visual
     const estadoVisualCounts: Record<string, number> = {
@@ -416,10 +420,13 @@ export default async function InformesPage({
               <p className="text-xs text-slate-500 font-medium uppercase mb-1">Aprobado</p>
               <p className="text-2xl font-bold text-green-600">{informesAprobadoLista}</p>
             </div>
-            <div className="bg-white rounded-lg border border-red-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-1">Pendientes Enviar</p>
-              <p className="text-2xl font-bold text-red-600">{informesPendientesLista}</p>
-            </div>
+            <PendientesModal
+              escuelas={escuelas ?? []}
+              ceConInforme={ceConInforme}
+              mes={mes}
+              pendientes={informesPendientesLista}
+              MESES={MESES}
+            />
           </div>
 
           {(() => {

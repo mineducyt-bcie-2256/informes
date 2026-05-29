@@ -39,7 +39,15 @@
       "PowerShell(Stop-Process -Id 304 -Force -ErrorAction SilentlyContinue)",
       "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git -C \"C:\\\\informe-bcie\" add -A)",
+      "Bash(git -C \"C:\\\\informe-bcie\" status)",
+      "Bash(git -C \"C:\\\\informe-bcie\" reset)",
+      "Bash(git -C \"C:\\\\informe-bcie\" add \"app/\\(app\\)/dashboard/page.tsx\" \"app/\\(app\\)/dashboard/ReubicacionCard.tsx\")",
+      "Bash(git -C 'C:\\\\informe-bcie' commit -m ' *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr \":3000\")",
+      "Bash(git -C \"C:\\\\informe-bcie\" add \"app/\\(app\\)/informes/page.tsx\")"
     ]
   }
 }
