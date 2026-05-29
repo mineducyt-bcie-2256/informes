@@ -215,6 +215,14 @@ export default async function InformesPage({
     return true
   })
 
+  // Calcular estadísticas para vista lista
+  const totalEmpresas = vista === 'lista' && informesFiltrados
+    ? new Set(informesFiltrados.map((inf: any) => inf.escuelas?.empresa_supervision).filter(Boolean)).size
+    : 0
+  const totalInformes = vista === 'lista' ? informesFiltrados?.length ?? 0 : 0
+  const informesBorrador = vista === 'lista' ? informesFiltrados?.filter((inf: any) => inf.estado === 'borrador').length ?? 0 : 0
+  const informesAprobado = vista === 'lista' ? informesFiltrados?.filter((inf: any) => inf.estado === 'aprobado').length ?? 0 : 0
+
   // Cargar observaciones para determinar estado visual de cada informe
   const idsLista = informesFiltrados?.map(i => i.id) ?? []
   // informe_id → Set de estados de sus observaciones
@@ -366,6 +374,26 @@ export default async function InformesPage({
       </form>
 
       {vista === 'lista' && (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-1">Empresas</p>
+              <p className="text-2xl font-bold text-slate-800">{totalEmpresas}</p>
+            </div>
+            <div className="bg-white rounded-lg border border-blue-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-1">Total</p>
+              <p className="text-2xl font-bold text-blue-600">{totalInformes}</p>
+            </div>
+            <div className="bg-white rounded-lg border border-amber-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-1">Borrador</p>
+              <p className="text-2xl font-bold text-amber-600">{informesBorrador}</p>
+            </div>
+            <div className="bg-white rounded-lg border border-green-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-1">Aprobado</p>
+              <p className="text-2xl font-bold text-green-600">{informesAprobado}</p>
+            </div>
+          </div>
+
         <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 border-b border-slate-200">
@@ -435,6 +463,7 @@ export default async function InformesPage({
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {vista === 'control' && (
