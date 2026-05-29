@@ -215,13 +215,43 @@ export default async function InformesPage({
     return true
   })
 
-  // Calcular estadísticas para vista lista
-  const totalEmpresas = vista === 'lista' && informesFiltrados
-    ? new Set(informesFiltrados.map((inf: any) => inf.escuelas?.empresa_supervision).filter(Boolean)).size
-    : 0
-  const totalInformes = vista === 'lista' ? informesFiltrados?.length ?? 0 : 0
-  const informesBorrador = vista === 'lista' ? informesFiltrados?.filter((inf: any) => inf.estado === 'borrador').length ?? 0 : 0
-  const informesAprobado = vista === 'lista' ? informesFiltrados?.filter((inf: any) => inf.estado === 'aprobado').length ?? 0 : 0
+  // Calcular estadísticas para vista lista (incluye filtros de mes y estado)
+  let estadisticasLista = {
+    totalEmpresas: 0,
+    totalInformes: 0,
+    borrador: 0,
+    aprobado: 0,
+    enviado: 0,
+    observado: 0,
+    pendientes: 0,
+  }
+
+  if (vista === 'lista' && informesFiltrados) {
+    // Filtrar por mes y estado además de los filtros existentes
+    const conFiltros = informesFiltrados.filter((inf: any) => {
+      if (mes && inf.periodo_mes !== parseInt(mes)) return false
+      if (estado && inf.estado !== estado) return false
+      return true
+    })
+
+    // Empresas únicas
+    const empresas = new Set(conFiltros.map((inf: any) => inf.escuelas?.empresa_supervision).filter(Boolean))
+
+    estadisticasLista = {
+      totalEmpresas: empresas.size,
+      totalInformes: conFiltros.length,
+      borrador: conFiltros.filter((inf: any) => inf.estado === 'borrador').length,
+      aprobado: conFiltros.filter((inf: any) => inf.estado === 'aprobado').length,
+      enviado: conFiltros.filter((inf: any) => inf.estado === 'enviado').length,
+      observado: 0, // Se calcula con obsEstadosMap
+      pendientes: 0, // Se calcula después
+    }
+  }
+
+  const totalEmpresas = estadisticasLista.totalEmpresas
+  const totalInformes = estadisticasLista.totalInformes
+  const informesBorrador = estadisticasLista.borrador
+  const informesAprobado = estadisticasLista.aprobado
 
   // Cargar observaciones para determinar estado visual de cada informe
   const idsLista = informesFiltrados?.map(i => i.id) ?? []
@@ -394,20 +424,27 @@ export default async function InformesPage({
             </div>
           </div>
 
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Centro Educativo</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Supervision</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Grupo</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Periodo</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Estado</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {informesFiltrados?.map((inf: any) => (
+          {(() => {
+            const informesParaMostrar = (informesFiltrados ?? []).filter((inf: any) => {
+              if (mes && inf.periodo_mes !== parseInt(mes)) return false
+              if (estado && inf.estado !== estado) return false
+              return true
+            })
+            return (
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 font-medium text-slate-600">Centro Educativo</th>
+                      <th className="text-left px-4 py-3 font-medium text-slate-600">Supervision</th>
+                      <th className="text-left px-4 py-3 font-medium text-slate-600">Grupo</th>
+                      <th className="text-left px-4 py-3 font-medium text-slate-600">Periodo</th>
+                      <th className="text-left px-4 py-3 font-medium text-slate-600">Estado</th>
+                      <th className="text-left px-4 py-3 font-medium text-slate-600">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {informesParaMostrar.map((inf: any) => (
                 <tr key={inf.id} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-medium text-slate-800">{inf.escuelas?.nombre ?? '-'}</p>
@@ -456,13 +493,15 @@ export default async function InformesPage({
                     </div>
                   </td>
                 </tr>
-              ))}
-              {!informesFiltrados?.length && (
-                <tr><td colSpan={6} className="text-center py-10 text-slate-400">No se encontraron informes</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                    ))}
+                    {informesParaMostrar.length === 0 && (
+                      <tr><td colSpan={6} className="text-center py-10 text-slate-400">No se encontraron informes con los filtros aplicados</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )
+          })()}
         </>
       )}
 
