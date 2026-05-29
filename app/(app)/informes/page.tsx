@@ -419,7 +419,8 @@ export default async function InformesPage({
             })
             return (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <table className="w-full text-sm">
+                <div className="max-h-[600px] overflow-y-auto">
+                  <table className="w-full text-sm">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
                       <th className="text-left px-4 py-3 font-medium text-slate-600">Centro Educativo</th>
@@ -486,6 +487,7 @@ export default async function InformesPage({
                     )}
                   </tbody>
                 </table>
+                </div>
               </div>
             )
           })()}
