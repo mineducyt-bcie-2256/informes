@@ -215,7 +215,7 @@ export default async function InformesPage({
     return true
   })
 
-  // Calcular estadísticas para vista lista (incluye filtros de mes y estado)
+  // Placeholder para estadísticas (será recalculado después de cargar observaciones)
   let estadisticasLista = {
     totalEmpresas: 0,
     totalInformes: 0,
@@ -225,33 +225,6 @@ export default async function InformesPage({
     observado: 0,
     pendientes: 0,
   }
-
-  if (vista === 'lista' && informesFiltrados) {
-    // Filtrar por mes y estado además de los filtros existentes
-    const conFiltros = informesFiltrados.filter((inf: any) => {
-      if (mes && inf.periodo_mes !== parseInt(mes)) return false
-      if (estado && inf.estado !== estado) return false
-      return true
-    })
-
-    // Empresas únicas
-    const empresas = new Set(conFiltros.map((inf: any) => inf.escuelas?.empresa_supervision).filter(Boolean))
-
-    estadisticasLista = {
-      totalEmpresas: empresas.size,
-      totalInformes: conFiltros.length,
-      borrador: conFiltros.filter((inf: any) => inf.estado === 'borrador').length,
-      aprobado: conFiltros.filter((inf: any) => inf.estado === 'aprobado').length,
-      enviado: conFiltros.filter((inf: any) => inf.estado === 'enviado').length,
-      observado: 0, // Se calcula con obsEstadosMap
-      pendientes: 0, // Se calcula después
-    }
-  }
-
-  const totalEmpresasLista = estadisticasLista.totalEmpresas
-  const totalInformesLista = estadisticasLista.totalInformes
-  const informesBorradorLista = estadisticasLista.borrador
-  const informesAprobadoLista = estadisticasLista.aprobado
 
   // Cargar observaciones para determinar estado visual de cada informe
   const idsLista = informesFiltrados?.map(i => i.id) ?? []
@@ -280,6 +253,48 @@ export default async function InformesPage({
     if (estados.has('pendiente'))       return 'observado'
     return 'resuelto'  // tiene obs pero todas atendidas
   }
+
+  // Recalcular estadísticas DESPUÉS de cargar observaciones
+  if (vista === 'lista' && informesFiltrados) {
+    const conFiltros = informesFiltrados.filter((inf: any) => {
+      if (mes && inf.periodo_mes !== parseInt(mes)) return false
+      if (estado && inf.estado !== estado) return false
+      return true
+    })
+
+    const empresas = new Set(conFiltros.map((inf: any) => inf.escuelas?.empresa_supervision).filter(Boolean))
+
+    // Contar por estado visual
+    const estadoVisualCounts: Record<string, number> = {
+      borrador: 0,
+      enviado: 0,
+      observado: 0,
+      resuelto: 0,
+      aprobado: 0,
+    }
+    conFiltros.forEach((inf: any) => {
+      const ev = getEstadoVisual(inf)
+      estadoVisualCounts[ev]++
+    })
+
+    estadisticasLista = {
+      totalEmpresas: empresas.size,
+      totalInformes: conFiltros.length,
+      borrador: estadoVisualCounts.borrador,
+      aprobado: estadoVisualCounts.aprobado,
+      enviado: estadoVisualCounts.enviado + estadoVisualCounts.resuelto, // Enviados + Resueltos
+      observado: estadoVisualCounts.observado,
+      pendientes: estadoVisualCounts.borrador, // Pendientes = Borradores no enviados
+    }
+  }
+
+  const totalEmpresasLista = estadisticasLista.totalEmpresas
+  const totalInformesLista = estadisticasLista.totalInformes
+  const informesBorradorLista = estadisticasLista.borrador
+  const informesAprobadoLista = estadisticasLista.aprobado
+  const informesEnviadoLista = estadisticasLista.enviado
+  const informesObservadoLista = estadisticasLista.observado
+  const informesPendientesLista = estadisticasLista.pendientes
 
   const MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
   // Meses visibles según el rango seleccionado (1-based)
@@ -405,7 +420,7 @@ export default async function InformesPage({
 
       {vista === 'lista' && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
             <div className="bg-white rounded-lg border border-slate-200 p-4">
               <p className="text-xs text-slate-500 font-medium uppercase mb-1">Empresas</p>
               <p className="text-2xl font-bold text-slate-800">{totalEmpresasLista}</p>
@@ -417,6 +432,14 @@ export default async function InformesPage({
             <div className="bg-white rounded-lg border border-amber-200 p-4">
               <p className="text-xs text-slate-500 font-medium uppercase mb-1">Borrador</p>
               <p className="text-2xl font-bold text-amber-600">{informesBorradorLista}</p>
+            </div>
+            <div className="bg-white rounded-lg border border-sky-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-1">Enviado</p>
+              <p className="text-2xl font-bold text-sky-600">{informesEnviadoLista}</p>
+            </div>
+            <div className="bg-white rounded-lg border border-orange-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-1">Observado</p>
+              <p className="text-2xl font-bold text-orange-600">{informesObservadoLista}</p>
             </div>
             <div className="bg-white rounded-lg border border-green-200 p-4">
               <p className="text-xs text-slate-500 font-medium uppercase mb-1">Aprobado</p>
