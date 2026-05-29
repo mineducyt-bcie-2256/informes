@@ -420,8 +420,8 @@ export default async function InformesPage({
             return (
               <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <div className="max-h-[600px] overflow-y-auto">
-                  <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-b border-slate-200">
+                  <table className="w-full text-sm border-collapse">
+                  <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
                     <tr>
                       <th className="text-left px-4 py-3 font-medium text-slate-600">Centro Educativo</th>
                       <th className="text-left px-4 py-3 font-medium text-slate-600">Supervision</th>
