@@ -264,6 +264,9 @@ export default async function InformesPage({
 
     const empresas = new Set(conFiltros.map((inf: any) => inf.escuelas?.empresa_supervision).filter(Boolean))
 
+    // Contar CE ÚNICOS que presentaron informe en el mes filtrado
+    const ceConInforme = new Set(conFiltros.map((inf: any) => inf.escuela_id).filter(Boolean))
+
     // Contar por estado visual
     const estadoVisualCounts: Record<string, number> = {
       borrador: 0,
@@ -277,6 +280,10 @@ export default async function InformesPage({
       estadoVisualCounts[ev]++
     })
 
+    // Pendientes = CE habilitados totales (según supervisión si aplica) - CE que presentaron
+    let ceHabilitadosFiltrados = escuelas?.length ?? 0
+    const pendientesCalculo = Math.max(0, ceHabilitadosFiltrados - ceConInforme.size)
+
     estadisticasLista = {
       totalEmpresas: empresas.size,
       totalInformes: conFiltros.length,
@@ -284,7 +291,7 @@ export default async function InformesPage({
       aprobado: estadoVisualCounts.aprobado,
       enviado: estadoVisualCounts.enviado + estadoVisualCounts.resuelto, // Enviados + Resueltos
       observado: estadoVisualCounts.observado,
-      pendientes: estadoVisualCounts.borrador, // Pendientes = Borradores no enviados
+      pendientes: pendientesCalculo, // Pendientes = CE habilitados - CE que presentaron
     }
   }
 
