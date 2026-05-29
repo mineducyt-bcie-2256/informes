@@ -215,6 +215,75 @@ export default async function InformesPage({
     return true
   })
 
+  // ── Cálculos para tarjetas de información (vista lista) ──────────
+  let estadisticas = {
+    totalEmpresas: 0,
+    totalInformes: 0,
+    enviados: 0,
+    borrador: 0,
+    observado: 0,
+    aprobado: 0,
+    pendientes: 0,
+  }
+
+  if (vista === 'lista' && informesFiltrados) {
+    // Empresas únicas en informes filtrados
+    const empresasEnFiltro = new Set<string>()
+
+    // Contar informes por estado y detectar observados/resueltos
+    const contadores = {
+      enviados: 0,
+      borrador: 0,
+      aprobado: 0,
+      observado: 0,
+      resuelto: 0,
+    }
+
+    informesFiltrados.forEach(inf => {
+      const esc = inf.escuelas as any
+      if (esc?.empresa_supervision) {
+        empresasEnFiltro.add(esc.empresa_supervision)
+      }
+
+      if (inf.estado === 'borrador') {
+        contadores.borrador++
+      } else if (inf.estado === 'aprobado') {
+        contadores.aprobado++
+      } else {
+        // Estado enviado - revisar si tiene observaciones
+        const estados = obsEstadosMap[inf.id]
+        if (estados && estados.size > 0) {
+          if (estados.has('pendiente')) {
+            contadores.observado++
+          } else {
+            contadores.resuelto++
+          }
+        } else {
+          contadores.enviados++
+        }
+      }
+    })
+
+    // Calcular pendientes (escuelas sin informe en el mes/estado seleccionado)
+    const escuelasConInforme = new Set(
+      informesFiltrados
+        .filter(inf => !estado || inf.estado === estado)
+        .map(inf => inf.escuela_id)
+    )
+    const totalEscuelasHabilitadas = escuelas?.length ?? 0
+    const pendientes = totalEscuelasHabilitadas - escuelasConInforme.size
+
+    estadisticas = {
+      totalEmpresas: empresasEnFiltro.size,
+      totalInformes: informesFiltrados.length,
+      enviados: contadores.enviados,
+      borrador: contadores.borrador,
+      observado: contadores.observado,
+      aprobado: contadores.aprobado,
+      pendientes: Math.max(0, pendientes),
+    }
+  }
+
   // Cargar observaciones para determinar estado visual de cada informe
   const idsLista = informesFiltrados?.map(i => i.id) ?? []
   // informe_id → Set de estados de sus observaciones
@@ -366,74 +435,133 @@ export default async function InformesPage({
       </form>
 
       {vista === 'lista' && (
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Centro Educativo</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Supervision</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Grupo</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Periodo</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Estado</th>
-                <th className="text-left px-4 py-3 font-medium text-slate-600">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {informesFiltrados?.map((inf: any) => (
-                <tr key={inf.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-slate-800">{inf.escuelas?.nombre ?? '-'}</p>
-                    <p className="text-xs text-slate-400">{inf.escuelas?.codigo}</p>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-500 max-w-40 truncate">{inf.escuelas?.empresa_supervision ?? '-'}</td>
-                  <td className="px-4 py-3">
-                    <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">
-                      G{inf.escuelas?.grupos?.numero ?? '?'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{MESES[inf.periodo_mes - 1]} {inf.periodo_anio}</td>
-                  <td className="px-4 py-3">
-                    {(() => {
-                      const ev = getEstadoVisual(inf)
-                      return (
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium w-fit flex items-center gap-1 ${
-                          ev === 'aprobado'  ? 'bg-green-100 text-green-700' :
-                          ev === 'enviado'   ? 'bg-blue-100 text-blue-700' :
-                          ev === 'observado' ? 'bg-amber-100 text-amber-700' :
-                          ev === 'resuelto'  ? 'bg-purple-100 text-purple-700' :
-                                              'bg-slate-100 text-slate-600'
-                        }`}>
-                          {ev === 'observado' && <AlertTriangle size={10} />}
-                          {ev === 'resuelto'  && <CircleCheck size={10} />}
-                          {ev === 'aprobado'  ? 'Aprobado'  :
-                           ev === 'enviado'   ? 'Enviado'   :
-                           ev === 'observado' ? 'Observado' :
-                           ev === 'resuelto'  ? 'Resuelto'  : 'Borrador'}
+        <div className="flex gap-4">
+          {/* ── Tabla de informes (scroll independiente) ── */}
+          <div className="flex-1 bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="overflow-y-auto max-h-[calc(100vh-400px)]">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                  <tr>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600">Centro Educativo</th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600">Supervision</th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600">Grupo</th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600">Periodo</th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600">Estado</th>
+                    <th className="text-left px-4 py-3 font-medium text-slate-600">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {informesFiltrados?.map((inf: any) => (
+                    <tr key={inf.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="font-medium text-slate-800">{inf.escuelas?.nombre ?? '-'}</p>
+                        <p className="text-xs text-slate-400">{inf.escuelas?.codigo}</p>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-slate-500 max-w-40 truncate">{inf.escuelas?.empresa_supervision ?? '-'}</td>
+                      <td className="px-4 py-3">
+                        <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">
+                          G{inf.escuelas?.grupos?.numero ?? '?'}
                         </span>
-                      )
-                    })()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <Link href={`/informes/${inf.id}`} className="text-blue-600 hover:text-blue-800 font-medium text-xs">
-                        Ver / Editar
-                      </Link>
-                      {esProgramador && (
-                        <BorrarInforme
-                          informeId={inf.id}
-                          nombre={inf.escuelas?.nombre ?? ''}
-                          periodo={`${MESES[inf.periodo_mes - 1]} ${inf.periodo_anio}`}
-                        />
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!informesFiltrados?.length && (
-                <tr><td colSpan={6} className="text-center py-10 text-slate-400">No se encontraron informes</td></tr>
-              )}
-            </tbody>
-          </table>
+                      </td>
+                      <td className="px-4 py-3 text-slate-600">{MESES[inf.periodo_mes - 1]} {inf.periodo_anio}</td>
+                      <td className="px-4 py-3">
+                        {(() => {
+                          const ev = getEstadoVisual(inf)
+                          return (
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium w-fit flex items-center gap-1 ${
+                              ev === 'aprobado'  ? 'bg-green-100 text-green-700' :
+                              ev === 'enviado'   ? 'bg-blue-100 text-blue-700' :
+                              ev === 'observado' ? 'bg-amber-100 text-amber-700' :
+                              ev === 'resuelto'  ? 'bg-purple-100 text-purple-700' :
+                                                  'bg-slate-100 text-slate-600'
+                            }`}>
+                              {ev === 'observado' && <AlertTriangle size={10} />}
+                              {ev === 'resuelto'  && <CircleCheck size={10} />}
+                              {ev === 'aprobado'  ? 'Aprobado'  :
+                               ev === 'enviado'   ? 'Enviado'   :
+                               ev === 'observado' ? 'Observado' :
+                               ev === 'resuelto'  ? 'Resuelto'  : 'Borrador'}
+                            </span>
+                          )
+                        })()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Link href={`/informes/${inf.id}`} className="text-blue-600 hover:text-blue-800 font-medium text-xs">
+                            Ver / Editar
+                          </Link>
+                          {esProgramador && (
+                            <BorrarInforme
+                              informeId={inf.id}
+                              nombre={inf.escuelas?.nombre ?? ''}
+                              periodo={`${MESES[inf.periodo_mes - 1]} ${inf.periodo_anio}`}
+                            />
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {!informesFiltrados?.length && (
+                    <tr><td colSpan={6} className="text-center py-10 text-slate-400">No se encontraron informes</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* ── Panel de tarjetas (fijo, scroll independiente) ── */}
+          <div className="w-80 flex-shrink-0">
+            <div className="space-y-3">
+              {/* Empresas de supervisión */}
+              <div className="bg-white rounded-xl border border-slate-200 p-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Empresas</p>
+                <p className="text-3xl font-black text-slate-800">{estadisticas.totalEmpresas}</p>
+                <p className="text-xs text-slate-500 mt-1">en los filtros actuales</p>
+              </div>
+
+              {/* Total de informes */}
+              <div className="bg-white rounded-xl border border-blue-200 p-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Total Informes</p>
+                <p className="text-3xl font-black text-blue-600">{estadisticas.totalInformes}</p>
+                <p className="text-xs text-slate-500 mt-1">encontrados</p>
+              </div>
+
+              {/* Enviados */}
+              <div className="bg-white rounded-xl border border-cyan-200 p-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Enviados</p>
+                <p className="text-3xl font-black text-cyan-600">{estadisticas.enviados}</p>
+                <p className="text-xs text-slate-500 mt-1">sin observaciones</p>
+              </div>
+
+              {/* Borrador */}
+              <div className="bg-white rounded-xl border border-amber-200 p-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Borrador</p>
+                <p className="text-3xl font-black text-amber-600">{estadisticas.borrador}</p>
+                <p className="text-xs text-slate-500 mt-1">en edición</p>
+              </div>
+
+              {/* Observado */}
+              <div className="bg-white rounded-xl border border-orange-200 p-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Observado</p>
+                <p className="text-3xl font-black text-orange-600">{estadisticas.observado}</p>
+                <p className="text-xs text-slate-500 mt-1">con observaciones</p>
+              </div>
+
+              {/* Aprobado */}
+              <div className="bg-white rounded-xl border border-green-200 p-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Aprobado</p>
+                <p className="text-3xl font-black text-green-600">{estadisticas.aprobado}</p>
+                <p className="text-xs text-slate-500 mt-1">completados</p>
+              </div>
+
+              {/* Pendientes */}
+              <div className="bg-white rounded-xl border border-red-200 p-4">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Pendientes</p>
+                <p className="text-3xl font-black text-red-600">{estadisticas.pendientes}</p>
+                <p className="text-xs text-slate-500 mt-1">sin entregar</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
