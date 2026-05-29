@@ -380,7 +380,7 @@ export default async function InformesPage({
 
       {vista === 'lista' && (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
             <div className="bg-white rounded-lg border border-orange-200 p-4">
               <p className="text-xs text-slate-500 font-medium uppercase mb-1">CE Habilitados</p>
               <p className="text-2xl font-bold text-orange-600">{totalHabilitadas ?? 0}</p>
@@ -408,6 +408,10 @@ export default async function InformesPage({
             <div className="bg-white rounded-lg border border-green-200 p-4">
               <p className="text-xs text-slate-500 font-medium uppercase mb-1">Aprobado</p>
               <p className="text-2xl font-bold text-green-600">{informesAprobadoLista}</p>
+            </div>
+            <div className="bg-white rounded-lg border border-red-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-1">Pendientes Enviar</p>
+              <p className="text-2xl font-bold text-red-600">{informesPendientesLista}</p>
             </div>
           </div>
 
