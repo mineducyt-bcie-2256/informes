@@ -91,6 +91,29 @@ export function PrintButton({
           tempContainer.style.width = dashboardElement.offsetWidth + 'px'
           document.body.appendChild(tempContainer)
 
+          // Reemplazar colores LAB() con equivalentes RGB para compatibilidad
+          console.log('✓ Fixing LAB colors...')
+          const allElements = clone.querySelectorAll('*')
+          allElements.forEach((el: any) => {
+            const style = window.getComputedStyle(el)
+            const bgColor = style.backgroundColor
+            const color = style.color
+            const borderColor = style.borderColor
+
+            // Reemplazar colores LAB en background
+            if (bgColor && bgColor.includes('lab(')) {
+              ;(el as HTMLElement).style.backgroundColor = '#f5f5f5'
+            }
+            // Reemplazar colores LAB en text
+            if (color && color.includes('lab(')) {
+              ;(el as HTMLElement).style.color = '#333333'
+            }
+            // Reemplazar colores LAB en border
+            if (borderColor && borderColor.includes('lab(')) {
+              ;(el as HTMLElement).style.borderColor = '#cccccc'
+            }
+          })
+
           // Capturar con html2canvas
           const canvas = await window.html2canvas(clone, {
             scale: 2,
@@ -98,6 +121,7 @@ export function PrintButton({
             logging: false,
             allowTaint: true,
             backgroundColor: '#ffffff',
+            foreignObjectRendering: true,
           })
 
           console.log('✓ Dashboard captured, generating PDF...')
