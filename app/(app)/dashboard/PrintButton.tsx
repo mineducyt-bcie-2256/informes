@@ -161,9 +161,6 @@ export function PrintButton({
           pdf.save(filename)
 
           console.log('✓ PDF generated and download initiated')
-
-          // Limpiar
-          document.body.removeChild(tempContainer)
           setLoading(false)
         } catch (err) {
           console.error('❌ Error generating PDF:', err)
