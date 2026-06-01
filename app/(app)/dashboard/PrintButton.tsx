@@ -81,30 +81,37 @@ export function PrintButton({
             return
           }
 
-          // Clonar el elemento sin formularios
-          const clone = dashboardElement.cloneNode(true) as HTMLElement
-          clone.querySelectorAll('form, .no-pdf').forEach(el => el.remove())
+          // Guardar estilos originales
+          const originalStyles = new Map()
+          const allElements = dashboardElement.querySelectorAll('*')
 
           // Reemplazar colores LAB() con equivalentes RGB para compatibilidad
           console.log('✓ Fixing LAB colors...')
-          const allElements = clone.querySelectorAll('*')
           allElements.forEach((el: any) => {
-            const style = window.getComputedStyle(el)
+            const htmlEl = el as HTMLElement
+            const style = window.getComputedStyle(htmlEl)
             const bgColor = style.backgroundColor
             const color = style.color
             const borderColor = style.borderColor
 
+            // Guardar estilos originales
+            originalStyles.set(htmlEl, {
+              bg: htmlEl.style.backgroundColor,
+              color: htmlEl.style.color,
+              border: htmlEl.style.borderColor,
+            })
+
             // Reemplazar colores LAB en background
             if (bgColor && bgColor.includes('lab(')) {
-              ;(el as HTMLElement).style.backgroundColor = '#f5f5f5'
+              htmlEl.style.backgroundColor = '#f5f5f5'
             }
             // Reemplazar colores LAB en text
             if (color && color.includes('lab(')) {
-              ;(el as HTMLElement).style.color = '#333333'
+              htmlEl.style.color = '#333333'
             }
             // Reemplazar colores LAB en border
             if (borderColor && borderColor.includes('lab(')) {
-              ;(el as HTMLElement).style.borderColor = '#cccccc'
+              htmlEl.style.borderColor = '#cccccc'
             }
           })
 
@@ -121,6 +128,13 @@ export function PrintButton({
               // Ignorar formularios y elementos sin-pdf
               return el.tagName === 'FORM' || el.classList.contains('no-pdf')
             },
+          })
+
+          // Restaurar estilos originales
+          originalStyles.forEach((originalStyle, el) => {
+            el.style.backgroundColor = originalStyle.bg
+            el.style.color = originalStyle.color
+            el.style.borderColor = originalStyle.border
           })
 
           console.log('✓ Dashboard captured, generating PDF...')
