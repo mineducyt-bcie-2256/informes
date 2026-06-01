@@ -887,6 +887,7 @@ export default async function DashboardPage({
   // ─────────────────────────────────────────────────────────────
   return (
     <div className="p-6 lg:p-8 space-y-6 max-w-screen-xl mx-auto">
+      <div id="dashboard-completo" className="space-y-6">
 
       {/* ── Encabezado ── */}
       <div className="flex items-center justify-between">
@@ -896,7 +897,7 @@ export default async function DashboardPage({
             {periodoLabel} — Programa Mi Nueva Escuela BCIE
           </p>
         </div>
-        <PrintButton />
+        <PrintButton periodoLabel={periodoLabel} />
       </div>
 
       {/* ── Bloque 1: Filtros ── */}
@@ -2053,6 +2054,7 @@ export default async function DashboardPage({
         )}
       </div>
 
+      </div>
     </div>
   )
 }
