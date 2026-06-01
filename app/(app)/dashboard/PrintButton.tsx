@@ -127,8 +127,11 @@ export function PrintButton({
           console.log('✓ Dashboard captured, generating PDF...')
 
           // Crear PDF con jsPDF
-          const { jsPDF } = window
-          const pdf = new jsPDF({
+          const jsPDFClass = (window as any).jspdf?.jsPDF || (window as any).jsPDF
+          if (!jsPDFClass) {
+            throw new Error('jsPDF not loaded')
+          }
+          const pdf = new jsPDFClass({
             orientation: 'portrait',
             unit: 'mm',
             format: 'a4',
