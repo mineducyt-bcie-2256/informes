@@ -5,7 +5,8 @@ import { Download } from 'lucide-react'
 
 declare global {
   interface Window {
-    html2pdf: any
+    html2canvas: any
+    jsPDF: any
   }
 }
 
@@ -26,81 +27,127 @@ export function PrintButton({
       // Verificar que el elemento existe
       const dashboardElement = document.getElementById('dashboard-completo')
       if (!dashboardElement) {
-        console.error('❌ Dashboard element with id="dashboard-completo" not found')
-        alert('Error: No se encontró el contenido del dashboard. Intenta recargar la página.')
+        console.error('❌ Dashboard element not found')
+        alert('Error: No se encontró el contenido del dashboard.')
         setLoading(false)
         return
       }
 
-      console.log('✓ Dashboard element found, cloning...')
+      console.log('✓ Dashboard element found, loading libraries...')
 
-      // Clonar el elemento
-      const clone = dashboardElement.cloneNode(true) as HTMLElement
+      // Cargar html2canvas y jsPDF
+      const html2canvasScript = document.createElement('script')
+      html2canvasScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
+      html2canvasScript.crossOrigin = 'anonymous'
 
-      // Remover filtros y botones, mantener todo lo visual
-      clone.querySelectorAll('form, .no-pdf').forEach(el => el.remove())
+      const jsPDFScript = document.createElement('script')
+      jsPDFScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+      jsPDFScript.crossOrigin = 'anonymous'
 
-      console.log('✓ Element cloned and cleaned')
+      let scriptsLoaded = 0
+      const checkBothLoaded = () => {
+        scriptsLoaded++
+        if (scriptsLoaded === 2) {
+          generatePDF()
+        }
+      }
 
-      // Cargar html2pdf
-      const script = document.createElement('script')
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
-      script.crossOrigin = 'anonymous'
+      html2canvasScript.onload = checkBothLoaded
+      jsPDFScript.onload = checkBothLoaded
 
-      script.onerror = () => {
-        console.error('❌ Failed to load html2pdf.js from CDN')
-        alert('Error: No se pudo cargar la librería de generación de PDF. Intenta de nuevo.')
+      html2canvasScript.onerror = () => {
+        console.error('❌ Failed to load html2canvas')
+        alert('Error cargando librería de captura.')
         setLoading(false)
       }
 
-      script.onload = () => {
-        console.log('✓ html2pdf.js loaded successfully')
+      jsPDFScript.onerror = () => {
+        console.error('❌ Failed to load jsPDF')
+        alert('Error cargando librería de PDF.')
+        setLoading(false)
+      }
 
-        if (!window.html2pdf) {
-          console.error('❌ window.html2pdf is not available')
-          alert('Error: Librería de PDF no disponible')
-          setLoading(false)
-          return
-        }
+      document.head.appendChild(html2canvasScript)
+      document.head.appendChild(jsPDFScript)
 
+      const generatePDF = async () => {
         try {
-          // Configurar opciones del PDF
-          const opt = {
-            margin: 10,
-            filename: `Reporte-Dashboard-${periodoLabel.split(' ')[0]}-${new Date().toISOString().split('T')[0]}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
-            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] },
+          console.log('✓ Libraries loaded, capturing dashboard...')
+
+          const dashboardElement = document.getElementById('dashboard-completo')
+          if (!dashboardElement) {
+            alert('Error: elemento no encontrado')
+            setLoading(false)
+            return
           }
 
-          console.log('✓ Options configured, generating PDF...')
+          // Crear un contenedor temporal sin formularios
+          const tempContainer = document.createElement('div')
+          const clone = dashboardElement.cloneNode(true) as HTMLElement
+          clone.querySelectorAll('form, .no-pdf').forEach(el => el.remove())
+          tempContainer.appendChild(clone)
+          tempContainer.style.position = 'absolute'
+          tempContainer.style.left = '-9999px'
+          tempContainer.style.width = dashboardElement.offsetWidth + 'px'
+          document.body.appendChild(tempContainer)
 
-          window.html2pdf()
-            .set(opt)
-            .from(clone)
-            .save()
-            .then(() => {
-              console.log('✓ PDF generated and download initiated')
-              setLoading(false)
-            })
-            .catch((err: any) => {
-              console.error('❌ Error during PDF generation:', err)
-              alert('Error al generar el PDF. Intenta de nuevo.')
-              setLoading(false)
-            })
+          // Capturar con html2canvas
+          const canvas = await window.html2canvas(clone, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+          })
+
+          console.log('✓ Dashboard captured, generating PDF...')
+
+          // Crear PDF con jsPDF
+          const { jsPDF } = window
+          const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4',
+          })
+
+          const imgData = canvas.toDataURL('image/jpeg', 0.98)
+          const pageWidth = pdf.internal.pageSize.getWidth()
+          const pageHeight = pdf.internal.pageSize.getHeight()
+          const imgWidth = pageWidth - 20 // 10mm margen en cada lado
+          const imgHeight = (canvas.height * imgWidth) / canvas.width
+          let heightLeft = imgHeight
+          let position = 10 // margen superior
+
+          // Primera página
+          pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight)
+          heightLeft -= pageHeight - 20
+
+          // Páginas adicionales si es necesario
+          while (heightLeft > 0) {
+            position = heightLeft - imgHeight + 10
+            pdf.addPage()
+            pdf.addImage(imgData, 'JPEG', 10, position, imgWidth, imgHeight)
+            heightLeft -= pageHeight - 20
+          }
+
+          // Descargar
+          const filename = `Reporte-Dashboard-${periodoLabel.split(' ')[0]}-${new Date().toISOString().split('T')[0]}.pdf`
+          pdf.save(filename)
+
+          console.log('✓ PDF generated and download initiated')
+
+          // Limpiar
+          document.body.removeChild(tempContainer)
+          setLoading(false)
         } catch (err) {
-          console.error('❌ Error in PDF generation process:', err)
+          console.error('❌ Error generating PDF:', err)
           alert('Error al generar el PDF. Intenta de nuevo.')
           setLoading(false)
         }
       }
-
-      document.head.appendChild(script)
-      console.log('✓ Script appended to head, waiting for load...')
     } catch (error) {
       console.error('❌ Unexpected error:', error)
-      alert('Error al generar reporte. Intenta de nuevo.')
+      alert('Error al generar reporte.')
       setLoading(false)
     }
   }
