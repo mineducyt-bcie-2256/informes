@@ -9,6 +9,7 @@ import {
 import Link from 'next/link'
 import PersonalDonut from '@/components/dashboard/PersonalDonut'
 import { ReubicacionCard } from './ReubicacionCard'
+import { PrintButton } from './PrintButton'
 
 // ── Tipos internos ─────────────────────────────────────────────────
 type Escuela = {
@@ -888,11 +889,14 @@ export default async function DashboardPage({
     <div className="p-6 lg:p-8 space-y-6 max-w-screen-xl mx-auto">
 
       {/* ── Encabezado ── */}
-      <div>
-        <h1 className="text-2xl font-bold text-[#1e2a45] dark:text-white">Dashboard</h1>
-        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-          {periodoLabel} — Programa Mi Nueva Escuela BCIE
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#1e2a45] dark:text-white">Dashboard</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+            {periodoLabel} — Programa Mi Nueva Escuela BCIE
+          </p>
+        </div>
+        <PrintButton />
       </div>
 
       {/* ── Bloque 1: Filtros ── */}
