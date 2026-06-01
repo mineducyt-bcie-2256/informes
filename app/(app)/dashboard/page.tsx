@@ -897,7 +897,7 @@ export default async function DashboardPage({
             {periodoLabel} — Programa Mi Nueva Escuela BCIE
           </p>
         </div>
-        <PrintButton periodoLabel={periodoLabel} />
+        <PrintButton periodoLabel={periodoLabel} empresa={empresaEfectiva ?? undefined} escuela_id={escuelaIdEfectiva ?? undefined} />
       </div>
 
       {/* ── Bloque 1: Filtros ── */}

@@ -3,66 +3,60 @@
 import React from 'react'
 import { Download } from 'lucide-react'
 
-declare global {
-  interface Window {
-    html2pdf: any
-  }
-}
-
-export function PrintButton({ periodoLabel }: { periodoLabel: string }) {
+export function PrintButton({
+  periodoLabel,
+  empresa,
+  escuela_id,
+}: {
+  periodoLabel: string
+  empresa?: string
+  escuela_id?: string
+}) {
   const [loading, setLoading] = React.useState(false)
 
-  const generarPDF = async () => {
+  const generarReporte = async () => {
     setLoading(true)
     try {
-      // Cargar la librería html2pdf
-      const script = document.createElement('script')
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+      const payload: any = { periodo: periodoLabel }
+      if (empresa) payload.empresa = empresa
+      if (escuela_id) payload.escuela_id = escuela_id
 
-      script.onload = () => {
-        const dashboardElement = document.getElementById('dashboard-completo')
+      const response = await fetch('/api/dashboard/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
 
-        if (!dashboardElement) {
-          console.error('Dashboard element not found')
-          setLoading(false)
-          return
-        }
-
-        // Clonar el elemento para no afectar el DOM original
-        const clone = dashboardElement.cloneNode(true) as HTMLElement
-
-        // Remover elementos que no queremos en el PDF (botones, filtros, etc)
-        clone.querySelectorAll('button, .no-pdf, form').forEach(el => el.remove())
-
-        // Configurar opciones del PDF
-        const opt = {
-          margin: 10,
-          filename: `Dashboard-${periodoLabel.split(' ')[0]}-${new Date().toISOString().split('T')[0]}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, allowTaint: true, useCORS: true },
-          jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' },
-        }
-
-        window.html2pdf().set(opt).from(clone).save()
-        setLoading(false)
+      if (!response.ok) {
+        throw new Error('Error al generar reporte')
       }
 
-      document.head.appendChild(script)
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Reporte-Dashboard-${new Date().toISOString().split('T')[0]}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
     } catch (error) {
-      console.error('Error generating PDF:', error)
+      console.error('Error:', error)
+      alert('Error al generar reporte')
+    } finally {
       setLoading(false)
     }
   }
 
   return (
     <button
-      onClick={generarPDF}
+      onClick={generarReporte}
       disabled={loading}
       className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-      title="Descargar dashboard completo en PDF"
+      title="Descargar reporte del dashboard en PDF"
     >
       <Download size={16} />
-      {loading ? 'Generando...' : 'Imprimir'}
+      {loading ? 'Generando...' : 'Generar Reporte'}
     </button>
   )
 }
