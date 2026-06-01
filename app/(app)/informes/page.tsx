@@ -5,6 +5,7 @@ import BorrarInforme from './BorrarInforme'
 import { MESES } from '@/types'
 import PendienteCell from './PendienteCell'
 import { PendientesModal } from './PendientesModal'
+import { GenerarReportePDF } from './GenerarReportePDF'
 
 const ANIO_ACTUAL = new Date().getFullYear()
 
@@ -318,10 +319,15 @@ export default async function InformesPage({
           <h1 className="text-xl font-bold text-slate-800">Informes mensuales de condiciones ambientales y sociales</h1>
           <p className="text-slate-500 text-sm mt-1">Supervision SCAS - BCIE</p>
         </div>
-        <Link href="/informes/nuevo"
-          className="flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-800 transition">
-          <Plus size={16} /> Nuevo informe
-        </Link>
+        <div className="flex items-center gap-2">
+          {vista === 'lista' && (
+            <GenerarReportePDF mes={mes} estado={estado} supervision={supervision} MESES={MESES} />
+          )}
+          <Link href="/informes/nuevo"
+            className="flex items-center gap-2 bg-blue-900 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-800 transition">
+            <Plus size={16} /> Nuevo informe
+          </Link>
+        </div>
       </div>
 
       <div className="flex gap-1 mb-5 bg-slate-100 p-1 rounded-xl w-fit">
@@ -390,8 +396,8 @@ export default async function InformesPage({
       </form>
 
       {vista === 'lista' && (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
+        <div id="dashboard-contenido" className="space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
             <div className="bg-white rounded-lg border border-orange-200 p-4">
               <p className="text-xs text-slate-500 font-medium uppercase mb-1">CE Habilitados</p>
               <p className="text-2xl font-bold text-orange-600">{totalHabilitadas ?? 0}</p>
@@ -509,7 +515,7 @@ export default async function InformesPage({
               </div>
             )
           })()}
-        </>
+        </div>
       )}
 
       {vista === 'control' && (
