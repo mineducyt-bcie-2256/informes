@@ -81,15 +81,9 @@ export function PrintButton({
             return
           }
 
-          // Crear un contenedor temporal sin formularios
-          const tempContainer = document.createElement('div')
+          // Clonar el elemento sin formularios
           const clone = dashboardElement.cloneNode(true) as HTMLElement
           clone.querySelectorAll('form, .no-pdf').forEach(el => el.remove())
-          tempContainer.appendChild(clone)
-          tempContainer.style.position = 'absolute'
-          tempContainer.style.left = '-9999px'
-          tempContainer.style.width = dashboardElement.offsetWidth + 'px'
-          document.body.appendChild(tempContainer)
 
           // Reemplazar colores LAB() con equivalentes RGB para compatibilidad
           console.log('✓ Fixing LAB colors...')
@@ -114,14 +108,19 @@ export function PrintButton({
             }
           })
 
-          // Capturar con html2canvas
-          const canvas = await window.html2canvas(clone, {
+          // Capturar directamente del elemento original en la página
+          console.log('✓ Capturing dashboard with html2canvas...')
+          const canvas = await window.html2canvas(dashboardElement, {
             scale: 2,
             useCORS: true,
             logging: false,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            foreignObjectRendering: true,
+            foreignObjectRendering: false,
+            ignoreElements: (el: HTMLElement) => {
+              // Ignorar formularios y elementos sin-pdf
+              return el.tagName === 'FORM' || el.classList.contains('no-pdf')
+            },
           })
 
           console.log('✓ Dashboard captured, generating PDF...')
