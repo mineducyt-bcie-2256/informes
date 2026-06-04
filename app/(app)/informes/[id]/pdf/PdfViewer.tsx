@@ -338,8 +338,9 @@ function Portada({ data }: { data: any }) {
   const elaVisibles = elaboradores.filter((e: any) => e.aparece_portada !== false)
 
   // Especialista principal desde portada
-  const espPrincipal: { nombre: string; cargo: string; firma_url?: string }[] = portada?.elaborado_por_nombre
-    ? [{ nombre: portada.elaborado_por_nombre, cargo: portada.elaborado_por_cargo ?? '', firma_url: portada.firma_url ?? '' }]
+  // Usar elaborado_por_nombre si existe, si no usar cargo como nombre (mejor fallback)
+  const espPrincipal: { nombre: string; cargo: string; firma_url?: string }[] = (portada?.elaborado_por_nombre || portada?.elaborado_por_cargo)
+    ? [{ nombre: portada?.elaborado_por_nombre || '(Especialista)', cargo: portada?.elaborado_por_cargo ?? '', firma_url: portada?.firma_url ?? '' }]
     : []
 
   // Colaboradores adicionales guardados en portada
@@ -351,7 +352,11 @@ function Portada({ data }: { data: any }) {
   // Si no hay elaboradores en informe, usar el de portada como fallback + colaboradores
   const listaFinal: { nombre: string; cargo: string; firma_url?: string }[] =
     elaVisibles.length > 0
-      ? [...elaVisibles.map((e: any) => ({ nombre: val(e.nombre), cargo: val(e.cargo, ''), firma_url: e.nombre === portada?.elaborado_por_nombre ? portada.firma_url ?? '' : '' })), ...colaboradoresPDF]
+      ? [...elaVisibles.map((e: any) => ({
+          nombre: val(e.nombre),
+          cargo: val(e.cargo, ''),
+          firma_url: (e.nombre === portada?.elaborado_por_nombre || e.nombre === '(Especialista)') ? portada?.firma_url ?? '' : ''
+        })), ...colaboradoresPDF]
       : [...espPrincipal, ...colaboradoresPDF]
 
   return (
