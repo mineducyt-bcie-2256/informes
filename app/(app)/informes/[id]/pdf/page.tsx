@@ -53,12 +53,18 @@ export default async function PdfPage({ params }: { params: Promise<{ id: string
   // Fetch elaborado_por profile name if portada has elaborado_por_id
   let elaboradoPorNombre: string | null = null
   if (portada?.elaborado_por_id) {
-    const { data: prof } = await supabase
+    console.log('🔍 Buscando nombre para elaborado_por_id:', portada.elaborado_por_id)
+    const { data: prof, error: profError } = await supabase
       .from('profiles')
       .select('nombre')
       .eq('id', portada.elaborado_por_id)
       .single()
+    console.log('📋 Perfil encontrado:', prof)
+    console.log('❌ Error al buscar perfil:', profError)
     elaboradoPorNombre = prof?.nombre ?? null
+    console.log('✓ Nombre final:', elaboradoPorNombre)
+  } else {
+    console.log('⚠️ No hay elaborado_por_id en portada')
   }
 
   const esc = informe.escuelas as any
