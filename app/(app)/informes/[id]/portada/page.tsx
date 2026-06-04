@@ -303,10 +303,15 @@ export default function PortadaPage() {
       sello_url:                   form.sello_url                    || null,
       colaboradores:               form.colaboradores.length > 0 ? form.colaboradores : null,
     }
-    const { error } = await supabase
+    console.log('📤 Guardando portada con payload:', payload)
+    const { error, data } = await supabase
       .from('informe_portada')
       .upsert(payload, { onConflict: 'informe_id' })
-    if (error) throw new Error(error.message)
+    console.log('✓ Respuesta del servidor:', { data, error })
+    if (error) {
+      console.error('❌ Error al guardar portada:', error)
+      throw new Error(error.message)
+    }
   }
 
   // ── Colaboradores ─────────────────────────────────────────────
