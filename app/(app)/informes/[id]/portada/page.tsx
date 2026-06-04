@@ -36,7 +36,6 @@ const INIT = {
   nombre_proyecto:             '',
   numero_contrato_supervision: '',
   elaborado_por_id:            '',
-  elaborado_por_nombre:        '',
   elaborado_por_cargo:         '',
   firma_url:                   '' as string,
   sello_url:                   '' as string,
@@ -242,7 +241,6 @@ export default function PortadaPage() {
           nombre_proyecto:             portada.nombre_proyecto ?? '',
           numero_contrato_supervision: portada.numero_contrato_supervision ?? '',
           elaborado_por_id:            portada.elaborado_por_id ?? '',
-          elaborado_por_nombre:        portada.elaborado_por_nombre ?? '',
           elaborado_por_cargo:         portada.elaborado_por_cargo ?? '',
           firma_url:                   portada.firma_url ?? '',
           sello_url:                   portada.sello_url ?? '',
@@ -284,9 +282,8 @@ export default function PortadaPage() {
     const esp = especialistas.find(e => e.id === eid)
     setForm(p => ({
       ...p,
-      elaborado_por_id:      eid,
-      elaborado_por_nombre:  esp?.nombre ?? '',
-      elaborado_por_cargo:   esp?.cargo ?? '',
+      elaborado_por_id:    eid,
+      elaborado_por_cargo: esp?.cargo ?? '',
     }))
   }
 
@@ -297,7 +294,6 @@ export default function PortadaPage() {
       nombre_proyecto:             form.nombre_proyecto              || null,
       numero_contrato_supervision: form.numero_contrato_supervision  || null,
       elaborado_por_id:            form.elaborado_por_id             || null,
-      elaborado_por_nombre:        form.elaborado_por_nombre         || null,
       elaborado_por_cargo:         form.elaborado_por_cargo          || null,
       firma_url:                   form.firma_url                    || null,
       sello_url:                   form.sello_url                    || null,
@@ -328,14 +324,6 @@ export default function PortadaPage() {
     setForm(p => {
       const cols = [...p.colaboradores]
       cols[idx] = { ...cols[idx], id: eid, nombre: esp?.nombre ?? '', cargo: esp?.cargo ?? '' }
-      return { ...p, colaboradores: cols }
-    })
-  }
-
-  function actualizarNombreColaborador(idx: number, nombre: string) {
-    setForm(p => {
-      const cols = [...p.colaboradores]
-      cols[idx] = { ...cols[idx], nombre }
       return { ...p, colaboradores: cols }
     })
   }
