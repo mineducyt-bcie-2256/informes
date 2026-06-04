@@ -348,11 +348,9 @@ function Portada({ data }: { data: any }) {
       .filter((c: any) => c.nombre)
       .map((c: any) => ({ nombre: c.nombre, cargo: c.cargo ?? '', firma_url: c.firma_url ?? '' }))
 
-  // Si no hay elaboradores en informe, usar el de portada como fallback + colaboradores
+  // Usar SIEMPRE los de portada + colaboradores, ignora elaboradores del informe
   const listaFinal: { nombre: string; cargo: string; firma_url?: string }[] =
-    elaVisibles.length > 0
-      ? [...elaVisibles.map((e: any) => ({ nombre: val(e.nombre), cargo: val(e.cargo, ''), firma_url: e.nombre === portada?.elaborado_por_nombre ? portada.firma_url ?? '' : '' })), ...colaboradoresPDF]
-      : [...espPrincipal, ...colaboradoresPDF]
+    [...espPrincipal, ...colaboradoresPDF]
 
   return (
     <Page size="LETTER" style={s.coverPage}>
