@@ -72,4 +72,5 @@ export const CONDICIONES = [
   { key: 'prt',     label: 'Plan de Reubicación Temporal',             short: 'PRT'     },
   { key: 'cct',     label: 'Código de Conducta de Trabajadores',       short: 'CCT'     },
   { key: 'cumplimiento_ambiental', label: 'Riesgos Críticos - Cumplimiento Ambiental', short: 'CUMPL.AMB' },
+  { key: 'casos_especiales', label: 'Casos Especiales',                short: 'CASOS'   },
 ]
