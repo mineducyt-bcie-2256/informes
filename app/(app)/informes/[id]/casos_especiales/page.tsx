@@ -93,25 +93,30 @@ export default function CasosEspecialesPage() {
     setError('')
 
     try {
-      const ext = file.name.split('.').pop()
-      const timestamp = new Date().getTime()
-      const path = `informes/${id}/casos-especiales_${timestamp}.${ext}`
+      const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME!
+      const PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!
 
-      const { error: upErr } = await supabase.storage
-        .from('firmas-sellos')
-        .upload(path, file, { upsert: true })
+      const fd = new FormData()
+      fd.append('file', file)
+      fd.append('upload_preset', PRESET)
+      fd.append('folder', `informes/${id}/casos-especiales`)
+      fd.append('resource_type', 'raw') // para archivos no-imagen
 
-      if (upErr) throw new Error(upErr.message)
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD}/raw/upload`,
+        { method: 'POST', body: fd }
+      )
 
-      const { data } = supabase.storage.from('firmas-sellos').getPublicUrl(path)
+      const json = await res.json()
+      if (!json.secure_url) throw new Error('Error al cargar archivo')
 
       setForm((p) => ({
         ...p,
-        documento_url: data.publicUrl,
+        documento_url: json.secure_url,
         documento_nombre: file.name,
       }))
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'Error al cargar documento')
     } finally {
       setUploading(false)
     }
