@@ -306,17 +306,17 @@ export default async function DashboardPage({
     garoData = (rawGaro ?? []) as any[]
   }
   const todasUnidades: UnidadSanitaria[] = garoData.flatMap(g => g.unidades_sanitarias ?? [])
-  const totalUnidades  = todasUnidades.reduce((s, u) => s + (u.total || 0), 0)
-  const totalUnidadesH = todasUnidades.reduce((s, u) => s + (u.hombres || 0), 0)
-  const totalUnidadesM = todasUnidades.reduce((s, u) => s + (u.mujeres || 0), 0)
+  const totalUnidades  = todasUnidades.reduce((s, u) => s + (parseInt(String(u.total)) || 0), 0)
+  const totalUnidadesH = todasUnidades.reduce((s, u) => s + (parseInt(String(u.hombres)) || 0), 0)
+  const totalUnidadesM = todasUnidades.reduce((s, u) => s + (parseInt(String(u.mujeres)) || 0), 0)
   // Agrupado por tipo
   const unidadesPorTipo: Record<string, { hombres: number; mujeres: number; total: number }> = {}
   for (const u of todasUnidades) {
     const t = u.tipo || 'Sin tipo'
     if (!unidadesPorTipo[t]) unidadesPorTipo[t] = { hombres: 0, mujeres: 0, total: 0 }
-    unidadesPorTipo[t].hombres += u.hombres || 0
-    unidadesPorTipo[t].mujeres += u.mujeres || 0
-    unidadesPorTipo[t].total   += u.total   || 0
+    unidadesPorTipo[t].hombres += parseInt(String(u.hombres)) || 0
+    unidadesPorTipo[t].mujeres += parseInt(String(u.mujeres)) || 0
+    unidadesPorTipo[t].total   += parseInt(String(u.total))   || 0
   }
   // Criterio: 1 unidad por cada 20 personas (usando personal HSSO)
   const personalTotal   = totalPersonal || 0
