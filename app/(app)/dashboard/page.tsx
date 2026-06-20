@@ -343,7 +343,7 @@ export default async function DashboardPage({
       .filter(r => r.categoria === cat)
       .flatMap(r => r.materiales ?? [])
       .filter(m => !m.unidad || m.unidad === 'kg')
-      .reduce((s, m) => s + (m.peso_kg || 0), 0)
+      .reduce((s, m) => s + (parseFloat(String(m.peso_kg)) || 0), 0)
   }
 
   const pgrDemolicion: Record<CategoriaPgr, number> = {
