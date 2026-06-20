@@ -240,8 +240,8 @@ export default function GaroPage() {
   }
 
   // ── Cumplimiento sanitarios ──────────────────────────────
-  const totalSanitariosH = data.unidades_sanitarias.reduce((s, u) => s + (u.hombres || 0), 0)
-  const totalSanitariosM = data.unidades_sanitarias.reduce((s, u) => s + (u.mujeres || 0), 0)
+  const totalSanitariosH = data.unidades_sanitarias.reduce((s, u) => s + (parseInt(String(u.hombres)) || 0), 0)
+  const totalSanitariosM = data.unidades_sanitarias.reduce((s, u) => s + (parseInt(String(u.mujeres)) || 0), 0)
   const requeridosH = personalHsso ? Math.ceil(personalHsso.hombres / 20) : 0
   const requeridosM = personalHsso ? Math.ceil(personalHsso.mujeres / 20) : 0
   const cumpleH = totalSanitariosH >= requeridosH
