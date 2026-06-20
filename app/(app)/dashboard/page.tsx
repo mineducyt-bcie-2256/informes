@@ -458,8 +458,8 @@ export default async function DashboardPage({
     for (const [key, val] of Object.entries(pm)) {
       if (!val?.activa) continue
       if (!partesTotales[key]) partesTotales[key] = { hombres: 0, mujeres: 0 }
-      partesTotales[key].hombres += val.hombres || 0
-      partesTotales[key].mujeres += val.mujeres || 0
+      partesTotales[key].hombres += parseInt(String(val.hombres)) || 0
+      partesTotales[key].mujeres += parseInt(String(val.mujeres)) || 0
     }
   }
 
@@ -496,7 +496,7 @@ export default async function DashboardPage({
   function sumIndicadorAnio<T extends { anio: number }>(
     arr: T[], anio: number, field: keyof T
   ): number {
-    return arr.filter(r => r.anio === anio).reduce((s, r) => s + ((r[field] as number) || 0), 0)
+    return arr.filter(r => r.anio === anio).reduce((s, r) => s + (Number(r[field]) || 0), 0)
   }
 
   // Matrícula por año
@@ -516,7 +516,7 @@ export default async function DashboardPage({
   const inasistenciasPorAnio = ANIOS_IND.map(anio => {
     const total = pppiData.reduce((s, r) => {
       const rows = (r.indicadores_impacto?.inasistencias ?? []).filter(x => x.anio === anio)
-      return s + rows.reduce((ss, x) => ss + (x.cantidad || 0), 0)
+      return s + rows.reduce((ss, x) => ss + (Number(x.cantidad) || 0), 0)
     }, 0)
     return { anio, total }
   })
@@ -525,7 +525,7 @@ export default async function DashboardPage({
   const desercionesPorAnio = ANIOS_IND.map(anio => {
     const total = pppiData.reduce((s, r) => {
       const rows = (r.indicadores_impacto?.deserciones ?? []).filter(x => x.anio === anio)
-      return s + rows.reduce((ss, x) => ss + (x.cantidad || 0), 0)
+      return s + rows.reduce((ss, x) => ss + (Number(x.cantidad) || 0), 0)
     }, 0)
     return { anio, total }
   })
@@ -534,19 +534,19 @@ export default async function DashboardPage({
   const empleosPorAnio = ANIOS_IND.map(anio => {
     const directosH = pppiData.reduce((s, r) => {
       const rows = (r.indicadores_impacto?.empleos_directos ?? []).filter(x => x.anio === anio)
-      return s + rows.reduce((ss, x) => ss + (x.hombres || 0), 0)
+      return s + rows.reduce((ss, x) => ss + (Number(x.hombres) || 0), 0)
     }, 0)
     const directosM = pppiData.reduce((s, r) => {
       const rows = (r.indicadores_impacto?.empleos_directos ?? []).filter(x => x.anio === anio)
-      return s + rows.reduce((ss, x) => ss + (x.mujeres || 0), 0)
+      return s + rows.reduce((ss, x) => ss + (Number(x.mujeres) || 0), 0)
     }, 0)
     const indirectosH = pppiData.reduce((s, r) => {
       const rows = (r.indicadores_impacto?.empleos_indirectos ?? []).filter(x => x.anio === anio)
-      return s + rows.reduce((ss, x) => ss + (x.hombres || 0), 0)
+      return s + rows.reduce((ss, x) => ss + (Number(x.hombres) || 0), 0)
     }, 0)
     const indirectosM = pppiData.reduce((s, r) => {
       const rows = (r.indicadores_impacto?.empleos_indirectos ?? []).filter(x => x.anio === anio)
-      return s + rows.reduce((ss, x) => ss + (x.mujeres || 0), 0)
+      return s + rows.reduce((ss, x) => ss + (Number(x.mujeres) || 0), 0)
     }, 0)
     return { anio, directos: directosH + directosM, indirectos: indirectosH + indirectosM, total: directosH + directosM + indirectosH + indirectosM }
   })
@@ -766,7 +766,7 @@ export default async function DashboardPage({
 
   // Estimado acumulado: suma de historial_costos
   const prtEstimadoAcumulado = prtData.reduce((s, r) => {
-    return s + (r.historial_costos ?? []).reduce((ss, h) => ss + (h.total || 0), 0)
+    return s + (r.historial_costos ?? []).reduce((ss, h) => ss + (Number(h.total) || 0), 0)
   }, 0)
 
   // Adecuaciones
