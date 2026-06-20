@@ -16,7 +16,7 @@ const KNOWN_COLUMNS: Record<string, { field: string; type: 'text' | 'numeric' | 
   'Distrito':                        { field: 'distrito',                 type: 'text'    },
   'Latitud':                         { field: 'latitud',                  type: 'numeric' },
   'Longitud':                        { field: 'longitud',                 type: 'numeric' },
-  'Grupo':                           { field: 'grupo_id',                 type: 'integer' },
+  'Grupo':                           { field: 'grupo_num_raw',            type: 'integer' },
   'Empresa obras':                   { field: 'empresa_obras',            type: 'text'    },
   'Número de contrato':              { field: 'numero_contrato',          type: 'text'    },
   'Numero de contrato':              { field: 'numero_contrato',          type: 'text'    },
@@ -114,6 +114,11 @@ export async function POST(req: NextRequest) {
   try {
     const { rows }: { rows: Record<string, any>[] } = await req.json()
     if (!rows?.length) return NextResponse.json({ error: 'Sin filas' }, { status: 400 })
+
+    // Lookup grupos: numero → id (UUID)
+    const { data: gruposData } = await adminClient.from('grupos').select('id, numero')
+    const gruposMap: Record<number, string> = {}
+    gruposData?.forEach((g: any) => { gruposMap[Number(g.numero)] = g.id })
 
     // 1. Detectar todas las cabeceras presentes en el Excel
     const allHeaders = Array.from(new Set(rows.flatMap(r => Object.keys(r))))
@@ -242,6 +247,12 @@ export async function POST(req: NextRequest) {
       }
 
       if (!record.codigo || !record.nombre) { err++; continue }
+
+      // Convertir grupo_num_raw → grupo_id (UUID)
+      if (record.grupo_num_raw) {
+        record.grupo_id = gruposMap[Number(record.grupo_num_raw)] ?? null
+      }
+      delete record.grupo_num_raw
 
       const { error } = await adminClient
         .from('escuelas')
