@@ -55,12 +55,27 @@ const PARTIAL_COLUMNS: { prefix: string; field: string; type: 'text' | 'numeric'
   { prefix: 'PEGAS Ejecuci',        field: 'pegas_ejecucion',   type: 'text' },
 ]
 
+function normalizeHeader(s: string) {
+  return s.trim().replace(/\s+/g, ' ')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+}
+
+// Pre-build normalized lookup
+const KNOWN_NORMALIZED: Record<string, { field: string; type: string }> = {}
+for (const [k, v] of Object.entries(KNOWN_COLUMNS)) {
+  KNOWN_NORMALIZED[normalizeHeader(k)] = v
+}
+
 function resolveHeader(header: string) {
   // 1. Coincidencia exacta
   if (KNOWN_COLUMNS[header]) return KNOWN_COLUMNS[header]
-  // 2. Coincidencia parcial (por prefijo)
+  // 2. Coincidencia normalizada (sin tildes, trim, lowercase)
+  const norm = normalizeHeader(header)
+  if (KNOWN_NORMALIZED[norm]) return KNOWN_NORMALIZED[norm]
+  // 3. Coincidencia parcial (por prefijo)
   const partial = PARTIAL_COLUMNS.find(p =>
-    header.toLowerCase().startsWith(p.prefix.toLowerCase())
+    norm.startsWith(normalizeHeader(p.prefix))
   )
   if (partial) return { field: partial.field, type: partial.type }
   return null
