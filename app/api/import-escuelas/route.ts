@@ -261,7 +261,11 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      if (!record.codigo || !record.nombre) { err++; continue }
+      if (!record.codigo || !record.nombre) {
+        err++
+        errores.push(`Sin código/nombre — keys: ${Object.keys(record).join(', ')} | codigo="${record.codigo}" nombre="${record.nombre}"`)
+        continue
+      }
 
       // Convertir grupo_num_raw → grupo_id (UUID)
       if (record.grupo_num_raw) {
