@@ -82,17 +82,17 @@ export default function ImportarEscuelas() {
 
       {open && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 shrink-0">
               <h2 className="font-bold text-lg text-slate-800">Importar escuelas</h2>
               <button onClick={cerrar}>
                 <X size={20} className="text-slate-400 hover:text-slate-600" />
               </button>
             </div>
 
-            <div className="p-6">
+            <div className="p-6 overflow-y-auto flex-1 min-h-0">
 
               {/* ── Resultado ── */}
               {resultado ? (
