@@ -3980,6 +3980,7 @@ function InformePDF({ data }: { data: any }) {
       <SeccionPRT data={data} />
       <SeccionCCT data={data} />
       <SeccionCumplimientoAmbiental data={data} />
+      <SeccionCasosEspeciales data={data} />
     </Document>
   )
 }
@@ -4256,6 +4257,109 @@ function SeccionCumplimientoAmbiental({ data }: { data: any }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+// SECCIÓN 10 — CASOS ESPECIALES
+// ═══════════════════════════════════════════════════════════════════
+function SeccionCasosEspeciales({ data }: { data: any }) {
+  const { esc, periodo, casosEspeciales } = data
+
+  if (!casosEspeciales) return null
+
+  const TIPOS_CASO = {
+    incumplimiento: 'Incumplimiento de entrega',
+    pausa_tecnica: 'Pausa técnica',
+    finalizacion_cierre: 'Finalización de obras (proceso de cierre)',
+    otro: 'Otro',
+  }
+
+  const ESTADOS = {
+    activo: 'Activo (pendiente de resolución)',
+    resuelto: 'Resuelto',
+    seguimiento: 'Seguimiento',
+  }
+
+  return (
+    <Page size="LETTER" style={s.page}>
+      <Footer escuela={esc?.nombre ?? ''} periodo={periodo} />
+      <View style={s.sectionBanner}>
+        <Text style={s.sectionNum}>10</Text>
+        <Text style={s.sectionTitle}>Casos Especiales</Text>
+      </View>
+
+      <View style={{ marginHorizontal: 4, marginBottom: 8 }}>
+        {/* Tipo de caso */}
+        {casosEspeciales.tipo_caso && (
+          <View style={{ marginBottom: 6 }}>
+            <Text style={{ fontSize: 7.5, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>TIPO DE CASO</Text>
+            <Text style={{ fontSize: 9, color: DARK }}>
+              {TIPOS_CASO[casosEspeciales.tipo_caso as keyof typeof TIPOS_CASO] || casosEspeciales.tipo_caso}
+            </Text>
+          </View>
+        )}
+
+        {/* Fecha inicio */}
+        {casosEspeciales.fecha_inicio && (
+          <View style={{ marginBottom: 6 }}>
+            <Text style={{ fontSize: 7.5, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>FECHA DE INICIO</Text>
+            <Text style={{ fontSize: 9, color: DARK }}>{casosEspeciales.fecha_inicio}</Text>
+          </View>
+        )}
+
+        {/* Estado */}
+        {casosEspeciales.estado && (
+          <View style={{ marginBottom: 6 }}>
+            <Text style={{ fontSize: 7.5, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ESTADO DEL CASO</Text>
+            <Text style={{ fontSize: 9, color: DARK }}>
+              {ESTADOS[casosEspeciales.estado as keyof typeof ESTADOS] || casosEspeciales.estado}
+            </Text>
+          </View>
+        )}
+
+        {/* Descripción */}
+        {casosEspeciales.descripcion_condicion && (
+          <View style={{ marginBottom: 6 }}>
+            <Text style={{ fontSize: 7.5, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>DESCRIPCIÓN</Text>
+            <Text style={{ fontSize: 8.5, color: DARK, lineHeight: 1.3 }}>{casosEspeciales.descripcion_condicion}</Text>
+          </View>
+        )}
+
+        {/* Casos reportados */}
+        {casosEspeciales.casos_reportados && (
+          <View style={{ marginBottom: 6 }}>
+            <Text style={{ fontSize: 7.5, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>CASOS REPORTADOS</Text>
+            <Text style={{ fontSize: 8.5, color: DARK, lineHeight: 1.3 }}>{casosEspeciales.casos_reportados}</Text>
+          </View>
+        )}
+
+        {/* Acciones tomadas */}
+        {casosEspeciales.acciones_tomadas && (
+          <View style={{ marginBottom: 6 }}>
+            <Text style={{ fontSize: 7.5, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>ACCIONES TOMADAS</Text>
+            <Text style={{ fontSize: 8.5, color: DARK, lineHeight: 1.3 }}>{casosEspeciales.acciones_tomadas}</Text>
+          </View>
+        )}
+
+        {/* Documento */}
+        {casosEspeciales.documento_nombre && (
+          <View style={{ marginBottom: 6 }}>
+            <Text style={{ fontSize: 7.5, color: MUTED, fontFamily: 'Helvetica-Bold', marginBottom: 2 }}>DOCUMENTO ADJUNTO</Text>
+            <Text style={{ fontSize: 8.5, color: '#2563eb', textDecoration: 'underline' }}>{casosEspeciales.documento_nombre}</Text>
+          </View>
+        )}
+
+        {/* Reemplaza informe */}
+        {casosEspeciales.reemplaza_informe && (
+          <View style={{ backgroundColor: '#fef3c7', borderLeftWidth: 3, borderLeftColor: AMBER, padding: 6, marginTop: 8 }}>
+            <Text style={{ fontSize: 8, color: AMBER, fontFamily: 'Helvetica-Bold' }}>
+              ⚠ Este caso especial reemplaza el informe completo
+            </Text>
+          </View>
+        )}
+      </View>
+    </Page>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // COMPONENTE PÚBLICO
 // ═══════════════════════════════════════════════════════════════════
 export default function PdfViewer({ data }: { data: any }) {
@@ -4316,6 +4420,7 @@ export default function PdfViewer({ data }: { data: any }) {
             { label: 'MAQR',            ok: !!data.maqr },
             { label: 'PRT',             ok: !!data.prt },
             { label: 'CUMPL.AMB',       ok: !!data.cumplimientoAmbiental },
+            { label: 'CASOS',           ok: !!data.casosEspeciales },
           ].map(({ label, ok }) => (
             <div key={label} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium ${
               ok ? 'bg-green-50 text-green-700' : 'bg-slate-50 text-slate-400'
