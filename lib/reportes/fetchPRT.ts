@@ -7,7 +7,7 @@ export async function fetchPRTData() {
     // Obtener todos los informes con datos de escuelas
     const { data: informes, error: infError } = await supabase
       .from('informes')
-      .select('id, periodo_mes, escuela_id, escuelas(codigo, nombre)')
+      .select('id, periodo_mes, escuela_id, escuelas!inner(codigo, nombre)')
 
     if (infError) throw infError
 
@@ -41,9 +41,10 @@ export async function fetchPRTData() {
         const datosVirtual = prt.virtual || {}
 
         for (const lugar of prt.lugares) {
+          const escuelaData = Array.isArray(informe.escuelas) ? informe.escuelas[0] : informe.escuelas
           resultado.push({
-            codigo: informe.escuelas?.codigo || '',
-            centro: informe.escuelas?.nombre || '',
+            codigo: escuelaData?.codigo || '',
+            centro: escuelaData?.nombre || '',
             supervision: empresaSupervision,
             modalidad: prt.modalidad || [],
             sitio_reubicacion: lugar.direccion || lugar.nombre || '',

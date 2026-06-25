@@ -23,17 +23,17 @@ export default function TablaPRT({ datos }: TablaPRTProps) {
     {
       accessorKey: 'codigo',
       header: 'Código',
-      cell: (info) => <span className="font-mono text-sm">{info.getValue()}</span>,
+      cell: (info) => <span className="font-mono text-sm">{String(info.getValue() || '')}</span>,
     },
     {
       accessorKey: 'centro',
       header: 'Centro Educativo',
-      cell: (info) => <span className="font-medium">{info.getValue()}</span>,
+      cell: (info) => <span className="font-medium">{String(info.getValue() || '')}</span>,
     },
     {
       accessorKey: 'supervision',
       header: 'Supervisión',
-      cell: (info) => <span className="text-sm">{info.getValue()}</span>,
+      cell: (info) => <span className="text-sm">{String(info.getValue() || '')}</span>,
     },
     {
       accessorKey: 'modalidad',
@@ -41,10 +41,10 @@ export default function TablaPRT({ datos }: TablaPRTProps) {
       cell: (info) => {
         const modalidad = info.getValue()
         const isArray = Array.isArray(modalidad)
-        const text = isArray ? modalidad.join(', ') : modalidad
+        const text = isArray ? (modalidad as string[]).join(', ') : String(modalidad || '')
         return (
           <div className="flex gap-1">
-            {isArray && modalidad.map((m: string) => (
+            {isArray && (modalidad as string[]).map((m: string) => (
               <span key={m} className="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs rounded">
                 {m}
               </span>
@@ -57,17 +57,17 @@ export default function TablaPRT({ datos }: TablaPRTProps) {
     {
       accessorKey: 'sitio_reubicacion',
       header: 'Sitio de Reubicación',
-      cell: (info) => <span className="text-sm">{info.getValue()}</span>,
+      cell: (info) => <span className="text-sm">{String(info.getValue() || '')}</span>,
     },
     {
       accessorKey: 'total_estudiantes',
       header: 'Est. Presencial',
-      cell: (info) => <span className="font-semibold text-blue-600">{info.getValue()}</span>,
+      cell: (info) => <span className="font-semibold text-blue-600">{String(info.getValue() || 0)}</span>,
     },
     {
       accessorKey: 'total_docentes',
       header: 'Doc. Presencial',
-      cell: (info) => <span className="font-semibold text-green-600">{info.getValue()}</span>,
+      cell: (info) => <span className="font-semibold text-green-600">{String(info.getValue() || 0)}</span>,
     },
     {
       id: 'total_virtual',
@@ -83,7 +83,7 @@ export default function TablaPRT({ datos }: TablaPRTProps) {
       header: 'Condición',
       cell: (info) => (
         <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs rounded">
-          {info.getValue()}
+          {String(info.getValue() || '')}
         </span>
       ),
     },

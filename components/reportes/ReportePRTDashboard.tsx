@@ -132,7 +132,7 @@ export default function ReportePRTDashboard({ onBack }: ReportePRTDashboardProps
           <div className="max-w-7xl mx-auto">
             <FiltrosPRT
               filtros={filtrosActivos}
-              setFiltros={setFiltrosActivos}
+              setFiltros={(nuevosFiltros) => setFiltrosActivos(nuevosFiltros as typeof filtrosActivos)}
               datos={datos}
             />
             {tieneFiltros && (

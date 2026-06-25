@@ -274,7 +274,7 @@ export default function ReportesConfig({ section, onBack, onClose }: ReportesCon
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
-                  {columnsToUse.map(colId => {
+                  {columnsToUse.map((colId: string) => {
                     const col = currentSection.columns.find((c: any) => c.id === colId)
                     return (
                       <th key={colId} className="text-left px-3 py-2 font-medium">
@@ -287,7 +287,7 @@ export default function ReportesConfig({ section, onBack, onClose }: ReportesCon
               <tbody>
                 {previewData.slice(0, 3).map((row, idx) => (
                   <tr key={idx} className="border-b">
-                    {columnsToUse.map(colId => (
+                    {columnsToUse.map((colId: string) => (
                       <td key={colId} className="px-3 py-2">
                         {String(row[colId] || '-').substring(0, 50)}
                       </td>

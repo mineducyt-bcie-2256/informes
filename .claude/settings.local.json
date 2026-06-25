@@ -54,7 +54,20 @@
       "Bash(curl -s http://localhost:3000 -o /dev/null -w \"%{http_code}\")",
       "Bash(curl -s \"http://localhost:3000/informes/ad25ef9f-5da6-4b8e-bfa5-1bdd82aedc86/construccion\" -o /dev/null -w \"%{http_code}\")",
       "Bash(node extract_data.js)",
-      "Bash(mkdir -p \"C:\\\\Informe-construccion\\\\.claude\" 2>/dev/null; echo done)"
+      "Bash(mkdir -p \"C:\\\\Informe-construccion\\\\.claude\" 2>/dev/null; echo done)",
+      "Bash(cp \"C:\\\\informe-bcie\\\\app\\\\\\(app\\)\\\\informes\\\\[id]\\\\prt\\\\page.tsx\" \"C:\\\\info-empresas\\\\app\\\\formularios\\\\prt\\\\[token]\\\\page-prt.tsx\" 2>&1 || echo \"Creando estructura...\")",
+      "Bash(mkdir -p \"C:\\\\info-empresas\\\\app\\\\formularios\\\\prt\\\\[token]\")",
+      "Bash(cp \"C:\\\\informe-bcie\\\\app\\\\\\(app\\)\\\\informes\\\\[id]\\\\prt\\\\page.tsx\" \"C:\\\\info-empresas\\\\app\\\\formularios\\\\prt\\\\[token]\\\\page.tsx\")",
+      "Bash(NEXT_PUBLIC_SUPABASE_URL=\"https://niiogsqmoiendycgxamx.supabase.co\" SUPABASE_SERVICE_ROLE_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5paW9nc3Ftb2llbmR5Y2d4YW14Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTkyMTg2NSwiZXhwIjoyMDkxNDk3ODY1fQ.FfLezVIBGTLM9Nr86j7MPS6yE7hMG9nQWA-EMMRGf7E\" npm run seed)",
+      "Bash(NEXT_PUBLIC_SUPABASE_URL=\"https://niiogsqmoiendycgxamx.supabase.co\" SUPABASE_SERVICE_ROLE_KEY=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5paW9nc3Ftb2llbmR5Y2d4YW14Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NTkyMTg2NSwiZXhwIjoyMDkxNDk3ODY1fQ.FfLezVIBGTLM9Nr86j7MPS6yE7hMG9nQWA-EMMRGf7E\" node scripts/create-admin.js)",
+      "Bash(sed -i \"s/import FormWrapper from '@\\\\/components\\\\/forms\\\\/FormWrapper'/import FormWrapperPreview from '@\\\\/components\\\\/forms\\\\/FormWrapperPreview'/\" \"C:\\\\info-empresas\\\\app\\\\preview\\\\prt\\\\page-completo.tsx\")",
+      "Bash(sed -i \"s/const { id } = useParams<{ id: string }>\\(\\)//g\" \"C:\\\\info-empresas\\\\app\\\\preview\\\\prt\\\\page-completo.tsx\")",
+      "Bash(sed -i \"s/const id = 'preview-mode'/const id = 'preview-mode'/\" \"C:\\\\info-empresas\\\\app\\\\preview\\\\prt\\\\page-completo.tsx\")",
+      "Bash(npm list *)",
+      "Bash(node extract-prt-data.js)",
+      "Bash(npm install *)",
+      "Bash(node generate-xlsx.js)",
+      "Bash(node check-supervisiones.js)"
     ]
   }
 }
