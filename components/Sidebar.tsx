@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
-  LayoutDashboard, School, FileText, Users, LogOut, ChevronRight
+  LayoutDashboard, School, FileText, Users, LogOut, ChevronRight, BarChart3
 } from 'lucide-react'
 import type { Profile } from '@/types'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -13,6 +13,7 @@ const ALL_NAV = [
   { href: '/informes',  label: 'Informes',  icon: FileText,         roles: ['programador', 'administrador', 'usuario', 'visitante'] },
   { href: '/escuelas',  label: 'Escuelas',  icon: School,           roles: ['programador', 'administrador', 'visitante'] },
   { href: '/usuarios',  label: 'Usuarios',  icon: Users,            roles: ['programador'] },
+  { href: '/reportes',  label: 'Reportes',  icon: BarChart3,        roles: ['programador', 'administrador'] },
 ]
 
 const ROL_BADGE: Record<string, { label: string; color: string }> = {
