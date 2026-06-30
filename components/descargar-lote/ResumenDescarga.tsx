@@ -21,6 +21,7 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
     setExito(false)
 
     try {
+      // Obtener lista de URLs de PDFs
       const response = await fetch('/api/informes/descargar-lote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -31,12 +32,37 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
       })
 
       if (!response.ok) {
-        throw new Error('Error al generar el archivo')
+        throw new Error('Error al obtener informes')
       }
 
-      // Descargar el archivo
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
+      const informesConURL = await response.json()
+
+      // Importar JSZip dinámicamente
+      const JSZip = (await import('jszip')).default
+      const zip = new JSZip()
+
+      // Descargar cada PDF
+      for (const informe of informesConURL) {
+        try {
+          const pdfResponse = await fetch(informe.pdf_url)
+          if (!pdfResponse.ok) throw new Error(`Error descargando ${informe.nombre}`)
+
+          const pdfBlob = await pdfResponse.blob()
+          const mes = String(informe.periodo_mes).padStart(2, '0')
+          const nombre = `Informe_${informe.periodo_anio}${mes}_${informe.codigo}_${informe.nombre}.pdf`
+
+          zip.file(nombre, pdfBlob)
+        } catch (err) {
+          console.error(`Error descargando ${informe.nombre}:`, err)
+          // Continuar con el siguiente
+        }
+      }
+
+      // Generar ZIP
+      const zipBlob = await zip.generateAsync({ type: 'blob' })
+
+      // Descargar ZIP
+      const url = window.URL.createObjectURL(zipBlob)
       const a = document.createElement('a')
       a.href = url
       a.download = `Informes_${new Date().toISOString().split('T')[0]}.zip`
