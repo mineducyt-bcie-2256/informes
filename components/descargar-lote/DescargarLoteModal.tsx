@@ -15,7 +15,13 @@ export default function DescargarLoteModal({ isOpen, setIsOpen }: DescargarLoteM
   const [cargando, setCargando] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const [filtros, setFiltros] = useState({
+  const [filtros, setFiltros] = useState<{
+    tipo: 'todo' | 'periodo' | 'supervision'
+    periodoDesde: string
+    periodoHasta: string
+    supervision: string
+    soloAprobados: boolean
+  }>({
     tipo: 'todo',
     periodoDesde: '',
     periodoHasta: '',
