@@ -21,7 +21,7 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
     setExito(false)
 
     try {
-      // Obtener lista de URLs de PDFs
+      // Obtener lista de informes a descargar
       const response = await fetch('/api/informes/descargar-lote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,10 +41,11 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
       const JSZip = (await import('jszip')).default
       const zip = new JSZip()
 
-      // Descargar cada PDF
+      // Descargar cada PDF directamente del servidor
       for (const informe of informesConURL) {
         try {
-          const pdfResponse = await fetch(informe.pdf_url)
+          // Usar el endpoint que genera PDF binario
+          const pdfResponse = await fetch(`/api/informes/${informe.id}/pdf`)
           if (!pdfResponse.ok) throw new Error(`Error descargando ${informe.nombre}`)
 
           const pdfBlob = await pdfResponse.blob()
