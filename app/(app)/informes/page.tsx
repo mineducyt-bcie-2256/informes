@@ -498,7 +498,7 @@ export default async function InformesPage({
                       </Link>
                       <AprobarInformeBtn
                         informeId={inf.id}
-                        estado={getEstadoVisual(inf)}
+                        estado={inf.estado}
                         rolUsuario={perfil?.rol ?? 'usuario'}
                       />
                       {esProgramador && (
