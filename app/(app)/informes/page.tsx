@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { Plus, HardHat, FileText, CheckCircle, Clock, AlertTriangle, CircleCheck } from 'lucide-react'
 import BorrarInforme from './BorrarInforme'
+import AprobarInformeBtn from './AprobarInformeBtn'
 import { MESES } from '@/types'
 import PendienteCell from './PendienteCell'
 import { PendientesModal } from './PendientesModal'
@@ -495,6 +496,11 @@ export default async function InformesPage({
                       <Link href={`/informes/${inf.id}`} className="text-blue-600 hover:text-blue-800 font-medium text-xs">
                         Ver / Editar
                       </Link>
+                      <AprobarInformeBtn
+                        informeId={inf.id}
+                        estado={getEstadoVisual(inf)}
+                        rolUsuario={perfil?.rol ?? 'usuario'}
+                      />
                       {esProgramador && (
                         <BorrarInforme
                           informeId={inf.id}
