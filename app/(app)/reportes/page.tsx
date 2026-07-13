@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import ReportePRTDashboard from '@/components/reportes/ReportePRTDashboard'
 import { FileText, BarChart3, ChevronRight } from 'lucide-react'
 
-type TipoReporte = 'prt' | 'ppi' | 'hsso' | 'garo' | 'pgr' | 'cumplimiento'
+type TipoReporte = 'prt' | 'hsso' | 'maqr'
 
 const TIPOS_REPORTES = [
   {
@@ -16,14 +16,6 @@ const TIPOS_REPORTES = [
     disponible: true,
   },
   {
-    id: 'ppi' as TipoReporte,
-    nombre: 'PPI - Plan de Protección Integral',
-    descripcion: 'Reportes sobre protección integral de estudiantes',
-    icon: '🛡️',
-    color: 'from-purple-500 to-purple-600',
-    disponible: false,
-  },
-  {
     id: 'hsso' as TipoReporte,
     nombre: 'HSSO - Higiene y Seguridad',
     descripcion: 'Condiciones de higiene y seguridad ocupacional',
@@ -32,28 +24,12 @@ const TIPOS_REPORTES = [
     disponible: true,
   },
   {
-    id: 'garo' as TipoReporte,
-    nombre: 'GARO - Gestión Ambiental',
-    descripcion: 'Reportes sobre gestión ambiental',
-    icon: '🌱',
-    color: 'from-green-500 to-green-600',
-    disponible: false,
-  },
-  {
-    id: 'pgr' as TipoReporte,
-    nombre: 'PGR - Plan de Gestión de Residuos',
-    descripcion: 'Gestión y disposición de residuos',
-    icon: '♻️',
-    color: 'from-emerald-500 to-emerald-600',
-    disponible: false,
-  },
-  {
-    id: 'cumplimiento' as TipoReporte,
-    nombre: 'Cumplimiento Ambiental',
-    descripcion: 'Indicadores de cumplimiento ambiental',
-    icon: '✅',
-    color: 'from-teal-500 to-teal-600',
-    disponible: false,
+    id: 'maqr' as TipoReporte,
+    nombre: 'MAQR - Mecanismo de Atención de Quejas y Reclamos',
+    descripcion: 'Análisis sistematizado de quejas y reclamos',
+    icon: '📋',
+    color: 'from-purple-500 to-purple-600',
+    disponible: true,
   },
 ]
 
@@ -64,6 +40,8 @@ export default function ReportesPage() {
   const handleSelectReporte = (tipo: TipoReporte) => {
     if (tipo === 'hsso') {
       router.push('/reportes/hsso')
+    } else if (tipo === 'maqr') {
+      router.push('/reportes/maqr')
     } else {
       setTipoSeleccionado(tipo)
     }
@@ -149,8 +127,8 @@ export default function ReportesPage() {
               <FileText size={24} className="text-blue-600" />
               <p className="text-sm text-slate-600 dark:text-slate-400">Reportes Disponibles</p>
             </div>
-            <p className="text-3xl font-bold">2</p>
-            <p className="text-xs text-slate-500 mt-1">PRT y HSSO disponibles</p>
+            <p className="text-3xl font-bold">3</p>
+            <p className="text-xs text-slate-500 mt-1">PRT, HSSO y MAQR disponibles</p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
