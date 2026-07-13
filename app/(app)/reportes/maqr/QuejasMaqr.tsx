@@ -312,99 +312,114 @@ export default function QuejasMaqr({
       {cargando ? null : quejas.length > 0 ? (
         <>
           {/* Tarjetas de estadísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Total */}
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-2">Total Quejas Reportadas</p>
-              <p className="text-3xl font-bold text-slate-900">{totalQuejas}</p>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-5">
+              <p className="text-xs text-blue-600 font-semibold uppercase mb-2">Total Quejas Reportadas</p>
+              <p className="text-4xl font-bold text-blue-900">{totalQuejas}</p>
+              <p className="text-xs text-blue-600 mt-2">Registradas en el período seleccionado</p>
             </div>
 
             {/* Por Estado */}
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-3">Por Estado</p>
-              <div className="space-y-1 text-sm">
-                {quejas.length > 0 && (
-                  <>
-                    {porEstado['En proceso'] && (
-                      <div className="flex justify-between">
-                        <span className="text-blue-600">En proceso</span>
-                        <span className="font-semibold">{porEstado['En proceso']}</span>
+            <div className="bg-white rounded-lg border border-slate-200 p-5">
+              <p className="text-xs text-slate-600 font-semibold uppercase mb-3">Distribución por Estado</p>
+              <div className="space-y-2">
+                {['En proceso', 'En investigación', 'Resuelto', 'Cerrado'].map(estado => (
+                  porEstado[estado] && (
+                    <div key={estado} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-1">
+                        <div className={`w-2 h-2 rounded-full ${
+                          estado === 'En proceso' ? 'bg-blue-500' :
+                          estado === 'En investigación' ? 'bg-amber-500' :
+                          estado === 'Resuelto' ? 'bg-green-500' :
+                          'bg-slate-500'
+                        }`}></div>
+                        <span className="text-sm text-slate-700">{estado}</span>
                       </div>
-                    )}
-                    {porEstado['En investigación'] && (
-                      <div className="flex justify-between">
-                        <span className="text-amber-600">En investig.</span>
-                        <span className="font-semibold">{porEstado['En investigación']}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${
+                              estado === 'En proceso' ? 'bg-blue-500' :
+                              estado === 'En investigación' ? 'bg-amber-500' :
+                              estado === 'Resuelto' ? 'bg-green-500' :
+                              'bg-slate-500'
+                            }`}
+                            style={{ width: `${(porEstado[estado] / totalQuejas) * 100}%` }}
+                          ></div>
+                        </div>
+                        <span className="font-semibold text-slate-900 w-8 text-right">{porEstado[estado]}</span>
                       </div>
-                    )}
-                    {porEstado['Resuelto'] && (
-                      <div className="flex justify-between">
-                        <span className="text-green-600">Resuelto</span>
-                        <span className="font-semibold">{porEstado['Resuelto']}</span>
-                      </div>
-                    )}
-                    {porEstado['Cerrado'] && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-600">Cerrado</span>
-                        <span className="font-semibold">{porEstado['Cerrado']}</span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Medio Utilizado */}
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-3">Medio Utilizado</p>
-              <div className="space-y-1 text-xs">
-                {Object.entries(porMedio).map(([medio, count]) => (
-                  <div key={medio} className="flex justify-between">
-                    <span className="text-slate-600 truncate">{medio}</span>
-                    <span className="font-semibold text-slate-900 ml-2">{count}</span>
-                  </div>
+                    </div>
+                  )
                 ))}
               </div>
             </div>
 
+            {/* Medio Utilizado */}
+            <div className="bg-white rounded-lg border border-slate-200 p-5">
+              <p className="text-xs text-slate-600 font-semibold uppercase mb-3">Medios Utilizados</p>
+              <div className="space-y-2">
+                {Object.entries(porMedio)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([medio, count]) => (
+                    <div key={medio} className="flex items-center justify-between">
+                      <span className="text-sm text-slate-700">{medio}</span>
+                      <span className="inline-block bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full text-xs font-semibold">{count}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
             {/* Tipo de Queja */}
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-3">Tipo de Queja</p>
-              <div className="space-y-1 text-xs">
+            <div className="bg-white rounded-lg border border-slate-200 p-5">
+              <p className="text-xs text-slate-600 font-semibold uppercase mb-3">Tipos de Queja</p>
+              <div className="space-y-2">
                 {Object.entries(porTipo)
                   .sort((a, b) => b[1] - a[1])
-                  .slice(0, 4)
                   .map(([tipo, count]) => (
-                    <div key={tipo} className="flex justify-between">
-                      <span className="text-slate-600 truncate">{tipo}</span>
-                      <span className="font-semibold text-slate-900 ml-2">{count}</span>
+                    <div key={tipo} className="flex items-center justify-between">
+                      <span className="text-sm text-slate-700">{tipo}</span>
+                      <span className="inline-block bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-xs font-semibold">{count}</span>
                     </div>
                   ))}
               </div>
             </div>
 
             {/* Nivel de Gravedad */}
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-3">Nivel Gravedad</p>
-              <div className="space-y-1 text-xs">
-                {porGravedad['Nivel 1 (Bajo)'] && (
-                  <div className="flex justify-between">
-                    <span className="text-green-600">Nivel 1 (Bajo)</span>
-                    <span className="font-semibold">{porGravedad['Nivel 1 (Bajo)']}</span>
-                  </div>
-                )}
-                {porGravedad['Nivel 2 (Medio)'] && (
-                  <div className="flex justify-between">
-                    <span className="text-amber-600">Nivel 2 (Medio)</span>
-                    <span className="font-semibold">{porGravedad['Nivel 2 (Medio)']}</span>
-                  </div>
-                )}
-                {porGravedad['Nivel 3 (Alto)'] && (
-                  <div className="flex justify-between">
-                    <span className="text-red-600">Nivel 3 (Alto)</span>
-                    <span className="font-semibold">{porGravedad['Nivel 3 (Alto)']}</span>
-                  </div>
-                )}
+            <div className="bg-white rounded-lg border border-slate-200 p-5">
+              <p className="text-xs text-slate-600 font-semibold uppercase mb-3">Niveles de Gravedad</p>
+              <div className="space-y-2">
+                {[
+                  { nivel: 'Nivel 1 (Bajo)', color: 'bg-green-100 text-green-700', colorDot: 'bg-green-500' },
+                  { nivel: 'Nivel 2 (Medio)', color: 'bg-amber-100 text-amber-700', colorDot: 'bg-amber-500' },
+                  { nivel: 'Nivel 3 (Alto)', color: 'bg-red-100 text-red-700', colorDot: 'bg-red-500' },
+                ].map(({ nivel, color, colorDot }) => (
+                  porGravedad[nivel] && (
+                    <div key={nivel} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${colorDot}`}></div>
+                        <span className="text-sm text-slate-700">{nivel}</span>
+                      </div>
+                      <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${color}`}>{porGravedad[nivel]}</span>
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+
+            {/* Origen de la Queja */}
+            <div className="bg-white rounded-lg border border-slate-200 p-5">
+              <p className="text-xs text-slate-600 font-semibold uppercase mb-3">Origen de Quejas</p>
+              <div className="space-y-2">
+                {Object.entries(porOrigen)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([origen, count]) => (
+                    <div key={origen} className="flex items-center justify-between">
+                      <span className="text-sm text-slate-700">{origen}</span>
+                      <span className="inline-block bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full text-xs font-semibold">{count}</span>
+                    </div>
+                  ))}
               </div>
             </div>
           </div>
