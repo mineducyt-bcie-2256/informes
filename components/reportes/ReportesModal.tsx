@@ -53,13 +53,6 @@ const SECTIONS = [
     fields: ['codigo', 'centro', 'supervision', 'modalidad', 'sitio_reubicacion', 'ninos', 'ninas', 'total_estudiantes', 'docentes_hombres', 'docentes_mujeres', 'total_docentes', 'estudiantes_virtual_ninos', 'estudiantes_virtual_ninas', 'docentes_virtual_hombres', 'docentes_virtual_mujeres', 'condicion_uso']
   },
   {
-    id: 'ppi',
-    name: 'PPI - Plan de Protección Integral',
-    description: 'Reportes sobre protección integral de estudiantes',
-    icon: '🛡️',
-    fields: ['codigo', 'centro', 'supervision', 'descripciones', 'acciones', 'responsables']
-  },
-  {
     id: 'hsso',
     name: 'HSSO - Higiene y Seguridad',
     description: 'Reportes sobre condiciones de higiene y seguridad',
@@ -72,27 +65,6 @@ const SECTIONS = [
     description: 'Reportes sobre quejas y reclamos de la comunidad',
     icon: '📋',
     fields: ['codigo', 'centro', 'supervision', 'medios', 'tipo_queja', 'origen', 'gravedad']
-  },
-  {
-    id: 'garo',
-    name: 'GARO - Gestión Ambiental',
-    description: 'Reportes sobre gestión ambiental',
-    icon: '🌱',
-    fields: ['codigo', 'centro', 'supervision', 'aspectos', 'impactos', 'planes_accion']
-  },
-  {
-    id: 'pgr',
-    name: 'PGR - Plan de Gestión de Residuos',
-    description: 'Reportes sobre gestión de residuos',
-    icon: '♻️',
-    fields: ['codigo', 'centro', 'supervision', 'tipos_residuos', 'cantidades', 'destino_final']
-  },
-  {
-    id: 'cumplimiento',
-    name: 'Cumplimiento Ambiental',
-    description: 'Reportes de cumplimiento ambiental',
-    icon: '✅',
-    fields: ['codigo', 'centro', 'supervision', 'indicadores', 'cumplimiento', 'evidencias']
   },
 ]
 
