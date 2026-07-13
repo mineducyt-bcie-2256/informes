@@ -3,6 +3,7 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import FiltrosHSSO from './FiltrosHSSO'
 import PersonalEnObra from './PersonalEnObra'
+import AccidentesEnProyecto from './AccidentesEnProyecto'
 
 export default async function HSSORuportePage({
   searchParams,
@@ -65,7 +66,7 @@ export default async function HSSORuportePage({
       />
 
       {/* Secciones de Reportes */}
-      <div className="mt-8 space-y-8">
+      <div className="mt-8 space-y-12">
         {/* Personal en Obra */}
         <PersonalEnObra
           supervision={params.supervision}
@@ -73,6 +74,16 @@ export default async function HSSORuportePage({
           mesDesde={params.mes_desde}
           mesHasta={params.mes_hasta}
         />
+
+        {/* Accidentes registrados en el proyecto */}
+        <div className="border-t-2 border-slate-200 pt-12">
+          <AccidentesEnProyecto
+            supervision={params.supervision}
+            escuela={params.escuela}
+            mesDesde={params.mes_desde}
+            mesHasta={params.mes_hasta}
+          />
+        </div>
       </div>
     </div>
   )
