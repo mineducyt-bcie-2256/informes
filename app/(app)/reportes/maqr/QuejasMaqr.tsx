@@ -38,7 +38,7 @@ export default function QuejasMaqr({
 }: QuejasMaqrProps) {
   const supabase = createClient()
   const [quejas, setQuejas] = useState<Queja[]>([])
-  const [cargando, setCargando] = useState(false)
+  const [cargando, setCargando] = useState(true)
   const [descargando, setDescargando] = useState(false)
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
     key: 'numero_queja',
