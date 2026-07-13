@@ -4,6 +4,7 @@ import { Plus, HardHat, FileText, CheckCircle, Clock, AlertTriangle, CircleCheck
 import BorrarInforme from './BorrarInforme'
 import AprobarInformeBtn from './AprobarInformeBtn'
 import DescargarExcel from './DescargarExcel'
+import DescargarExcelControl from './DescargarExcelControl'
 import { MESES } from '@/types'
 import PendienteCell from './PendienteCell'
 import { PendientesModal } from './PendientesModal'
@@ -399,6 +400,16 @@ export default async function InformesPage({
           <DescargarExcel
             informes={informesFiltrados}
             filtros={{ mes, anio, estado, supervision }}
+          />
+        )}
+        {vista === 'control' && escuelas && (
+          <DescargarExcelControl
+            escuelas={escuelas}
+            mapaInformes={mapaInformes}
+            mesDesde={mesDesde}
+            mesHasta={mesHasta}
+            anio={anio}
+            supervision={supervision}
           />
         )}
       </form>
