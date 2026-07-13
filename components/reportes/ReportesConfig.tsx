@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { ChevronLeft, Download, FileJson } from 'lucide-react'
 import { generateReportExcel } from '@/lib/reportes/generator'
 
@@ -10,6 +11,14 @@ interface ReportesConfigProps {
 }
 
 export default function ReportesConfig({ section, onBack, onClose }: ReportesConfigProps) {
+  const router = useRouter()
+
+  // Redirigir a HSSO a su página específica
+  useEffect(() => {
+    if (section === 'hsso') {
+      router.push('/reportes/hsso')
+    }
+  }, [section, router])
   const [selectedColumns, setSelectedColumns] = useState<string[]>([])
   const [filters, setFilters] = useState({
     mes: '',
