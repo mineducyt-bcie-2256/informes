@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import FiltrosMaqr from './FiltrosMaqr'
+import QuejasMaqr from './QuejasMaqr'
 
 export default async function MaqrReportePage({
   searchParams,
@@ -93,10 +94,15 @@ export default async function MaqrReportePage({
         filtrosActuales={params}
       />
 
-      {/* Placeholder para datos */}
-      <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500 mt-6">
-        <p className="mb-2">Selecciona filtros para ver los datos</p>
-        <p className="text-sm">La tabla de quejas y reclamos se cargará aquí según los filtros aplicados</p>
+      {/* Tabla de quejas */}
+      <div className="mt-6">
+        <QuejasMaqr
+          supervision={params.supervision}
+          empresaObras={params.empresa_obras}
+          escuela={params.escuela}
+          mesDesde={params.mes_desde}
+          mesHasta={params.mes_hasta}
+        />
       </div>
     </div>
   )
