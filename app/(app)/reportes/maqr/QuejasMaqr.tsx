@@ -312,73 +312,73 @@ export default function QuejasMaqr({
       {cargando ? null : quejas.length > 0 ? (
         <>
           {/* Tarjetas de estadísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
             {/* Total */}
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-2">Total Quejas Reportadas</p>
-              <p className="text-3xl font-bold text-slate-900">{totalQuejas}</p>
+            <div className="bg-white rounded-lg border border-slate-200 p-3">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1">Total Quejas</p>
+              <p className="text-2xl font-bold text-slate-900">{totalQuejas}</p>
             </div>
 
             {/* Por Estado */}
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-2">Por Estado</p>
-              <div className="space-y-1 text-xs">
+            <div className="bg-white rounded-lg border border-slate-200 p-3">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1.5">Por Estado</p>
+              <div className="space-y-0.5 text-[11px]">
                 {Object.entries(porEstado)
                   .sort((a, b) => b[1] - a[1])
                   .map(([estado, count]) => (
                     <div key={estado} className="flex justify-between">
-                      <span className="text-slate-600">{estado}</span>
-                      <span className="font-semibold text-slate-900">{count}</span>
+                      <span className="text-slate-600 truncate flex-1 pr-1">{estado}</span>
+                      <span className="font-bold text-slate-900">{count}</span>
                     </div>
                   ))}
               </div>
             </div>
 
             {/* Medio Utilizado */}
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-2">Medio Utilizado</p>
-              <div className="space-y-1 text-xs">
+            <div className="bg-white rounded-lg border border-slate-200 p-3">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1.5">Medio Utilizado</p>
+              <div className="space-y-0.5 text-[11px]">
                 {Object.entries(porMedio)
                   .sort((a, b) => b[1] - a[1])
                   .map(([medio, count]) => (
                     <div key={medio} className="flex justify-between items-start">
-                      <span className="text-slate-600 flex-1">{medio}</span>
-                      <span className="font-semibold text-slate-900 ml-2">{count}</span>
+                      <span className="text-slate-600 flex-1 truncate pr-1">{medio}</span>
+                      <span className="font-bold text-slate-900 shrink-0">{count}</span>
                     </div>
                   ))}
               </div>
             </div>
 
             {/* Tipo de Queja */}
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-2">Tipo de Queja</p>
-              <div className="space-y-1 text-xs">
+            <div className="bg-white rounded-lg border border-slate-200 p-3">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1.5">Tipo de Queja</p>
+              <div className="space-y-0.5 text-[11px]">
                 {Object.entries(porTipo)
                   .sort((a, b) => b[1] - a[1])
                   .map(([tipo, count]) => (
                     <div key={tipo} className="flex justify-between items-start">
-                      <span className="text-slate-600 flex-1">{tipo}</span>
-                      <span className="font-semibold text-slate-900 ml-2">{count}</span>
+                      <span className="text-slate-600 flex-1 truncate pr-1">{tipo}</span>
+                      <span className="font-bold text-slate-900 shrink-0">{count}</span>
                     </div>
                   ))}
               </div>
             </div>
 
             {/* Nivel Gravedad */}
-            <div className="bg-white rounded-lg border border-slate-200 p-4">
-              <p className="text-xs text-slate-500 font-medium uppercase mb-2">Nivel Gravedad</p>
-              <div className="space-y-1 text-xs">
+            <div className="bg-white rounded-lg border border-slate-200 p-3">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1.5">Nivel Gravedad</p>
+              <div className="space-y-0.5 text-[11px]">
                 {Object.entries(porGravedad)
                   .map(([nivel, count]) => (
                     <div key={nivel} className="flex justify-between">
-                      <span className={
+                      <span className={`flex-1 truncate pr-1 ${
                         nivel.includes('Bajo') ? 'text-green-600' :
                         nivel.includes('Medio') ? 'text-amber-600' :
                         'text-red-600'
-                      }>
+                      }`}>
                         {nivel}
                       </span>
-                      <span className="font-semibold text-slate-900">{count}</span>
+                      <span className="font-bold text-slate-900 shrink-0">{count}</span>
                     </div>
                   ))}
               </div>
