@@ -70,7 +70,8 @@
       "Bash(node check-supervisiones.js)",
       "mcp__claude-in-chrome__navigate",
       "mcp__claude-in-chrome__read_page",
-      "Bash(git commit -m 'Fix: Usar estado real del informe en lugar de estado visual para mostrar botón de aprobar *)"
+      "Bash(git commit -m 'Fix: Usar estado real del informe en lugar de estado visual para mostrar botón de aprobar *)",
+      "Bash(git commit -m 'Feature: Agregar botón para descargar tabla de informes en Excel *)"
     ]
   }
 }

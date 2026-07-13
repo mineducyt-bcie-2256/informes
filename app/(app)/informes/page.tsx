@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Plus, HardHat, FileText, CheckCircle, Clock, AlertTriangle, CircleCheck } from 'lucide-react'
 import BorrarInforme from './BorrarInforme'
 import AprobarInformeBtn from './AprobarInformeBtn'
+import DescargarExcel from './DescargarExcel'
 import { MESES } from '@/types'
 import PendienteCell from './PendienteCell'
 import { PendientesModal } from './PendientesModal'
@@ -394,6 +395,12 @@ export default async function InformesPage({
         <button type="submit" className="bg-blue-900 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-800 transition">
           Filtrar
         </button>
+        {vista === 'lista' && informesFiltrados && (
+          <DescargarExcel
+            informes={informesFiltrados}
+            filtros={{ mes, anio, estado, supervision }}
+          />
+        )}
       </form>
 
       {vista === 'lista' && (
