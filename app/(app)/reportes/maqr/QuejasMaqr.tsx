@@ -605,49 +605,82 @@ export default function QuejasMaqr({
               </div>
 
               {/* Medidas Implementadas */}
-              {quejaSeleccionada.medidas && (Array.isArray(quejaSeleccionada.medidas) ? quejaSeleccionada.medidas.length > 0 : Object.keys(quejaSeleccionada.medidas).length > 0) && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-600 uppercase mb-3">Medidas Implementadas</p>
-                  <div className="space-y-3">
-                    {Array.isArray(quejaSeleccionada.medidas) ? (
-                      quejaSeleccionada.medidas.map((medida: any, idx: number) => (
-                        <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                          <p className="text-sm font-medium text-slate-900 mb-1">{medida.medida || medida}</p>
-                          {typeof medida === 'object' && (medida.fecha || medida.resultados) && (
-                            <div className="text-xs text-slate-600 space-y-1 mt-2">
-                              {medida.fecha && <p>📅 Fecha: {medida.fecha}</p>}
-                              {medida.resultados && <p>✓ Resultados: {medida.resultados}</p>}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      Object.entries(quejaSeleccionada.medidas).map(([key, value]: any, idx: number) => (
-                        <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                          <p className="text-sm font-medium text-slate-900">{value.medida || value}</p>
-                          {typeof value === 'object' && (value.fecha || value.resultados) && (
-                            <div className="text-xs text-slate-600 space-y-1 mt-2">
-                              {value.fecha && <p>📅 Fecha: {value.fecha}</p>}
-                              {value.resultados && <p>✓ Resultados: {value.resultados}</p>}
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
+              {(() => {
+                const medidas = quejaSeleccionada.medidas
+                let medidasParsed: any[] = []
 
-              {/* Sin medidas */}
-              {(!quejaSeleccionada.medidas || (Array.isArray(quejaSeleccionada.medidas) ? quejaSeleccionada.medidas.length === 0 : Object.keys(quejaSeleccionada.medidas).length === 0)) && (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
-                  <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-amber-900">Sin medidas registradas</p>
-                    <p className="text-xs text-amber-700 mt-0.5">No hay medidas implementadas registradas aún.</p>
-                  </div>
-                </div>
-              )}
+                // Intentar parsear las medidas
+                if (medidas) {
+                  if (typeof medidas === 'string') {
+                    try {
+                      medidasParsed = JSON.parse(medidas)
+                      if (!Array.isArray(medidasParsed)) {
+                        medidasParsed = Object.values(medidasParsed)
+                      }
+                    } catch (e) {
+                      medidasParsed = []
+                    }
+                  } else if (Array.isArray(medidas)) {
+                    medidasParsed = medidas
+                  } else if (typeof medidas === 'object') {
+                    medidasParsed = Object.values(medidas)
+                  }
+                }
+
+                // Filtrar medidas válidas (con al menos un campo no vacío)
+                medidasParsed = medidasParsed.filter((m: any) => {
+                  if (typeof m === 'string') return m.trim().length > 0
+                  if (typeof m === 'object' && m !== null) {
+                    return (m.medida && m.medida.trim().length > 0) ||
+                           (m.fecha && m.fecha.trim().length > 0) ||
+                           (m.resultados && m.resultados.trim().length > 0)
+                  }
+                  return false
+                })
+
+                if (medidasParsed.length > 0) {
+                  return (
+                    <div>
+                      <p className="text-xs font-semibold text-slate-600 uppercase mb-3">Medidas Implementadas</p>
+                      <div className="space-y-3">
+                        {medidasParsed.map((medida: any, idx: number) => (
+                          <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                            {typeof medida === 'string' ? (
+                              <p className="text-sm text-slate-900">{medida}</p>
+                            ) : (
+                              <>
+                                {medida.medida && (
+                                  <p className="text-sm font-medium text-slate-900 mb-1">{medida.medida}</p>
+                                )}
+                                {(medida.fecha || medida.resultados) && (
+                                  <div className="text-xs text-slate-600 space-y-1 mt-2">
+                                    {medida.fecha && medida.fecha.trim() && (
+                                      <p>📅 <span className="font-medium">Fecha:</span> {medida.fecha}</p>
+                                    )}
+                                    {medida.resultados && medida.resultados.trim() && (
+                                      <p>✓ <span className="font-medium">Resultados:</span> {medida.resultados}</p>
+                                    )}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                } else {
+                  return (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                      <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-900">Sin medidas registradas</p>
+                        <p className="text-xs text-amber-700 mt-0.5">No hay medidas implementadas registradas aún.</p>
+                      </div>
+                    </div>
+                  )
+                }
+              })()}
             </div>
           </div>
         </div>
