@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import ReportePRTDashboard from '@/components/reportes/ReportePRTDashboard'
 import { FileText, BarChart3, ChevronRight } from 'lucide-react'
 
@@ -28,7 +29,7 @@ const TIPOS_REPORTES = [
     descripcion: 'Condiciones de higiene y seguridad ocupacional',
     icon: '⚠️',
     color: 'from-orange-500 to-orange-600',
-    disponible: false,
+    disponible: true,
   },
   {
     id: 'garo' as TipoReporte,
@@ -57,7 +58,16 @@ const TIPOS_REPORTES = [
 ]
 
 export default function ReportesPage() {
+  const router = useRouter()
   const [tipoSeleccionado, setTipoSeleccionado] = useState<TipoReporte | null>(null)
+
+  const handleSelectReporte = (tipo: TipoReporte) => {
+    if (tipo === 'hsso') {
+      router.push('/reportes/hsso')
+    } else {
+      setTipoSeleccionado(tipo)
+    }
+  }
 
   if (tipoSeleccionado === 'prt') {
     return <ReportePRTDashboard onBack={() => setTipoSeleccionado(null)} />
@@ -89,7 +99,7 @@ export default function ReportesPage() {
                   ? 'border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg cursor-pointer'
                   : 'border-slate-200 dark:border-slate-700 opacity-60 cursor-not-allowed'
               }`}
-              onClick={() => reporte.disponible && setTipoSeleccionado(reporte.id)}
+              onClick={() => reporte.disponible && handleSelectReporte(reporte.id)}
             >
               {/* Gradient Background */}
               <div className={`h-20 bg-gradient-to-r ${reporte.color} relative overflow-hidden`}>
@@ -139,8 +149,8 @@ export default function ReportesPage() {
               <FileText size={24} className="text-blue-600" />
               <p className="text-sm text-slate-600 dark:text-slate-400">Reportes Disponibles</p>
             </div>
-            <p className="text-3xl font-bold">1</p>
-            <p className="text-xs text-slate-500 mt-1">PRT completamente funcional</p>
+            <p className="text-3xl font-bold">2</p>
+            <p className="text-xs text-slate-500 mt-1">PRT y HSSO disponibles</p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
