@@ -13,10 +13,12 @@ interface ReportesConfigProps {
 export default function ReportesConfig({ section, onBack, onClose }: ReportesConfigProps) {
   const router = useRouter()
 
-  // Redirigir a HSSO a su página específica
+  // Redirigir a reportes con página específica
   useEffect(() => {
     if (section === 'hsso') {
       router.push('/reportes/hsso')
+    } else if (section === 'maqr') {
+      router.push('/reportes/maqr')
     }
   }, [section, router])
   const [selectedColumns, setSelectedColumns] = useState<string[]>([])

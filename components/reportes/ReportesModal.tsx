@@ -67,6 +67,13 @@ const SECTIONS = [
     fields: ['codigo', 'centro', 'supervision', 'condiciones', 'riesgos', 'medidas']
   },
   {
+    id: 'maqr',
+    name: 'MAQR - Mecanismo de Atención de Quejas y Reclamos',
+    description: 'Reportes sobre quejas y reclamos de la comunidad',
+    icon: '📋',
+    fields: ['codigo', 'centro', 'supervision', 'medios', 'tipo_queja', 'origen', 'gravedad']
+  },
+  {
     id: 'garo',
     name: 'GARO - Gestión Ambiental',
     description: 'Reportes sobre gestión ambiental',
