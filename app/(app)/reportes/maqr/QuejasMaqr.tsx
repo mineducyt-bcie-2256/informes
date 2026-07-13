@@ -52,69 +52,62 @@ export default function QuejasMaqr({
   const cargarQuejas = async () => {
     setCargando(true)
     try {
-      // Obtener informes y MAQR según filtros (sin filtro de estado)
-      let query = supabase
-        .from('informes')
-        .select(
-          `id, periodo_mes, periodo_anio, estado,
-           escuela_id,
-           escuelas(id, codigo, nombre, empresa_obras, empresa_supervision),
-           informe_maqr(id)`
-        )
+      // Paso 1: Obtener todos los MAQR con sus informes relacionados
+      const { data: maqrData, error: maqrError } = await supabase
+        .from('informe_maqr')
+        .select('id, informe_id, informes(id, periodo_mes, periodo_anio, escuela_id, escuelas(id, codigo, nombre, empresa_obras, empresa_supervision))')
 
-      if (supervision) {
-        query = query.eq('escuelas.empresa_supervision', supervision)
-      }
-
-      if (empresaObras) {
-        query = query.eq('escuelas.empresa_obras', empresaObras)
-      }
-
-      if (escuela) {
-        query = query.eq('escuela_id', parseInt(escuela))
-      }
-
-      const { data: informes } = await query
-
-      if (!informes || informes.length === 0) {
+      if (maqrError) throw maqrError
+      if (!maqrData || maqrData.length === 0) {
         setQuejas([])
         setCargando(false)
         return
       }
 
-      // Filtrar por período
+      // Paso 2: Filtrar MAQR según los filtros
       const mesDesdeNum = mesDesde ? parseInt(mesDesde) : 1
       const mesHastaNum = mesHasta ? parseInt(mesHasta) : 12
 
-      const informesFiltrados = informes.filter((inf: any) => {
-        const mes = inf.periodo_mes
-        return mes >= mesDesdeNum && mes <= mesHastaNum
+      const maqrFiltrados = maqrData.filter((maqr: any) => {
+        const inf = maqr.informes as any
+        if (!inf) return false
+
+        // Filtrar por período
+        if (inf.periodo_mes < mesDesdeNum || inf.periodo_mes > mesHastaNum) return false
+
+        // Filtrar por supervisión
+        if (supervision && inf.escuelas?.empresa_supervision !== supervision) return false
+
+        // Filtrar por empresa obras
+        if (empresaObras && inf.escuelas?.empresa_obras !== empresaObras) return false
+
+        // Filtrar por escuela
+        if (escuela && inf.escuela_id !== parseInt(escuela)) return false
+
+        return true
       })
 
-      // Obtener IDs de MAQR
-      const maqrIds = informesFiltrados
-        .map((inf: any) => inf.informe_maqr?.[0]?.id)
-        .filter(Boolean)
-
-      if (maqrIds.length === 0) {
+      if (maqrFiltrados.length === 0) {
         setQuejas([])
         setCargando(false)
         return
       }
 
-      // Obtener quejas con toda la información
-      const { data: quejasData } = await supabase
+      // Paso 3: Obtener todas las quejas de los MAQR filtrados
+      const maqrIds = maqrFiltrados.map((m: any) => m.id)
+      const { data: quejasData, error: quejasError } = await supabase
         .from('informe_maqr_quejas')
         .select('*')
         .in('maqr_id', maqrIds)
         .order('numero_queja', { ascending: true })
 
-      // Mapear datos con información de escuela
+      if (quejasError) throw quejasError
+
+      // Paso 4: Mapear datos con información de escuela
       const quejasConEscuela: Queja[] = (quejasData || []).map((queja: any) => {
-        const informe = informesFiltrados.find(
-          (inf: any) => inf.informe_maqr?.[0]?.id === queja.maqr_id
-        )
-        const esc = informe?.escuelas as any
+        const maqr = maqrFiltrados.find((m: any) => m.id === queja.maqr_id)
+        const inf = maqr?.informes as any
+        const esc = inf?.escuelas as any
 
         // Calcular días entre fechas
         const calcularDias = () => {
