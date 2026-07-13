@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Download } from 'lucide-react'
 
 interface Accidente {
   id: string
@@ -37,6 +37,7 @@ export default function AccidentesEnProyecto({
   const supabase = createClient()
   const [datos, setDatos] = useState<AccidenteData[]>([])
   const [cargando, setCargando] = useState(false)
+  const [descargando, setDescargando] = useState(false)
 
   useEffect(() => {
     cargarDatos()
@@ -155,10 +156,72 @@ export default function AccidentesEnProyecto({
     'Mortal': { bg: 'bg-red-100', text: 'text-red-700', bar: 'bg-red-500' },
   }
 
+  const handleDescargarExcel = async () => {
+    setDescargando(true)
+    try {
+      const XLSX = await import('xlsx')
+
+      const datosExcel = datos.flatMap((centro) =>
+        centro.accidentes.map((accidente) => ({
+          'Código': centro.codigo,
+          'Centro Educativo': centro.centro,
+          'Empresa Obras': centro.empresa_obras,
+          'Empresa Supervisión': centro.empresa_supervision,
+          'Tipo': accidente.tipo,
+          'Gravedad': accidente.gravedad,
+          'Causa': accidente.causa,
+          'Tipo de Lesión': accidente.tipo_lesion,
+          'Descripción': accidente.descripcion,
+        }))
+      )
+
+      const ws = XLSX.utils.json_to_sheet(datosExcel)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Accidentes')
+
+      ws['!cols'] = [
+        { wch: 12 },  // Código
+        { wch: 35 },  // Centro Educativo
+        { wch: 25 },  // Empresa Obras
+        { wch: 30 },  // Empresa Supervisión
+        { wch: 12 },  // Tipo
+        { wch: 18 },  // Gravedad
+        { wch: 20 },  // Causa
+        { wch: 25 },  // Tipo de Lesión
+        { wch: 40 },  // Descripción
+      ]
+
+      XLSX.writeFile(wb, 'Accidentes_en_Proyecto.xlsx')
+    } catch (error) {
+      console.error('Error descargando Excel:', error)
+    } finally {
+      setDescargando(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Encabezado */}
-      <h2 className="text-2xl font-bold text-slate-900">Accidentes registrados en el proyecto</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold text-slate-900">Accidentes registrados en el proyecto</h2>
+        <button
+          onClick={handleDescargarExcel}
+          disabled={descargando || datos.length === 0}
+          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-slate-400 transition text-sm font-medium"
+        >
+          {descargando ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              Descargando...
+            </>
+          ) : (
+            <>
+              <Download size={16} />
+              Descargar Excel
+            </>
+          )}
+        </button>
+      </div>
 
       {cargando ? (
         <div className="text-center py-12">
