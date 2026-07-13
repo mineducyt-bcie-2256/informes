@@ -86,24 +86,37 @@ export default function PersonalEnObra({
         .select('informe_id, personal_hombres, personal_mujeres, personal_total')
         .in('informe_id', informeIds)
 
-      // Combinar datos
-      const datosPersonal: PersonalData[] = informesFiltrados
-        .map((inf: any) => {
-          const hsso = hssoData?.find((h: any) => h.informe_id === inf.id)
-          const esc = inf.escuelas as any
+      // Combinar datos y acumular por centro educativo
+      const mapaPersonal: Record<string, PersonalData> = {}
 
-          return {
-            id: inf.id,
+      informesFiltrados.forEach((inf: any) => {
+        const hsso = hssoData?.find((h: any) => h.informe_id === inf.id)
+        const esc = inf.escuelas as any
+        const key = `${esc?.codigo}_${esc?.id}` // Clave única por centro
+
+        if (!mapaPersonal[key]) {
+          mapaPersonal[key] = {
+            id: esc?.id ?? inf.id,
             codigo: esc?.codigo ?? '-',
             centro: esc?.nombre ?? '-',
             empresa_obras: esc?.empresa_obras ?? '-',
             empresa_supervision: esc?.empresa_supervision ?? '-',
-            hombres: hsso?.personal_hombres ?? 0,
-            mujeres: hsso?.personal_mujeres ?? 0,
-            total: hsso?.personal_total ?? 0,
+            hombres: 0,
+            mujeres: 0,
+            total: 0,
           }
-        })
-        .filter((d) => d.total > 0) // Solo mostrar registros con personal
+        }
+
+        // Acumular datos
+        mapaPersonal[key].hombres += hsso?.personal_hombres ?? 0
+        mapaPersonal[key].mujeres += hsso?.personal_mujeres ?? 0
+        mapaPersonal[key].total += hsso?.personal_total ?? 0
+      })
+
+      // Convertir a array y filtrar solo los que tienen personal
+      const datosPersonal: PersonalData[] = Object.values(mapaPersonal)
+        .filter((d) => d.total > 0)
+        .sort((a, b) => a.codigo.localeCompare(b.codigo))
 
       setDatos(datosPersonal)
     } catch (error) {

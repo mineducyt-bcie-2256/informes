@@ -93,22 +93,35 @@ export default function AccidentesEnProyecto({
         .select('informe_id, accidentes')
         .in('informe_id', informeIds)
 
-      // Combinar datos y filtrar solo los que tienen accidentes
-      const datosAccidentes: AccidenteData[] = informesFiltrados
-        .map((inf: any) => {
-          const hsso = hssoData?.find((h: any) => h.informe_id === inf.id)
-          const esc = inf.escuelas as any
+      // Combinar datos y acumular accidentes por centro educativo
+      const mapaAccidentes: Record<string, AccidenteData> = {}
 
-          return {
-            id: inf.id,
+      informesFiltrados.forEach((inf: any) => {
+        const hsso = hssoData?.find((h: any) => h.informe_id === inf.id)
+        const esc = inf.escuelas as any
+        const key = `${esc?.codigo}_${esc?.id}` // Clave única por centro
+
+        if (!mapaAccidentes[key]) {
+          mapaAccidentes[key] = {
+            id: esc?.id ?? inf.id,
             codigo: esc?.codigo ?? '-',
             centro: esc?.nombre ?? '-',
             empresa_obras: esc?.empresa_obras ?? '-',
             empresa_supervision: esc?.empresa_supervision ?? '-',
-            accidentes: (hsso?.accidentes ?? []) as Accidente[],
+            accidentes: [],
           }
-        })
-        .filter((d) => d.accidentes.length > 0) // Solo centros con accidentes
+        }
+
+        // Acumular accidentes
+        if (hsso?.accidentes && Array.isArray(hsso.accidentes)) {
+          mapaAccidentes[key].accidentes.push(...(hsso.accidentes as Accidente[]))
+        }
+      })
+
+      // Convertir a array, filtrar solo los que tienen accidentes y ordenar
+      const datosAccidentes: AccidenteData[] = Object.values(mapaAccidentes)
+        .filter((d) => d.accidentes.length > 0)
+        .sort((a, b) => a.codigo.localeCompare(b.codigo))
 
       setDatos(datosAccidentes)
     } catch (error) {

@@ -77,7 +77,8 @@
       "Bash(git commit -m 'Fix: Habilitar reporte HSSO en dashboard de reportes *)",
       "Bash(git commit -m 'Feature: Agregar sección '\\\\''Personal en Obra'\\\\'' al reporte HSSO *)",
       "Bash(git commit -m 'Feature: Agregar sección '\\\\''Accidentes registrados en el proyecto'\\\\'' al reporte HSSO *)",
-      "Bash(git commit -m 'Feature: Agregar botón de descarga en Excel para tabla de Accidentes *)"
+      "Bash(git commit -m 'Feature: Agregar botón de descarga en Excel para tabla de Accidentes *)",
+      "Bash(git commit -m 'Fix: Acumular datos por centro educativo en lugar de mostrar múltiples filas por período *)"
     ]
   }
 }
