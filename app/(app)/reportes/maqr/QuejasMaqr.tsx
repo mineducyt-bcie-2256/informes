@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Download, Loader2, ChevronUp, ChevronDown } from 'lucide-react'
+import { Download, Loader2, ChevronUp, ChevronDown, X, AlertCircle } from 'lucide-react'
 
 interface Queja {
   id: string
@@ -40,6 +40,7 @@ export default function QuejasMaqr({
   const [quejas, setQuejas] = useState<Queja[]>([])
   const [cargando, setCargando] = useState(true)
   const [descargando, setDescargando] = useState(false)
+  const [quejaSeleccionada, setQuejaSeleccionada] = useState<Queja | null>(null)
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' }>({
     key: 'numero_queja',
     direction: 'asc',
@@ -474,7 +475,14 @@ export default function QuejasMaqr({
                 {quejasOrdenadas.map((q) => (
                   <tr key={q.id} className="hover:bg-slate-50 transition">
                     <td className="px-4 py-3 font-mono text-slate-700 text-xs">{q.escuela_codigo}</td>
-                    <td className="px-4 py-3 text-slate-900 font-medium text-sm">{q.escuela_nombre}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setQuejaSeleccionada(q)}
+                        className="text-slate-900 font-medium text-sm hover:text-blue-600 hover:underline transition text-left"
+                      >
+                        {q.escuela_nombre}
+                      </button>
+                    </td>
                     <td className="px-4 py-3 text-slate-600 text-xs">{q.empresa_obras}</td>
                     <td className="px-4 py-3 text-center font-medium">{q.numero_queja}</td>
                     <td className="px-4 py-3 text-slate-600 text-xs">{q.medio}</td>
@@ -508,6 +516,139 @@ export default function QuejasMaqr({
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de detalles */}
+      {quejaSeleccionada && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4 flex items-center justify-between border-b">
+              <div>
+                <h2 className="text-xl font-bold">Queja #{quejaSeleccionada.numero_queja}</h2>
+                <p className="text-sm text-blue-100 mt-1">{quejaSeleccionada.escuela_nombre}</p>
+              </div>
+              <button
+                onClick={() => setQuejaSeleccionada(null)}
+                className="p-2 hover:bg-blue-500 rounded-lg transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Contenido */}
+            <div className="p-6 space-y-6">
+              {/* Información General */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 uppercase mb-1">Código Escuela</p>
+                  <p className="text-sm font-mono text-slate-900">{quejaSeleccionada.escuela_codigo}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 uppercase mb-1">Empresa Obras</p>
+                  <p className="text-sm text-slate-900">{quejaSeleccionada.empresa_obras}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 uppercase mb-1">Medio Utilizado</p>
+                  <p className="text-sm text-slate-900">{quejaSeleccionada.medio}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 uppercase mb-1">Estado</p>
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getEstadoColor(quejaSeleccionada.estado)}`}>
+                    {quejaSeleccionada.estado}
+                  </span>
+                </div>
+              </div>
+
+              {/* Fechas */}
+              <div className="bg-slate-50 rounded-lg p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 uppercase mb-2">Fecha Recepción</p>
+                  <p className="text-sm text-slate-900">{quejaSeleccionada.fecha_recepcion}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 uppercase mb-2">Fecha Resolución</p>
+                  <p className="text-sm text-slate-900">{quejaSeleccionada.fecha_resolucion}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 uppercase mb-2">Días para Resolver</p>
+                  <p className="text-sm font-bold text-blue-600">{quejaSeleccionada.dias_proceso} días</p>
+                </div>
+              </div>
+
+              {/* Clasificación */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 uppercase mb-1">Tipo de Queja</p>
+                  <p className="text-sm text-slate-900">{quejaSeleccionada.tipo_queja}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 uppercase mb-1">Origen</p>
+                  <p className="text-sm text-slate-900">{quejaSeleccionada.origen}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 uppercase mb-1">Nivel Gravedad</p>
+                  <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getNivelColor(quejaSeleccionada.nivel_gravedad)}`}>
+                    {quejaSeleccionada.nivel_gravedad}
+                  </span>
+                </div>
+              </div>
+
+              {/* Descripción */}
+              <div>
+                <p className="text-xs font-semibold text-slate-600 uppercase mb-2">Descripción de la Queja</p>
+                <div className="bg-slate-50 rounded-lg p-4 text-sm text-slate-900 whitespace-pre-wrap">
+                  {quejaSeleccionada.descripcion}
+                </div>
+              </div>
+
+              {/* Medidas Implementadas */}
+              {quejaSeleccionada.medidas && (Array.isArray(quejaSeleccionada.medidas) ? quejaSeleccionada.medidas.length > 0 : Object.keys(quejaSeleccionada.medidas).length > 0) && (
+                <div>
+                  <p className="text-xs font-semibold text-slate-600 uppercase mb-3">Medidas Implementadas</p>
+                  <div className="space-y-3">
+                    {Array.isArray(quejaSeleccionada.medidas) ? (
+                      quejaSeleccionada.medidas.map((medida: any, idx: number) => (
+                        <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-sm font-medium text-slate-900 mb-1">{medida.medida || medida}</p>
+                          {typeof medida === 'object' && (medida.fecha || medida.resultados) && (
+                            <div className="text-xs text-slate-600 space-y-1 mt-2">
+                              {medida.fecha && <p>📅 Fecha: {medida.fecha}</p>}
+                              {medida.resultados && <p>✓ Resultados: {medida.resultados}</p>}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      Object.entries(quejaSeleccionada.medidas).map(([key, value]: any, idx: number) => (
+                        <div key={idx} className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-sm font-medium text-slate-900">{value.medida || value}</p>
+                          {typeof value === 'object' && (value.fecha || value.resultados) && (
+                            <div className="text-xs text-slate-600 space-y-1 mt-2">
+                              {value.fecha && <p>📅 Fecha: {value.fecha}</p>}
+                              {value.resultados && <p>✓ Resultados: {value.resultados}</p>}
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Sin medidas */}
+              {(!quejaSeleccionada.medidas || (Array.isArray(quejaSeleccionada.medidas) ? quejaSeleccionada.medidas.length === 0 : Object.keys(quejaSeleccionada.medidas).length === 0)) && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3">
+                  <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-amber-900">Sin medidas registradas</p>
+                    <p className="text-xs text-amber-700 mt-0.5">No hay medidas implementadas registradas aún.</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
