@@ -100,6 +100,8 @@ interface SectionSelectorProps {
   setSelectedSection: (section: string) => void
 }
 
+// Force rebuild
+
 function SectionSelector({ setSelectedSection }: SectionSelectorProps) {
   return (
     <div>
