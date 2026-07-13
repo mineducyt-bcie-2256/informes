@@ -104,7 +104,7 @@ function SectionSelector({ setSelectedSection }: SectionSelectorProps) {
   return (
     <div>
       <h3 className="text-lg font-semibold mb-6">Selecciona la sección del reporte</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {SECTIONS.map((section) => (
           <button
             key={section.id}
