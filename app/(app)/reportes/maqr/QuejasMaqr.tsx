@@ -312,112 +312,73 @@ export default function QuejasMaqr({
       {cargando ? null : quejas.length > 0 ? (
         <>
           {/* Tarjetas de estadísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Total */}
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-5">
-              <p className="text-xs text-blue-600 font-semibold uppercase mb-2">Total Quejas Reportadas</p>
-              <p className="text-4xl font-bold text-blue-900">{totalQuejas}</p>
-              <p className="text-xs text-blue-600 mt-2">Registradas en el período seleccionado</p>
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-2">Total Quejas Reportadas</p>
+              <p className="text-3xl font-bold text-slate-900">{totalQuejas}</p>
             </div>
 
             {/* Por Estado */}
-            <div className="bg-white rounded-lg border border-slate-200 p-5">
-              <p className="text-xs text-slate-600 font-semibold uppercase mb-3">Distribución por Estado</p>
-              <div className="space-y-2">
-                {['En proceso', 'En investigación', 'Resuelto', 'Cerrado'].map(estado => (
-                  porEstado[estado] && (
-                    <div key={estado} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 flex-1">
-                        <div className={`w-2 h-2 rounded-full ${
-                          estado === 'En proceso' ? 'bg-blue-500' :
-                          estado === 'En investigación' ? 'bg-amber-500' :
-                          estado === 'Resuelto' ? 'bg-green-500' :
-                          'bg-slate-500'
-                        }`}></div>
-                        <span className="text-sm text-slate-700">{estado}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full ${
-                              estado === 'En proceso' ? 'bg-blue-500' :
-                              estado === 'En investigación' ? 'bg-amber-500' :
-                              estado === 'Resuelto' ? 'bg-green-500' :
-                              'bg-slate-500'
-                            }`}
-                            style={{ width: `${(porEstado[estado] / totalQuejas) * 100}%` }}
-                          ></div>
-                        </div>
-                        <span className="font-semibold text-slate-900 w-8 text-right">{porEstado[estado]}</span>
-                      </div>
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-2">Por Estado</p>
+              <div className="space-y-1 text-xs">
+                {Object.entries(porEstado)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([estado, count]) => (
+                    <div key={estado} className="flex justify-between">
+                      <span className="text-slate-600">{estado}</span>
+                      <span className="font-semibold text-slate-900">{count}</span>
                     </div>
-                  )
-                ))}
+                  ))}
               </div>
             </div>
 
             {/* Medio Utilizado */}
-            <div className="bg-white rounded-lg border border-slate-200 p-5">
-              <p className="text-xs text-slate-600 font-semibold uppercase mb-3">Medios Utilizados</p>
-              <div className="space-y-2">
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-2">Medio Utilizado</p>
+              <div className="space-y-1 text-xs">
                 {Object.entries(porMedio)
                   .sort((a, b) => b[1] - a[1])
                   .map(([medio, count]) => (
-                    <div key={medio} className="flex items-center justify-between">
-                      <span className="text-sm text-slate-700">{medio}</span>
-                      <span className="inline-block bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full text-xs font-semibold">{count}</span>
+                    <div key={medio} className="flex justify-between items-start">
+                      <span className="text-slate-600 flex-1">{medio}</span>
+                      <span className="font-semibold text-slate-900 ml-2">{count}</span>
                     </div>
                   ))}
               </div>
             </div>
 
             {/* Tipo de Queja */}
-            <div className="bg-white rounded-lg border border-slate-200 p-5">
-              <p className="text-xs text-slate-600 font-semibold uppercase mb-3">Tipos de Queja</p>
-              <div className="space-y-2">
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-2">Tipo de Queja</p>
+              <div className="space-y-1 text-xs">
                 {Object.entries(porTipo)
                   .sort((a, b) => b[1] - a[1])
                   .map(([tipo, count]) => (
-                    <div key={tipo} className="flex items-center justify-between">
-                      <span className="text-sm text-slate-700">{tipo}</span>
-                      <span className="inline-block bg-orange-100 text-orange-700 px-2.5 py-1 rounded-full text-xs font-semibold">{count}</span>
+                    <div key={tipo} className="flex justify-between items-start">
+                      <span className="text-slate-600 flex-1">{tipo}</span>
+                      <span className="font-semibold text-slate-900 ml-2">{count}</span>
                     </div>
                   ))}
               </div>
             </div>
 
-            {/* Nivel de Gravedad */}
-            <div className="bg-white rounded-lg border border-slate-200 p-5">
-              <p className="text-xs text-slate-600 font-semibold uppercase mb-3">Niveles de Gravedad</p>
-              <div className="space-y-2">
-                {[
-                  { nivel: 'Nivel 1 (Bajo)', color: 'bg-green-100 text-green-700', colorDot: 'bg-green-500' },
-                  { nivel: 'Nivel 2 (Medio)', color: 'bg-amber-100 text-amber-700', colorDot: 'bg-amber-500' },
-                  { nivel: 'Nivel 3 (Alto)', color: 'bg-red-100 text-red-700', colorDot: 'bg-red-500' },
-                ].map(({ nivel, color, colorDot }) => (
-                  porGravedad[nivel] && (
-                    <div key={nivel} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${colorDot}`}></div>
-                        <span className="text-sm text-slate-700">{nivel}</span>
-                      </div>
-                      <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${color}`}>{porGravedad[nivel]}</span>
-                    </div>
-                  )
-                ))}
-              </div>
-            </div>
-
-            {/* Origen de la Queja */}
-            <div className="bg-white rounded-lg border border-slate-200 p-5">
-              <p className="text-xs text-slate-600 font-semibold uppercase mb-3">Origen de Quejas</p>
-              <div className="space-y-2">
-                {Object.entries(porOrigen)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([origen, count]) => (
-                    <div key={origen} className="flex items-center justify-between">
-                      <span className="text-sm text-slate-700">{origen}</span>
-                      <span className="inline-block bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full text-xs font-semibold">{count}</span>
+            {/* Nivel Gravedad */}
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <p className="text-xs text-slate-500 font-medium uppercase mb-2">Nivel Gravedad</p>
+              <div className="space-y-1 text-xs">
+                {Object.entries(porGravedad)
+                  .map(([nivel, count]) => (
+                    <div key={nivel} className="flex justify-between">
+                      <span className={
+                        nivel.includes('Bajo') ? 'text-green-600' :
+                        nivel.includes('Medio') ? 'text-amber-600' :
+                        'text-red-600'
+                      }>
+                        {nivel}
+                      </span>
+                      <span className="font-semibold text-slate-900">{count}</span>
                     </div>
                   ))}
               </div>
