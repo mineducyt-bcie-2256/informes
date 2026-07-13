@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import FiltrosHSSO from './FiltrosHSSO'
+import PersonalEnObra from './PersonalEnObra'
 
 export default async function HSSORuportePage({
   searchParams,
@@ -63,10 +64,15 @@ export default async function HSSORuportePage({
         filtrosActuales={params}
       />
 
-      {/* Placeholder para datos */}
-      <div className="bg-white rounded-xl border border-slate-200 p-8 text-center text-slate-500 mt-6">
-        <p className="mb-2">Selecciona filtros para ver los datos</p>
-        <p className="text-sm">Los datos se cargarán aquí según los filtros aplicados</p>
+      {/* Secciones de Reportes */}
+      <div className="mt-8 space-y-8">
+        {/* Personal en Obra */}
+        <PersonalEnObra
+          supervision={params.supervision}
+          escuela={params.escuela}
+          mesDesde={params.mes_desde}
+          mesHasta={params.mes_hasta}
+        />
       </div>
     </div>
   )
