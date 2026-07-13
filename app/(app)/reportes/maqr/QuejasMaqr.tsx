@@ -52,15 +52,15 @@ export default function QuejasMaqr({
   const cargarQuejas = async () => {
     setCargando(true)
     try {
-      // Obtener informes según filtros
+      // Obtener informes y MAQR según filtros
       let query = supabase
         .from('informes')
         .select(
           `id, periodo_mes, periodo_anio,
-           escuelas(codigo, nombre, empresa_obras, empresa_supervision),
+           escuela_id,
+           escuelas(id, codigo, nombre, empresa_obras, empresa_supervision),
            informe_maqr(id)`
         )
-        .eq('estado', 'aprobado')
 
       if (supervision) {
         query = query.eq('escuelas.empresa_supervision', supervision)
@@ -102,7 +102,7 @@ export default function QuejasMaqr({
         return
       }
 
-      // Obtener quejas
+      // Obtener quejas con toda la información
       const { data: quejasData } = await supabase
         .from('informe_maqr_quejas')
         .select('*')
@@ -116,13 +116,23 @@ export default function QuejasMaqr({
         )
         const esc = informe?.escuelas as any
 
+        // Calcular días entre fechas
+        const calcularDias = () => {
+          if (!queja.fecha_recepcion) return 0
+          const from = new Date(queja.fecha_recepcion)
+          const to = queja.fecha_resolucion
+            ? new Date(queja.fecha_resolucion)
+            : new Date()
+          return Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24))
+        }
+
         return {
           id: queja.id,
           numero_queja: queja.numero_queja,
           medio: queja.medio || '-',
           fecha_recepcion: queja.fecha_recepcion || '-',
           fecha_resolucion: queja.fecha_resolucion || '-',
-          dias_proceso: queja.dias_proceso || 0,
+          dias_proceso: calcularDias(),
           tipo_queja: queja.tipo_queja || '-',
           origen: queja.origen || '-',
           nivel_gravedad: queja.nivel_gravedad || '-',
