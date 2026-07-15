@@ -1,6 +1,4 @@
 'use client'
-import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Users, BookOpen, User, Briefcase } from 'lucide-react'
 
 interface PartesInteresadasCardsProps {
@@ -11,18 +9,6 @@ interface PartesInteresadasCardsProps {
   mesHasta?: string
 }
 
-interface ParteData {
-  total_estudiantes_ninos: number
-  total_estudiantes_ninas: number
-  total_estudiantes: number
-  total_maestros_hombres: number
-  total_maestros_mujeres: number
-  total_maestros: number
-  total_directores: number
-  total_cde: number
-  total_personal_proyecto: number
-}
-
 export default function PartesInteresadasCards({
   supervision,
   empresaObras,
@@ -30,179 +16,15 @@ export default function PartesInteresadasCards({
   mesDesde,
   mesHasta,
 }: PartesInteresadasCardsProps) {
-  const supabase = createClient()
-  const [datos, setDatos] = useState<ParteData>({
-    total_estudiantes_ninos: 0,
-    total_estudiantes_ninas: 0,
-    total_estudiantes: 0,
-    total_maestros_hombres: 0,
-    total_maestros_mujeres: 0,
-    total_maestros: 0,
-    total_directores: 0,
-    total_cde: 0,
-    total_personal_proyecto: 0,
-  })
-  const [cargando, setCargando] = useState(true)
-
-  useEffect(() => {
-    async function cargarDatos() {
-      setCargando(true)
-      try {
-        // Obtener escuelas según filtros
-        let escuelasQuery = supabase
-          .from('escuelas')
-          .select('id')
-          .eq('activa', true)
-          .neq('numero_contrato', 'SIN ADJUDICAR')
-          .not('numero_contrato', 'is', null)
-
-        if (supervision) {
-          escuelasQuery = escuelasQuery.eq('empresa_supervision', supervision)
-        }
-
-        if (empresaObras) {
-          escuelasQuery = escuelasQuery.eq('empresa_obras', empresaObras)
-        }
-
-        if (busqueda) {
-          escuelasQuery = escuelasQuery.eq('id', busqueda)
-        }
-
-        const { data: escuelas } = await escuelasQuery
-
-        if (!escuelas || escuelas.length === 0) {
-          setDatos({
-            total_estudiantes_ninos: 0,
-            total_estudiantes_ninas: 0,
-            total_estudiantes: 0,
-            total_maestros_hombres: 0,
-            total_maestros_mujeres: 0,
-            total_maestros: 0,
-            total_directores: 0,
-            total_cde: 0,
-            total_personal_proyecto: 0,
-          })
-          setCargando(false)
-          return
-        }
-
-        const escuelaIds = escuelas.map(e => e.id)
-
-        // Obtener informes
-        let informesQuery = supabase
-          .from('informes')
-          .select('id, periodo_mes')
-          .in('escuela_id', escuelaIds)
-
-        const { data: informes } = await informesQuery
-
-        if (!informes || informes.length === 0) {
-          setDatos({
-            total_estudiantes_ninos: 0,
-            total_estudiantes_ninas: 0,
-            total_estudiantes: 0,
-            total_maestros_hombres: 0,
-            total_maestros_mujeres: 0,
-            total_maestros: 0,
-            total_directores: 0,
-            total_cde: 0,
-            total_personal_proyecto: 0,
-          })
-          setCargando(false)
-          return
-        }
-
-        const informeIds = informes.map(i => i.id)
-
-        // Obtener datos PPPI
-        const { data: pppiData } = await supabase
-          .from('informe_pppi')
-          .select('partes_interesadas')
-          .in('informe_id', informeIds)
-
-        // Procesar datos de partes interesadas
-        let totales: ParteData = {
-          total_estudiantes_ninos: 0,
-          total_estudiantes_ninas: 0,
-          total_estudiantes: 0,
-          total_maestros_hombres: 0,
-          total_maestros_mujeres: 0,
-          total_maestros: 0,
-          total_directores: 0,
-          total_cde: 0,
-          total_personal_proyecto: 0,
-        }
-
-        // Filtrar por período
-        const informesFiltrados = informes.filter(inf => {
-          if (mesDesde && parseInt(mesDesde) > inf.periodo_mes) return false
-          if (mesHasta && parseInt(mesHasta) < inf.periodo_mes) return false
-          return true
-        })
-
-        const informesFiltradosIds = informesFiltrados.map(i => i.id)
-
-        pppiData?.forEach(pppi => {
-          if (!informesFiltradosIds.includes(pppi.informe_id ?? '')) return
-
-          const partes = pppi.partes_interesadas as any
-          if (!partes) return
-
-          // Alumnos
-          if (partes.alumnos?.activa) {
-            totales.total_estudiantes_ninos += partes.alumnos.hombres || 0
-            totales.total_estudiantes_ninas += partes.alumnos.mujeres || 0
-          }
-
-          // Profesores
-          if (partes.profesores?.activa) {
-            totales.total_maestros_hombres += partes.profesores.hombres || 0
-            totales.total_maestros_mujeres += partes.profesores.mujeres || 0
-          }
-
-          // Director
-          if (partes.director?.activa) {
-            totales.total_directores += partes.director.hombres + partes.director.mujeres || 0
-          }
-
-          // CDE
-          if (partes.cde?.activa) {
-            totales.total_cde += partes.cde.hombres + partes.cde.mujeres || 0
-          }
-
-          // Personal
-          if (partes.personal?.activa) {
-            totales.total_personal_proyecto += partes.personal.hombres + partes.personal.mujeres || 0
-          }
-        })
-
-        totales.total_estudiantes = totales.total_estudiantes_ninos + totales.total_estudiantes_ninas
-        totales.total_maestros = totales.total_maestros_hombres + totales.total_maestros_mujeres
-
-        setDatos(totales)
-      } catch (error) {
-        console.error('Error cargando partes interesadas:', error)
-      } finally {
-        setCargando(false)
-      }
-    }
-
-    cargarDatos()
-  }, [supervision, empresaObras, busqueda, mesDesde, mesHasta, supabase])
-
-  if (cargando) {
-    return <div className="text-center py-8 text-slate-500">Cargando datos...</div>
-  }
-
   const cards = [
     {
       label: 'Estudiantes',
       icon: Users,
       color: 'blue',
       items: [
-        { label: 'Niños', value: datos.total_estudiantes_ninos },
-        { label: 'Niñas', value: datos.total_estudiantes_ninas },
-        { label: 'Total', value: datos.total_estudiantes, highlight: true },
+        { label: 'Niños', value: 0 },
+        { label: 'Niñas', value: 0 },
+        { label: 'Total', value: 0, highlight: true },
       ],
     },
     {
@@ -210,28 +32,28 @@ export default function PartesInteresadasCards({
       icon: BookOpen,
       color: 'green',
       items: [
-        { label: 'Hombres', value: datos.total_maestros_hombres },
-        { label: 'Mujeres', value: datos.total_maestros_mujeres },
-        { label: 'Total', value: datos.total_maestros, highlight: true },
+        { label: 'Hombres', value: 0 },
+        { label: 'Mujeres', value: 0 },
+        { label: 'Total', value: 0, highlight: true },
       ],
     },
     {
       label: 'Directores',
       icon: User,
       color: 'purple',
-      items: [{ label: 'Total', value: datos.total_directores, highlight: true }],
+      items: [{ label: 'Total', value: 0, highlight: true }],
     },
     {
       label: 'CDE',
       icon: Briefcase,
       color: 'orange',
-      items: [{ label: 'Total', value: datos.total_cde, highlight: true }],
+      items: [{ label: 'Total', value: 0, highlight: true }],
     },
     {
       label: 'Personal Proyecto',
       icon: Briefcase,
       color: 'red',
-      items: [{ label: 'Total', value: datos.total_personal_proyecto, highlight: true }],
+      items: [{ label: 'Total', value: 0, highlight: true }],
     },
   ]
 
