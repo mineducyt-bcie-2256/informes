@@ -18,7 +18,10 @@ export default function ReportePRTDashboard({ onBack }: ReportePRTDashboardProps
   const [filtrosActivos, setFiltrosActivos] = useState({
     mes: '',
     supervision: '',
+    empresa_obras: '',
     centro: '',
+    mes_desde: '',
+    mes_hasta: '',
     modalidad: '',
     condicion: '',
   })
@@ -50,9 +53,23 @@ export default function ReportePRTDashboard({ onBack }: ReportePRTDashboardProps
       resultado = resultado.filter(d => d.periodo_mes === parseInt(filtrosActivos.mes))
     }
 
+    if (filtrosActivos.mes_desde) {
+      resultado = resultado.filter(d => d.periodo_mes >= parseInt(filtrosActivos.mes_desde))
+    }
+
+    if (filtrosActivos.mes_hasta) {
+      resultado = resultado.filter(d => d.periodo_mes <= parseInt(filtrosActivos.mes_hasta))
+    }
+
     if (filtrosActivos.supervision) {
       resultado = resultado.filter(d =>
         d.supervision?.toLowerCase().includes(filtrosActivos.supervision.toLowerCase())
+      )
+    }
+
+    if (filtrosActivos.empresa_obras) {
+      resultado = resultado.filter(d =>
+        d.empresa_obras?.toLowerCase().includes(filtrosActivos.empresa_obras.toLowerCase())
       )
     }
 
@@ -82,7 +99,10 @@ export default function ReportePRTDashboard({ onBack }: ReportePRTDashboardProps
     setFiltrosActivos({
       mes: '',
       supervision: '',
+      empresa_obras: '',
       centro: '',
+      mes_desde: '',
+      mes_hasta: '',
       modalidad: '',
       condicion: '',
     })

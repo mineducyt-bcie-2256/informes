@@ -1,4 +1,5 @@
 'use client'
+import { MESES } from '@/types'
 
 interface FiltrosPRTProps {
   filtros: Record<string, string>
@@ -7,21 +8,12 @@ interface FiltrosPRTProps {
 }
 
 export default function FiltrosPRT({ filtros, setFiltros, datos }: FiltrosPRTProps) {
-  // Extraer valores únicos de los datos para los selectores
-  const mesesUnicos = [5, 6, 7, 8, 9, 10, 11, 12]
-  const mesesNombres: Record<number, string> = {
-    5: 'Mayo',
-    6: 'Junio',
-    7: 'Julio',
-    8: 'Agosto',
-    9: 'Septiembre',
-    10: 'Octubre',
-    11: 'Noviembre',
-    12: 'Diciembre',
-  }
-
   const supervisiones = Array.from(
     new Set(datos.map(d => d.supervision).filter(Boolean))
+  ).sort() as string[]
+
+  const empresasObras = Array.from(
+    new Set(datos.map(d => d.empresa_obras).filter(Boolean))
   ).sort() as string[]
 
   const centros = Array.from(
@@ -46,107 +38,113 @@ export default function FiltrosPRT({ filtros, setFiltros, datos }: FiltrosPRTPro
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-      {/* Mes */}
-      <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Mes
-        </label>
-        <select
-          value={filtros.mes}
-          onChange={(e) => handleChange('mes', e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-        >
-          <option value="">Todos los meses</option>
-          {mesesUnicos.map((mes) => (
-            <option key={mes} value={mes}>
-              {mesesNombres[mes]}
-            </option>
-          ))}
-        </select>
+    <div className="space-y-4">
+      {/* Fila 1: Filtros principales */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Supervisión */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">Supervisión</label>
+          <select
+            value={filtros.supervision || ''}
+            onChange={(e) => handleChange('supervision', e.target.value)}
+            className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Todas</option>
+            {supervisiones.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Empresa Obras */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">Empresa Obras</label>
+          <select
+            value={filtros.empresa_obras || ''}
+            onChange={(e) => handleChange('empresa_obras', e.target.value)}
+            className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Todas</option>
+            {empresasObras.map(e => (
+              <option key={e} value={e}>{e}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Mes Desde */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">Desde</label>
+          <select
+            value={filtros.mes_desde || ''}
+            onChange={(e) => handleChange('mes_desde', e.target.value)}
+            className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">—</option>
+            {MESES.map((mes, idx) => (
+              <option key={idx} value={idx + 1}>{mes}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Mes Hasta */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">Hasta</label>
+          <select
+            value={filtros.mes_hasta || ''}
+            onChange={(e) => handleChange('mes_hasta', e.target.value)}
+            className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">—</option>
+            {MESES.map((mes, idx) => (
+              <option key={idx} value={idx + 1}>{mes}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Supervisión */}
-      <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Supervisión
-        </label>
-        <input
-          type="text"
-          placeholder="Buscar..."
-          value={filtros.supervision}
-          onChange={(e) => handleChange('supervision', e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400"
-        />
-        {filtros.supervision && supervisiones.filter(s =>
-          s.toLowerCase().includes(filtros.supervision.toLowerCase())
-        ).length > 0 && (
-          <div className="absolute bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded mt-1 max-h-32 overflow-y-auto w-48 shadow-lg z-50">
-            {supervisiones
-              .filter(s => s.toLowerCase().includes(filtros.supervision.toLowerCase()))
-              .map((s) => (
-                <button
-                  key={s}
-                  onClick={() => handleChange('supervision', s)}
-                  className="block w-full text-left px-3 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm"
-                >
-                  {s}
-                </button>
-              ))}
-          </div>
-        )}
-      </div>
+      {/* Fila 2: Otros filtros */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {/* Centro Educativo */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">Centro Educativo</label>
+          <input
+            type="text"
+            placeholder="Buscar..."
+            value={filtros.centro || ''}
+            onChange={(e) => handleChange('centro', e.target.value)}
+            className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
 
-      {/* Centro */}
-      <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Centro Educativo
-        </label>
-        <input
-          type="text"
-          placeholder="Buscar..."
-          value={filtros.centro}
-          onChange={(e) => handleChange('centro', e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400"
-        />
-      </div>
+        {/* Modalidad */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">Modalidad</label>
+          <select
+            value={filtros.modalidad || ''}
+            onChange={(e) => handleChange('modalidad', e.target.value)}
+            className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Todas</option>
+            {modalidades.map((m) => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
 
-      {/* Modalidad */}
-      <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Modalidad
-        </label>
-        <select
-          value={filtros.modalidad}
-          onChange={(e) => handleChange('modalidad', e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-        >
-          <option value="">Todas</option>
-          {modalidades.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Condición */}
-      <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-          Condición de Uso
-        </label>
-        <select
-          value={filtros.condicion}
-          onChange={(e) => handleChange('condicion', e.target.value)}
-          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-white"
-        >
-          <option value="">Todas</option>
-          {condiciones.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
+        {/* Condición de Uso */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">Condición de Uso</label>
+          <select
+            value={filtros.condicion || ''}
+            onChange={(e) => handleChange('condicion', e.target.value)}
+            className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Todas</option>
+            {condiciones.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
       </div>
     </div>
   )

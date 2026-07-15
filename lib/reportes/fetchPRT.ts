@@ -13,14 +13,17 @@ export async function fetchPRTData() {
 
     if (!informes || informes.length === 0) return []
 
-    // Obtener todas las escuelas para mapear empresa de supervisión
+    // Obtener todas las escuelas para mapear empresa de supervisión y empresa de obras
     const { data: allEscuelas } = await supabase
       .from('escuelas')
-      .select('id, empresa_supervision')
+      .select('id, empresa_supervision, empresa_obras')
 
-    const escuelaMap: Record<string, string> = {}
+    const escuelaMap: Record<string, { supervision: string; obras: string }> = {}
     allEscuelas?.forEach((esc: any) => {
-      escuelaMap[esc.id] = esc.empresa_supervision
+      escuelaMap[esc.id] = {
+        supervision: esc.empresa_supervision || '',
+        obras: esc.empresa_obras || ''
+      }
     })
 
     // Obtener datos PRT
@@ -35,7 +38,7 @@ export async function fetchPRTData() {
 
     for (const informe of informes) {
       const prt = prtData?.find((p: any) => p.informe_id === informe.id)
-      const empresaSupervision = escuelaMap[informe.escuela_id] || ''
+      const empresaData = escuelaMap[informe.escuela_id] || { supervision: '', obras: '' }
 
       if (prt?.lugares && Array.isArray(prt.lugares)) {
         const datosVirtual = prt.virtual || {}
@@ -45,7 +48,8 @@ export async function fetchPRTData() {
           resultado.push({
             codigo: escuelaData?.codigo || '',
             centro: escuelaData?.nombre || '',
-            supervision: empresaSupervision,
+            supervision: empresaData.supervision,
+            empresa_obras: empresaData.obras,
             modalidad: prt.modalidad || [],
             sitio_reubicacion: lugar.direccion || lugar.nombre || '',
             ninos: lugar.est_ninos || 0,
