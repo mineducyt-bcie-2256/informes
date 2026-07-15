@@ -65,7 +65,7 @@ export default function PartesInteresadasTabla({
 
         const { data: pppiData } = await supabase
           .from('informe_pppi')
-          .select('partes_interesadas')
+          .select('informe_id, partes_interesadas')
           .in('informe_id', informes.map(i => i.id))
 
         const informesFiltrados = informes.filter(inf => {
@@ -92,11 +92,7 @@ export default function PartesInteresadasTabla({
             }
           }
 
-          const pppi = pppiData?.find(p => {
-            const idx = informes.findIndex(i => i.id === inf.id)
-            return idx >= 0 && pppiData[idx] === p
-          })
-
+          const pppi = pppiData?.find(p => p.informe_id === inf.id)
           if (!pppi) return
           const partes = pppi.partes_interesadas as any
           if (!partes) return

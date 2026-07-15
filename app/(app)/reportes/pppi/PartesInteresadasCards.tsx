@@ -53,7 +53,7 @@ export default function PartesInteresadasCards({
 
         const { data: pppiData } = await supabase
           .from('informe_pppi')
-          .select('partes_interesadas')
+          .select('informe_id, partes_interesadas')
           .in('informe_id', informes.map(i => i.id))
 
         const informesFiltrados = informes.filter(inf => {
@@ -61,6 +61,8 @@ export default function PartesInteresadasCards({
           if (mesHasta && parseInt(mesHasta) < inf.periodo_mes) return false
           return true
         })
+
+        const informesFiltradosIds = new Set(informesFiltrados.map(i => i.id))
 
         let totales = {
           estudiantes_ninos: 0,
@@ -73,6 +75,7 @@ export default function PartesInteresadasCards({
         }
 
         pppiData?.forEach(pppi => {
+          if (!informesFiltradosIds.has(pppi.informe_id as string)) return
           const partes = pppi.partes_interesadas as any
           if (!partes) return
 
