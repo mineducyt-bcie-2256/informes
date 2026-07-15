@@ -10,6 +10,7 @@ import Link from 'next/link'
 import PersonalDonut from '@/components/dashboard/PersonalDonut'
 import { ReubicacionCard } from './ReubicacionCard'
 import { PrintButton } from './PrintButton'
+import FiltrosDashboard from './FiltrosDashboard'
 
 // ── Tipos internos ─────────────────────────────────────────────────
 type Escuela = {
@@ -902,114 +903,19 @@ export default async function DashboardPage({
 
       {/* ── Bloque 1: Filtros ── */}
       {!esVisitante && (
-        <form method="GET" className="rounded-2xl border p-4 flex flex-wrap items-end gap-3" style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)' }}>
-          {/* Empresa */}
-          {esRestringido ? (
-            <>
-              <input type="hidden" name="empresa" value={empresaEfectiva ?? ''} />
-              <div className="flex items-center gap-2 border border-blue-200 dark:border-blue-700 bg-blue-50 dark:bg-blue-950 rounded-lg px-3 py-2 text-sm text-blue-800 dark:text-blue-300 min-w-[220px]">
-                <Building2 size={14} className="text-blue-500 shrink-0" />
-                <span className="font-medium truncate">{empresaEfectiva}</span>
-              </div>
-            </>
-          ) : (
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                Empresa supervisora
-              </label>
-              <select
-                name="empresa"
-                defaultValue={empresaEfectiva ?? ''}
-                className="text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 min-w-[220px]"
-              >
-                <option value="">— Todas las empresas —</option>
-                {empresasUnicas.map(emp => (
-                  <option key={emp} value={emp}>{emp}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Escuela (solo si hay empresa) */}
-          {empresaEfectiva && (
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">
-                Escuela
-              </label>
-              <select
-                name="escuela_id"
-                defaultValue={escuelaParam ?? ''}
-                className="text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300 min-w-[280px]"
-              >
-                <option value="">— Todas las escuelas —</option>
-                {escuelasDeEmpresa.map(esc => (
-                  <option key={esc.id} value={esc.id}>{esc.nombre}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Mes */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Mes</label>
-            <select
-              name="mes"
-              defaultValue={mesSel}
-              className="text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            >
-              {MESES.map((mes, i) => (
-                <option key={i + 1} value={i + 1}>{mes}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Mes desde */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Desde</label>
-            <select
-              name="mes_desde"
-              defaultValue={mesDesde ?? ''}
-              className="text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            >
-              <option value="">—</option>
-              {MESES.map((mes, i) => (
-                <option key={i + 1} value={i + 1}>{mes}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Mes hasta */}
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Hasta</label>
-            <select
-              name="mes_hasta"
-              defaultValue={mesHasta ?? ''}
-              className="text-sm border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-300"
-            >
-              <option value="">—</option>
-              {MESES.map((mes, i) => (
-                <option key={i + 1} value={i + 1}>{mes}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Botón filtrar */}
-          <button
-            type="submit"
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Filter size={15} />
-            Filtrar
-          </button>
-
-          {/* Limpiar filtros */}
-          <Link
-            href="/dashboard"
-            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline underline-offset-2 self-center"
-          >
-            Limpiar filtros
-          </Link>
-        </form>
+        <FiltrosDashboard
+          empresasUnicas={empresasUnicas}
+          escuelasDeEmpresa={escuelasDeEmpresa}
+          esRestringido={esRestringido}
+          empresaEfectiva={empresaEfectiva}
+          filtrosActuales={{
+            empresa: empresaParam ?? undefined,
+            escuela_id: escuelaParam ?? undefined,
+            mes: mesSel !== mesDefault ? String(mesSel) : undefined,
+            mes_desde: mesDesde ? String(mesDesde) : undefined,
+            mes_hasta: mesHasta ? String(mesHasta) : undefined,
+          }}
+        />
       )}
 
       {/* ── Bloque 2: Tarjetas de resumen ── */}
