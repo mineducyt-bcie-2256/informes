@@ -27,8 +27,8 @@ export default function FiltrosMaqr({
   const [supervision, setSupervision] = useState(filtrosActuales.supervision ?? '')
   const [empresaObras, setEmpresaObras] = useState(filtrosActuales.empresa_obras ?? '')
   const [escuela, setEscuela] = useState(filtrosActuales.escuela ?? '')
-  const [mesDesde, setMesDesde] = useState(filtrosActuales.mes_desde ?? '1')
-  const [mesHasta, setMesHasta] = useState(filtrosActuales.mes_hasta ?? '12')
+  const [mesDesde, setMesDesde] = useState(String(filtrosActuales.mes_desde ?? '1'))
+  const [mesHasta, setMesHasta] = useState(String(filtrosActuales.mes_hasta ?? '12'))
 
   // Filtros de quejas
   const [medios, setMedios] = useState<string[]>(
