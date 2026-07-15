@@ -597,8 +597,8 @@ export default async function DashboardPage({
     if (mesDesde || mesHasta) {
       todasQuejas = todasQuejas.filter(q => {
         if (!q.fecha_recepcion) return false
-        const [year, month] = q.fecha_recepcion.split('-').slice(0, 2)
-        const mesQueja = parseInt(month)
+        const parts = q.fecha_recepcion.split('-')
+        const mesQueja = parseInt(parts[1])
         if (mesDesde && mesQueja < mesDesde) return false
         if (mesHasta && mesQueja > mesHasta) return false
         return true
