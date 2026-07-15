@@ -1,4 +1,6 @@
 'use client'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Users, BookOpen, User, Briefcase } from 'lucide-react'
 
 interface PartesInteresadasCardsProps {
@@ -16,15 +18,105 @@ export default function PartesInteresadasCards({
   mesDesde,
   mesHasta,
 }: PartesInteresadasCardsProps) {
+  const supabase = createClient()
+  const [datos, setDatos] = useState({
+    estudiantes_ninos: 0,
+    estudiantes_ninas: 0,
+    maestros_hombres: 0,
+    maestros_mujeres: 0,
+    directores: 0,
+    cde: 0,
+    personal: 0,
+  })
+
+  useEffect(() => {
+    async function cargarDatos() {
+      try {
+        let escuelasQuery = supabase
+          .from('escuelas')
+          .select('id')
+          .eq('activa', true)
+
+        if (supervision) escuelasQuery = escuelasQuery.eq('empresa_supervision', supervision)
+        if (empresaObras) escuelasQuery = escuelasQuery.eq('empresa_obras', empresaObras)
+        if (busqueda) escuelasQuery = escuelasQuery.eq('id', busqueda)
+
+        const { data: escuelas } = await escuelasQuery
+        if (!escuelas?.length) return
+
+        const { data: informes } = await supabase
+          .from('informes')
+          .select('id, periodo_mes')
+          .in('escuela_id', escuelas.map(e => e.id))
+
+        if (!informes?.length) return
+
+        const { data: pppiData } = await supabase
+          .from('informe_pppi')
+          .select('partes_interesadas')
+          .in('informe_id', informes.map(i => i.id))
+
+        const informesFiltrados = informes.filter(inf => {
+          if (mesDesde && parseInt(mesDesde) > inf.periodo_mes) return false
+          if (mesHasta && parseInt(mesHasta) < inf.periodo_mes) return false
+          return true
+        })
+
+        let totales = {
+          estudiantes_ninos: 0,
+          estudiantes_ninas: 0,
+          maestros_hombres: 0,
+          maestros_mujeres: 0,
+          directores: 0,
+          cde: 0,
+          personal: 0,
+        }
+
+        pppiData?.forEach(pppi => {
+          const partes = pppi.partes_interesadas as any
+          if (!partes) return
+
+          if (partes.alumnos?.activa) {
+            totales.estudiantes_ninos += partes.alumnos.hombres || 0
+            totales.estudiantes_ninas += partes.alumnos.mujeres || 0
+          }
+
+          if (partes.profesores?.activa) {
+            totales.maestros_hombres += partes.profesores.hombres || 0
+            totales.maestros_mujeres += partes.profesores.mujeres || 0
+          }
+
+          if (partes.director?.activa) {
+            totales.directores += (partes.director.hombres || 0) + (partes.director.mujeres || 0)
+          }
+
+          if (partes.cde?.activa) {
+            totales.cde += (partes.cde.hombres || 0) + (partes.cde.mujeres || 0)
+          }
+
+          if (partes.personal?.activa) {
+            totales.personal += (partes.personal.hombres || 0) + (partes.personal.mujeres || 0)
+          }
+        })
+
+        setDatos(totales)
+      } catch (error) {
+        console.error('Error:', error)
+      }
+    }
+
+    cargarDatos()
+  }, [supervision, empresaObras, busqueda, mesDesde, mesHasta, supabase])
+
   const cards = [
     {
       label: 'Estudiantes',
       icon: Users,
       color: 'blue',
       items: [
-        { label: 'Niños', value: 0 },
-        { label: 'Niñas', value: 0 },
-        { label: 'Total', value: 0, highlight: true },
+        { label: 'Niños', value: datos.estudiantes_ninos },
+        { label: 'Niñas', value: datos.estudiantes_ninas },
+        { label: 'Total', value: datos.estudiantes_ninos + datos.estudiantes_ninas, highlight: true },
       ],
     },
     {
@@ -32,28 +124,28 @@ export default function PartesInteresadasCards({
       icon: BookOpen,
       color: 'green',
       items: [
-        { label: 'Hombres', value: 0 },
-        { label: 'Mujeres', value: 0 },
-        { label: 'Total', value: 0, highlight: true },
+        { label: 'Hombres', value: datos.maestros_hombres },
+        { label: 'Mujeres', value: datos.maestros_mujeres },
+        { label: 'Total', value: datos.maestros_hombres + datos.maestros_mujeres, highlight: true },
       ],
     },
     {
       label: 'Directores',
       icon: User,
       color: 'purple',
-      items: [{ label: 'Total', value: 0, highlight: true }],
+      items: [{ label: 'Total', value: datos.directores, highlight: true }],
     },
     {
       label: 'CDE',
       icon: Briefcase,
       color: 'orange',
-      items: [{ label: 'Total', value: 0, highlight: true }],
+      items: [{ label: 'Total', value: datos.cde, highlight: true }],
     },
     {
       label: 'Personal Proyecto',
       icon: Briefcase,
       color: 'red',
-      items: [{ label: 'Total', value: 0, highlight: true }],
+      items: [{ label: 'Total', value: datos.personal, highlight: true }],
     },
   ]
 
