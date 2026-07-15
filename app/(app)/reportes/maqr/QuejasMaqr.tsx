@@ -48,7 +48,7 @@ export default function QuejasMaqr({
 
   useEffect(() => {
     cargarQuejas()
-  }, [supervision, empresaObras, escuela, mesDesde, mesHasta])
+  }, [supervision, empresaObras, escuela, mesDesde, mesHasta, supabase])
 
   const cargarQuejas = async () => {
     setCargando(true)
