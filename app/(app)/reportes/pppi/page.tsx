@@ -3,6 +3,8 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import FiltrosPppi from './FiltrosPppi'
 import RegistrosPppi from './RegistrosPppi'
+import PartesInteresadasCards from './PartesInteresadasCards'
+import PartesInteresadasTabla from './PartesInteresadasTabla'
 
 export default async function PppiReportePage({
   searchParams,
@@ -78,13 +80,39 @@ export default async function PppiReportePage({
       />
 
       {/* Tabla de registros */}
-      <RegistrosPppi
-        supervision={params.supervision}
-        empresaObras={params.empresa_obras}
-        busqueda={params.busqueda}
-        mesDesde={params.mes_desde}
-        mesHasta={params.mes_hasta}
-      />
+      <div className="mb-10">
+        <h2 className="text-sm font-semibold uppercase tracking-widest text-slate-600 mb-4">
+          Datos PPPI
+        </h2>
+        <RegistrosPppi
+          supervision={params.supervision}
+          empresaObras={params.empresa_obras}
+          busqueda={params.busqueda}
+          mesDesde={params.mes_desde}
+          mesHasta={params.mes_hasta}
+        />
+      </div>
+
+      {/* Partes Interesadas */}
+      <div className="bg-blue-50 rounded-lg border border-blue-200 p-6">
+        <PartesInteresadasCards
+          supervision={params.supervision}
+          empresaObras={params.empresa_obras}
+          busqueda={params.busqueda}
+          mesDesde={params.mes_desde}
+          mesHasta={params.mes_hasta}
+        />
+
+        <hr className="my-6 border-blue-200" />
+
+        <PartesInteresadasTabla
+          supervision={params.supervision}
+          empresaObras={params.empresa_obras}
+          busqueda={params.busqueda}
+          mesDesde={params.mes_desde}
+          mesHasta={params.mes_hasta}
+        />
+      </div>
     </div>
   )
 }
