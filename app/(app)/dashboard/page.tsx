@@ -566,8 +566,6 @@ export default async function DashboardPage({
   }
   let todasQuejas: QuejaRow[] = []
   {
-    // Quejas históricas: todas las escuelas filtradas, SIN restricción de periodo
-    // (una queja abierta en marzo sigue vigente en abril/mayo)
     const escuelaIdsArr = Array.from(escuelaIds)
     if (escuelaIdsArr.length > 0) {
       const { data: todosInformesMaqr } = await admin
@@ -593,6 +591,18 @@ export default async function DashboardPage({
           todasQuejas = (rawQuejas ?? []) as QuejaRow[]
         }
       }
+    }
+
+    // Filtrar por período si está especificado
+    if (mesDesde || mesHasta) {
+      todasQuejas = todasQuejas.filter(q => {
+        if (!q.fecha_recepcion) return false
+        const [year, month] = q.fecha_recepcion.split('-').slice(0, 2)
+        const mesQueja = parseInt(month)
+        if (mesDesde && mesQueja < mesDesde) return false
+        if (mesHasta && mesQueja > mesHasta) return false
+        return true
+      })
     }
   }
 
