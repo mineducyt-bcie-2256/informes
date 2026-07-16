@@ -19,6 +19,8 @@ export default function ReportePRTPage() {
   const [mesDesde, setMesDesde] = useState(searchParams.get('mes_desde') || '')
   const [mesHasta, setMesHasta] = useState(searchParams.get('mes_hasta') || '')
   const [modalidad, setModalidad] = useState(searchParams.get('modalidad') || '')
+  const [codigo, setCodigo] = useState(searchParams.get('codigo') || '')
+  const [centro, setCentro] = useState(searchParams.get('centro') || '')
 
   // Cargar datos
   useEffect(() => {
@@ -67,8 +69,20 @@ export default function ReportePRTPage() {
       })
     }
 
+    if (codigo) {
+      resultado = resultado.filter(d =>
+        d.codigo?.toLowerCase().includes(codigo.toLowerCase())
+      )
+    }
+
+    if (centro) {
+      resultado = resultado.filter(d =>
+        d.centro?.toLowerCase().includes(centro.toLowerCase())
+      )
+    }
+
     setDatosFiltrados(resultado)
-  }, [datos, supervision, empresaObras, mesDesde, mesHasta, modalidad])
+  }, [datos, supervision, empresaObras, mesDesde, mesHasta, modalidad, codigo, centro])
 
   // Obtener opciones únicas para dropdowns
   const supervisiones = Array.from(new Set(datos.map(d => d.supervision).filter(Boolean))).sort()
@@ -125,6 +139,8 @@ export default function ReportePRTPage() {
     if (mesDesde) params.append('mes_desde', mesDesde)
     if (mesHasta) params.append('mes_hasta', mesHasta)
     if (modalidad) params.append('modalidad', modalidad)
+    if (codigo) params.append('codigo', codigo)
+    if (centro) params.append('centro', centro)
 
     router.push(`/reportes/prt?${params.toString()}`)
   }
@@ -135,6 +151,8 @@ export default function ReportePRTPage() {
     setMesDesde('')
     setMesHasta('')
     setModalidad('')
+    setCodigo('')
+    setCentro('')
     router.push('/reportes/prt')
   }
 
@@ -246,6 +264,37 @@ export default function ReportePRTPage() {
                     <option key={idx} value={idx + 1}>{mes}</option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {/* Fila 1.5: Búsqueda */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              {/* Código */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">
+                  Código
+                </label>
+                <input
+                  type="text"
+                  placeholder="Buscar por código..."
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value)}
+                  className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Centro Educativo */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">
+                  Centro Educativo
+                </label>
+                <input
+                  type="text"
+                  placeholder="Buscar por centro..."
+                  value={centro}
+                  onChange={(e) => setCentro(e.target.value)}
+                  className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
               </div>
             </div>
 
