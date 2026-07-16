@@ -90,7 +90,7 @@ export default function ReportePRTPage() {
     })
   })
 
-  let presencial = 0, virtual = 0, hibrida = 0
+  let presencial = 0, virtual = 0, hibrida = 0, sinRegistro = 0
   escuelasPorModalidad.forEach((modos) => {
     const tienePresencial = modos.has('Presencial')
     const tieneVirtual = modos.has('Virtual')
@@ -101,8 +101,22 @@ export default function ReportePRTPage() {
       presencial++
     } else if (tieneVirtual) {
       virtual++
+    } else {
+      sinRegistro++
     }
   })
+
+  // Calcular otras métricas
+  const sitiosReubicacion = datosFiltrados.length
+  const modalidadVirtualCount = new Set(
+    datosFiltrados
+      .filter(d => Array.isArray(d.modalidad) ? d.modalidad.includes('Virtual') : d.modalidad === 'Virtual')
+      .map(d => d.centro)
+  ).size
+  const totalNinos = datosFiltrados.reduce((sum, d) => sum + (d.ninos || 0), 0)
+  const totalNinas = datosFiltrados.reduce((sum, d) => sum + (d.ninas || 0), 0)
+  const totalDocentesHombres = datosFiltrados.reduce((sum, d) => sum + (d.docentes_hombres || 0), 0)
+  const totalDocentesMujeres = datosFiltrados.reduce((sum, d) => sum + (d.docentes_mujeres || 0), 0)
 
   const handleAplicarFiltros = () => {
     const params = new URLSearchParams()
@@ -284,22 +298,66 @@ export default function ReportePRTPage() {
           </div>
         ) : (
           <>
-            {/* Tarjetas de Modalidad */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Tarjetas de Resumen */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Presencial */}
               <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
                 <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Presencial</p>
                 <p className="text-2xl font-bold text-blue-600">{presencial}</p>
                 <p className="text-xs text-slate-600 mt-1">Escuelas</p>
               </div>
+
+              {/* Virtual */}
               <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
                 <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Virtual</p>
                 <p className="text-2xl font-bold text-purple-600">{virtual}</p>
                 <p className="text-xs text-slate-600 mt-1">Escuelas</p>
               </div>
+
+              {/* Híbrida */}
               <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                 <p className="text-xs font-semibold text-green-700 uppercase mb-2">Híbrida</p>
                 <p className="text-2xl font-bold text-green-600">{hibrida}</p>
                 <p className="text-xs text-slate-600 mt-1">Escuelas</p>
+              </div>
+
+              {/* Sin Registro */}
+              <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                <p className="text-xs font-semibold text-orange-700 uppercase mb-2">Sin Registro</p>
+                <p className="text-2xl font-bold text-orange-600">{sinRegistro}</p>
+                <p className="text-xs text-slate-600 mt-1">Escuelas</p>
+              </div>
+
+              {/* Sitios de Reubicación */}
+              <div className="bg-indigo-50 rounded-lg p-4 border border-indigo-200">
+                <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Sitios de Reubicación</p>
+                <p className="text-2xl font-bold text-indigo-600">{sitiosReubicacion}</p>
+                <p className="text-xs text-slate-600 mt-1">Registros</p>
+              </div>
+
+              {/* Modalidad Virtual Implementándose */}
+              <div className="bg-rose-50 rounded-lg p-4 border border-rose-200">
+                <p className="text-xs font-semibold text-rose-700 uppercase mb-2">Virtual Implementándose</p>
+                <p className="text-2xl font-bold text-rose-600">{modalidadVirtualCount}</p>
+                <p className="text-xs text-slate-600 mt-1">Escuelas</p>
+              </div>
+
+              {/* Total Estudiantes */}
+              <div className="bg-teal-50 rounded-lg p-4 border border-teal-200">
+                <p className="text-xs font-semibold text-teal-700 uppercase mb-2">Total Estudiantes</p>
+                <p className="text-2xl font-bold text-teal-600">{totalNinos + totalNinas}</p>
+                <p className="text-xs text-slate-600 mt-1">
+                  👦 {totalNinos} | 👧 {totalNinas}
+                </p>
+              </div>
+
+              {/* Total Docentes */}
+              <div className="bg-cyan-50 rounded-lg p-4 border border-cyan-200">
+                <p className="text-xs font-semibold text-cyan-700 uppercase mb-2">Total Docentes</p>
+                <p className="text-2xl font-bold text-cyan-600">{totalDocentesHombres + totalDocentesMujeres}</p>
+                <p className="text-xs text-slate-600 mt-1">
+                  👨 {totalDocentesHombres} | 👩 {totalDocentesMujeres}
+                </p>
               </div>
             </div>
 
