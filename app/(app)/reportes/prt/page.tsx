@@ -303,18 +303,21 @@ export default function ReportePRTPage() {
               </div>
             </div>
 
-            {/* Tabla de datos */}
+            {/* Tabla 1: Modalidad de continuidad centros educativos */}
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-200 bg-slate-50">
+                <h3 className="text-sm font-semibold text-slate-700">Modalidad de Continuidad Centros Educativos</h3>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-slate-100 border-b border-slate-200">
                     <tr>
                       <th className="px-4 py-3 text-left font-semibold text-slate-700">Código</th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-700">Centro Educativo</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Supervisión</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Empresa Obras</th>
                       <th className="px-4 py-3 text-left font-semibold text-slate-700">Modalidad</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Período</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-700">Niños</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-700">Niñas</th>
+                      <th className="px-4 py-3 text-right font-semibold text-slate-700">Total</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -324,20 +327,28 @@ export default function ReportePRTPage() {
                           No hay registros para los filtros seleccionados
                         </td>
                       </tr>
-                    ) : (
-                      datosFiltrados.map((item, idx) => (
+                    ) : (() => {
+                      const centrosMapa = new Map<string, any>()
+                      datosFiltrados.forEach(item => {
+                        const actual = centrosMapa.get(item.centro)
+                        if (!actual || item.periodo_mes > actual.periodo_mes) {
+                          centrosMapa.set(item.centro, item)
+                        }
+                      })
+                      const centrosUnicos = Array.from(centrosMapa.values())
+                      return centrosUnicos.map((item, idx) => (
                         <tr key={idx} className="border-b border-slate-200 hover:bg-slate-50 transition">
                           <td className="px-4 py-3 font-medium">{item.codigo}</td>
                           <td className="px-4 py-3">{item.centro}</td>
-                          <td className="px-4 py-3">{item.supervision}</td>
-                          <td className="px-4 py-3">{item.empresa_obras}</td>
                           <td className="px-4 py-3">
                             {Array.isArray(item.modalidad) ? item.modalidad.join(', ') : item.modalidad}
                           </td>
-                          <td className="px-4 py-3">{MESES[item.periodo_mes - 1]}</td>
+                          <td className="px-4 py-3 text-right">{item.ninos}</td>
+                          <td className="px-4 py-3 text-right">{item.ninas}</td>
+                          <td className="px-4 py-3 text-right font-medium">{item.ninos + item.ninas}</td>
                         </tr>
                       ))
-                    )}
+                    })()}
                   </tbody>
                 </table>
               </div>
