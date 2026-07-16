@@ -1,10 +1,8 @@
 'use client'
-import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import ReportePRTDashboard from '@/components/reportes/ReportePRTDashboard'
 import { FileText, BarChart3, ChevronRight } from 'lucide-react'
 
-type TipoReporte = 'prt' | 'hsso' | 'maqr' | 'pppi'
+type TipoReporte = 'hsso' | 'maqr' | 'pppi'
 
 const TIPOS_REPORTES = [
   {
@@ -35,7 +33,6 @@ const TIPOS_REPORTES = [
 
 export default function ReportesPage() {
   const router = useRouter()
-  const [tipoSeleccionado, setTipoSeleccionado] = useState<TipoReporte | null>(null)
 
   const handleSelectReporte = (tipo: TipoReporte) => {
     if (tipo === 'hsso') {
@@ -44,13 +41,7 @@ export default function ReportesPage() {
       router.push('/reportes/maqr')
     } else if (tipo === 'pppi') {
       router.push('/reportes/pppi')
-    } else {
-      setTipoSeleccionado(tipo)
     }
-  }
-
-  if (tipoSeleccionado === 'prt') {
-    return <ReportePRTDashboard onBack={() => setTipoSeleccionado(null)} />
   }
 
   return (
