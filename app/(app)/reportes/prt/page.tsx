@@ -1,0 +1,350 @@
+'use client'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ChevronLeft, Filter } from 'lucide-react'
+import { MESES } from '@/types'
+import { fetchPRTData } from '@/lib/reportes/fetchPRT'
+
+export default function ReportePRTPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [datos, setDatos] = useState<any[]>([])
+  const [datosFiltrados, setDatosFiltrados] = useState<any[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [mostrarFiltros, setMostrarFiltros] = useState(false)
+
+  // Estado de filtros
+  const [supervision, setSupervision] = useState(searchParams.get('supervision') || '')
+  const [empresaObras, setEmpresaObras] = useState(searchParams.get('empresa_obras') || '')
+  const [mesDesde, setMesDesde] = useState(searchParams.get('mes_desde') || '')
+  const [mesHasta, setMesHasta] = useState(searchParams.get('mes_hasta') || '')
+  const [modalidad, setModalidad] = useState(searchParams.get('modalidad') || '')
+
+  // Cargar datos
+  useEffect(() => {
+    const cargarDatos = async () => {
+      setCargando(true)
+      try {
+        const datosObtenidos = await fetchPRTData()
+        setDatos(datosObtenidos)
+      } catch (error) {
+        console.error('Error al cargar datos:', error)
+      } finally {
+        setCargando(false)
+      }
+    }
+    cargarDatos()
+  }, [])
+
+  // Aplicar filtros
+  useEffect(() => {
+    let resultado = datos
+
+    if (supervision) {
+      resultado = resultado.filter(d =>
+        d.supervision?.toLowerCase().includes(supervision.toLowerCase())
+      )
+    }
+
+    if (empresaObras) {
+      resultado = resultado.filter(d =>
+        d.empresa_obras?.toLowerCase().includes(empresaObras.toLowerCase())
+      )
+    }
+
+    if (mesDesde) {
+      resultado = resultado.filter(d => d.periodo_mes >= parseInt(mesDesde))
+    }
+
+    if (mesHasta) {
+      resultado = resultado.filter(d => d.periodo_mes <= parseInt(mesHasta))
+    }
+
+    if (modalidad) {
+      resultado = resultado.filter(d => {
+        const modos = Array.isArray(d.modalidad) ? d.modalidad : [d.modalidad]
+        return modos.includes(modalidad)
+      })
+    }
+
+    setDatosFiltrados(resultado)
+  }, [datos, supervision, empresaObras, mesDesde, mesHasta, modalidad])
+
+  // Obtener opciones únicas para dropdowns
+  const supervisiones = Array.from(new Set(datos.map(d => d.supervision).filter(Boolean))).sort()
+  const empresasObrasUnicas = Array.from(new Set(datos.map(d => d.empresa_obras).filter(Boolean))).sort()
+  const modalidades = Array.from(
+    new Set(datos.map(d => Array.isArray(d.modalidad) ? d.modalidad : [d.modalidad]).flat().filter(Boolean))
+  ).sort()
+
+  // Contar escuelas por modalidad
+  const escuelasPorModalidad = new Map<string, Set<string>>()
+  datosFiltrados.forEach(d => {
+    const key = d.centro
+    const modos = Array.isArray(d.modalidad) ? d.modalidad : [d.modalidad]
+    if (!escuelasPorModalidad.has(key)) {
+      escuelasPorModalidad.set(key, new Set())
+    }
+    modos.forEach((m: string) => {
+      if (m) escuelasPorModalidad.get(key)?.add(m)
+    })
+  })
+
+  let presencial = 0, virtual = 0, hibrida = 0
+  escuelasPorModalidad.forEach((modos) => {
+    const tienePresencial = modos.has('Presencial')
+    const tieneVirtual = modos.has('Virtual')
+
+    if (tienePresencial && tieneVirtual) {
+      hibrida++
+    } else if (tienePresencial) {
+      presencial++
+    } else if (tieneVirtual) {
+      virtual++
+    }
+  })
+
+  const handleAplicarFiltros = () => {
+    const params = new URLSearchParams()
+    if (supervision) params.append('supervision', supervision)
+    if (empresaObras) params.append('empresa_obras', empresaObras)
+    if (mesDesde) params.append('mes_desde', mesDesde)
+    if (mesHasta) params.append('mes_hasta', mesHasta)
+    if (modalidad) params.append('modalidad', modalidad)
+
+    router.push(`/reportes/prt?${params.toString()}`)
+  }
+
+  const handleLimpiar = () => {
+    setSupervision('')
+    setEmpresaObras('')
+    setMesDesde('')
+    setMesHasta('')
+    setModalidad('')
+    router.push('/reportes/prt')
+  }
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.push('/reportes')}
+                className="p-2 hover:bg-blue-500 rounded-lg transition"
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold">PRT - Reubicación Temporal</h1>
+                <p className="text-blue-100 text-sm mt-1">
+                  {datosFiltrados.length} registros
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setMostrarFiltros(!mostrarFiltros)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                mostrarFiltros
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white/20 hover:bg-white/30 text-white'
+              }`}
+            >
+              <Filter size={18} />
+              Filtros
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Filtros */}
+      {mostrarFiltros && (
+        <div className="bg-blue-50 dark:bg-slate-800 border-b border-blue-200 dark:border-slate-700 p-6">
+          <div className="max-w-7xl mx-auto">
+            {/* Fila 1: Filtros principales */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              {/* Supervisión */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">
+                  Supervisión
+                </label>
+                <select
+                  value={supervision}
+                  onChange={(e) => setSupervision(e.target.value)}
+                  className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todas</option>
+                  {supervisiones.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Empresa Obras */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">
+                  Empresa Obras
+                </label>
+                <select
+                  value={empresaObras}
+                  onChange={(e) => setEmpresaObras(e.target.value)}
+                  className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todas</option>
+                  {empresasObrasUnicas.map(e => (
+                    <option key={e} value={e}>{e}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Período Desde */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">
+                  Desde
+                </label>
+                <select
+                  value={mesDesde}
+                  onChange={(e) => setMesDesde(e.target.value)}
+                  className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">—</option>
+                  {MESES.map((mes, idx) => (
+                    <option key={idx} value={idx + 1}>{mes}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Período Hasta */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase mb-1.5">
+                  Hasta
+                </label>
+                <select
+                  value={mesHasta}
+                  onChange={(e) => setMesHasta(e.target.value)}
+                  className="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">—</option>
+                  {MESES.map((mes, idx) => (
+                    <option key={idx} value={idx + 1}>{mes}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Fila 2: Especificaciones por Modalidad */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-slate-600 uppercase mb-3">
+                Modalidad de Continuidad Educativa
+              </label>
+              <div className="flex gap-3 flex-wrap">
+                {['Presencial', 'Virtual', 'Presencial, Virtual'].map(modo => (
+                  <label key={modo} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="modalidad"
+                      value={modo === 'Presencial, Virtual' ? '' : modo}
+                      checked={modalidad === (modo === 'Presencial, Virtual' ? '' : modo)}
+                      onChange={(e) => setModalidad(e.target.value)}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm text-slate-700">{modo === 'Presencial, Virtual' ? 'Híbrida' : modo}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Botones */}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={handleLimpiar}
+                className="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50 transition"
+              >
+                Limpiar
+              </button>
+              <button
+                onClick={handleAplicarFiltros}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition"
+              >
+                Aplicar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-6 space-y-6">
+        {cargando ? (
+          <div className="flex justify-center items-center h-96">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <>
+            {/* Tarjetas de Modalidad */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Presencial</p>
+                <p className="text-2xl font-bold text-blue-600">{presencial}</p>
+                <p className="text-xs text-slate-600 mt-1">Escuelas</p>
+              </div>
+              <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
+                <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Virtual</p>
+                <p className="text-2xl font-bold text-purple-600">{virtual}</p>
+                <p className="text-xs text-slate-600 mt-1">Escuelas</p>
+              </div>
+              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+                <p className="text-xs font-semibold text-green-700 uppercase mb-2">Híbrida</p>
+                <p className="text-2xl font-bold text-green-600">{hibrida}</p>
+                <p className="text-xs text-slate-600 mt-1">Escuelas</p>
+              </div>
+            </div>
+
+            {/* Tabla de datos */}
+            <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-100 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Código</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Centro Educativo</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Supervisión</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Empresa Obras</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Modalidad</th>
+                      <th className="px-4 py-3 text-left font-semibold text-slate-700">Período</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {datosFiltrados.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
+                          No hay registros para los filtros seleccionados
+                        </td>
+                      </tr>
+                    ) : (
+                      datosFiltrados.map((item, idx) => (
+                        <tr key={idx} className="border-b border-slate-200 hover:bg-slate-50 transition">
+                          <td className="px-4 py-3 font-medium">{item.codigo}</td>
+                          <td className="px-4 py-3">{item.centro}</td>
+                          <td className="px-4 py-3">{item.supervision}</td>
+                          <td className="px-4 py-3">{item.empresa_obras}</td>
+                          <td className="px-4 py-3">
+                            {Array.isArray(item.modalidad) ? item.modalidad.join(', ') : item.modalidad}
+                          </td>
+                          <td className="px-4 py-3">{MESES[item.periodo_mes - 1]}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}

@@ -2,9 +2,17 @@
 import { useRouter } from 'next/navigation'
 import { FileText, BarChart3, ChevronRight } from 'lucide-react'
 
-type TipoReporte = 'hsso' | 'maqr' | 'pppi'
+type TipoReporte = 'prt' | 'hsso' | 'maqr' | 'pppi'
 
 const TIPOS_REPORTES = [
+  {
+    id: 'prt' as TipoReporte,
+    nombre: 'PRT - Reubicación Temporal',
+    descripcion: 'Plan de Reubicación Temporal de estudiantes y docentes',
+    icon: '📍',
+    color: 'from-blue-500 to-blue-600',
+    disponible: true,
+  },
   {
     id: 'hsso' as TipoReporte,
     nombre: 'HSSO - Higiene y Seguridad',
@@ -35,7 +43,9 @@ export default function ReportesPage() {
   const router = useRouter()
 
   const handleSelectReporte = (tipo: TipoReporte) => {
-    if (tipo === 'hsso') {
+    if (tipo === 'prt') {
+      router.push('/reportes/prt')
+    } else if (tipo === 'hsso') {
       router.push('/reportes/hsso')
     } else if (tipo === 'maqr') {
       router.push('/reportes/maqr')
@@ -120,8 +130,8 @@ export default function ReportesPage() {
               <FileText size={24} className="text-blue-600" />
               <p className="text-sm text-slate-600 dark:text-slate-400">Reportes Disponibles</p>
             </div>
-            <p className="text-3xl font-bold">3</p>
-            <p className="text-xs text-slate-500 mt-1">HSSO, MAQR y PPPI disponibles</p>
+            <p className="text-3xl font-bold">4</p>
+            <p className="text-xs text-slate-500 mt-1">PRT, HSSO, MAQR y PPPI disponibles</p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
