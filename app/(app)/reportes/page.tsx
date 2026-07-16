@@ -23,8 +23,8 @@ const TIPOS_REPORTES = [
   },
   {
     id: 'pppi' as TipoReporte,
-    nombre: 'PPPI - Datos y Registros',
-    descripcion: 'Protección y prevención de infraestructura',
+    nombre: 'PPPI - Participación de Partes Interesadas',
+    descripcion: 'Participación de Partes Interesadas',
     icon: '🏗️',
     color: 'from-green-500 to-green-600',
     disponible: true,

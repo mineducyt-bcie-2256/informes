@@ -85,7 +85,8 @@
       "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
       "Bash(git commit -m 'Add empresa_obras and period filters to PRT report *)",
       "Bash(git commit -m 'Remove PRT from reports dashboard *)",
-      "Bash(git commit -m 'Fix TypeScript errors in reports page *)"
+      "Bash(git commit -m 'Fix TypeScript errors in reports page *)",
+      "Bash(git commit -m 'Update PPPI report name to Participación de Partes Interesadas *)"
     ]
   }
 }
