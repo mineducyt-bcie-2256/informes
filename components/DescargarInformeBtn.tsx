@@ -13,18 +13,15 @@ export default function DescargarInformeBtn({ informeId, estado }: DescargarInfo
     return null
   }
 
-  const handleDescargar = () => {
-    window.open(`/informes/${informeId}/pdf?download=true`, '_blank', 'width=800,height=600')
-  }
-
   return (
-    <button
-      onClick={handleDescargar}
+    <a
+      href={`/api/informes/${informeId}/pdf/download`}
+      download
       type="button"
       className="text-green-600 hover:text-green-800 font-medium text-xs flex items-center gap-1 whitespace-nowrap"
     >
       <Download size={14} />
       Descargar
-    </button>
+    </a>
   )
 }
