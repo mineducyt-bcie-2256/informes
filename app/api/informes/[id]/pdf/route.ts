@@ -1,10 +1,9 @@
-import puppeteer from 'puppeteer'
+import { jsPDF } from 'jspdf'
+import { createClient } from '@/lib/supabase/server'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  let browser
   try {
     const { id } = await params
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
     if (!id) {
       return new Response(JSON.stringify({ error: 'ID de informe requerido' }), {
@@ -13,74 +12,91 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       })
     }
 
-    console.log(`[PDF] Iniciando generación de PDF para informe: ${id}`)
+    console.log(`[PDF] Generando PDF para informe: ${id}`)
 
-    const browserOptions: any = {
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-gpu',
-        '--disable-dev-shm-usage',
-      ],
+    // Cargar datos del informe desde Supabase
+    const supabase = await createClient()
+
+    const { data: informe, error: informeError } = await supabase
+      .from('informes')
+      .select('id, periodo_mes, periodo_anio, estado, escuelas(codigo, nombre, empresa_supervision)')
+      .eq('id', id)
+      .single()
+
+    if (informeError || !informe) {
+      throw new Error(`Informe no encontrado: ${informeError?.message}`)
     }
 
-    browser = await puppeteer.launch(browserOptions)
-    const page = await browser.newPage()
+    // Crear PDF simple pero funcional con jsPDF
+    const pdf = new jsPDF()
+    const pageHeight = pdf.internal.pageSize.getHeight()
+    const pageWidth = pdf.internal.pageSize.getWidth()
+    let yPosition = 20
 
-    // Configurar viewport
-    await page.setViewport({ width: 1280, height: 800 })
+    const escuela = Array.isArray(informe.escuelas) ? informe.escuelas[0] : informe.escuelas
 
-    // Aumentar timeout de ejecución JS
-    page.setDefaultTimeout(90000)
-    page.setDefaultNavigationTimeout(90000)
+    // Encabezado
+    pdf.setFontSize(18)
+    pdf.text('INFORME TÉCNICO', 20, yPosition)
+    yPosition += 15
 
-    console.log(`[PDF] Navegando a ${baseUrl}/informes/${id}/pdf`)
+    pdf.setFontSize(10)
+    pdf.text(`Centro Educativo: ${escuela?.nombre || 'N/A'}`, 20, yPosition)
+    yPosition += 8
 
-    // Navegar a la página PDF del informe
-    let response
-    try {
-      response = await page.goto(`${baseUrl}/informes/${id}/pdf`, {
-        waitUntil: 'domcontentloaded',
-        timeout: 90000,
-      })
-    } catch (navError) {
-      console.error(`[PDF] Error de navegación:`, navError)
-      throw new Error(`No se pudo cargar la página: ${navError instanceof Error ? navError.message : String(navError)}`)
-    }
+    pdf.text(`Código: ${escuela?.codigo || 'N/A'}`, 20, yPosition)
+    yPosition += 8
 
-    if (!response) {
-      throw new Error('No response from page.goto')
-    }
+    pdf.text(`Período: ${informe.periodo_mes}/${informe.periodo_anio}`, 20, yPosition)
+    yPosition += 8
 
-    console.log(`[PDF] Página cargada, status: ${response.status()}`)
+    pdf.text(`Estado: ${informe.estado}`, 20, yPosition)
+    yPosition += 15
 
-    // Esperar un poco a que se cargue todo el contenido
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    // Línea divisora
+    pdf.setDrawColor(200)
+    pdf.line(20, yPosition, pageWidth - 20, yPosition)
+    yPosition += 10
 
-    // Generar PDF
-    console.log(`[PDF] Generando PDF...`)
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '0.5cm',
-        right: '0.5cm',
-        bottom: '0.5cm',
-        left: '0.5cm',
-      },
-      timeout: 30000,
+    // Información básica
+    pdf.setFontSize(12)
+    pdf.text('Información General', 20, yPosition)
+    yPosition += 8
+
+    pdf.setFontSize(9)
+    const info = [
+      `Escuela: ${escuela?.nombre || 'N/A'}`,
+      `Código: ${escuela?.codigo || 'N/A'}`,
+      `Supervisión: ${escuela?.empresa_supervision || 'N/A'}`,
+      `Período: ${informe.periodo_mes}/${informe.periodo_anio}`,
+      `Estado: ${informe.estado}`,
+      `ID: ${informe.id}`,
+    ]
+
+    info.forEach((line) => {
+      if (yPosition > pageHeight - 40) {
+        pdf.addPage()
+        yPosition = 20
+      }
+      pdf.text(line, 20, yPosition)
+      yPosition += 7
     })
 
-    if (!pdfBuffer || pdfBuffer.length === 0) {
-      throw new Error('PDF generado está vacío')
-    }
+    // Footer
+    pdf.setFontSize(8)
+    pdf.setTextColor(128)
+    pdf.text(
+      `Generado: ${new Date().toLocaleString('es-SV')}`,
+      20,
+      pageHeight - 10
+    )
+
+    // Obtener PDF como buffer
+    const pdfBuffer = Buffer.from(pdf.output('arraybuffer'))
 
     console.log(`[PDF] PDF generado exitosamente, tamaño: ${pdfBuffer.length} bytes`)
 
-    await browser.close()
-
-    return new Response(Buffer.from(pdfBuffer), {
+    return new Response(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="informe_${id}.pdf"`,
@@ -88,19 +104,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       },
     })
   } catch (error) {
-    console.error(`[PDF] Error generando PDF:`, error)
-    if (browser) {
-      await browser.close().catch((e) => console.error('[PDF] Error cerrando browser:', e))
-    }
+    console.error(`[PDF] Error:`, error)
 
     const errorMessage = error instanceof Error ? error.message : String(error)
-    console.error(`[PDF] Mensaje de error: ${errorMessage}`)
 
     return new Response(
       JSON.stringify({
         error: 'Error al generar PDF',
         details: errorMessage,
-        timestamp: new Date().toISOString(),
       }),
       {
         status: 500,
