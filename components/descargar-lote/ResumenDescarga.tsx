@@ -37,30 +37,69 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
 
       const informesConURL = await response.json()
 
+      if (!informesConURL || informesConURL.length === 0) {
+        throw new Error('No se encontraron informes para descargar')
+      }
+
       // Importar JSZip dinámicamente
       const JSZip = (await import('jszip')).default
       const zip = new JSZip()
+
+      let descargadosExitosos = 0
+      let descargadosFallidos = 0
 
       // Descargar cada PDF directamente del servidor
       for (const informe of informesConURL) {
         try {
           // Usar el endpoint que genera PDF binario
           const pdfResponse = await fetch(`/api/informes/${informe.id}/pdf`)
-          if (!pdfResponse.ok) throw new Error(`Error descargando ${informe.nombre}`)
+
+          if (!pdfResponse.ok) {
+            console.error(`Error HTTP descargando ${informe.nombre}: ${pdfResponse.status}`)
+            descargadosFallidos++
+            continue
+          }
 
           const pdfBlob = await pdfResponse.blob()
+
+          // Verificar que el blob es válido y contiene un PDF
+          if (!pdfBlob || pdfBlob.size === 0) {
+            console.error(`PDF vacío para ${informe.nombre}`)
+            descargadosFallidos++
+            continue
+          }
+
+          if (!pdfBlob.type.includes('pdf') && !pdfBlob.type.includes('octet-stream')) {
+            console.error(`Tipo MIME inválido para ${informe.nombre}: ${pdfBlob.type}`)
+            descargadosFallidos++
+            continue
+          }
+
           const mes = String(informe.periodo_mes).padStart(2, '0')
           const nombre = `Informe_${informe.periodo_anio}${mes}_${informe.codigo}_${informe.nombre}.pdf`
 
           zip.file(nombre, pdfBlob)
+          descargadosExitosos++
         } catch (err) {
           console.error(`Error descargando ${informe.nombre}:`, err)
-          // Continuar con el siguiente
+          descargadosFallidos++
         }
+      }
+
+      if (descargadosExitosos === 0) {
+        throw new Error('No se pudieron descargar PDFs. Verifica que los informes existan y estén aprobados.')
+      }
+
+      if (descargadosFallidos > 0) {
+        console.warn(`Se descargaron ${descargadosExitosos} informes exitosamente, ${descargadosFallidos} fallaron`)
       }
 
       // Generar ZIP
       const zipBlob = await zip.generateAsync({ type: 'blob' })
+
+      if (!zipBlob || zipBlob.size === 0) {
+        throw new Error('El archivo ZIP está vacío. No se pudieron agregar los PDFs.')
+      }
 
       // Descargar ZIP
       const url = window.URL.createObjectURL(zipBlob)
