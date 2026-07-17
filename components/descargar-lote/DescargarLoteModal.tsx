@@ -16,15 +16,17 @@ export default function DescargarLoteModal({ isOpen, setIsOpen }: DescargarLoteM
   const [error, setError] = useState<string | null>(null)
 
   const [filtros, setFiltros] = useState<{
-    tipo: 'todo' | 'periodo' | 'supervision'
-    periodoDesde: string
-    periodoHasta: string
+    tipo: 'todos' | 'periodo-todos' | 'periodo-supervision'
+    mesDesde: number
+    mesHasta: number
+    anio: number
     supervision: string
     soloAprobados: boolean
   }>({
-    tipo: 'todo',
-    periodoDesde: '',
-    periodoHasta: '',
+    tipo: 'periodo-todos',
+    mesDesde: 1,
+    mesHasta: 12,
+    anio: new Date().getFullYear(),
     supervision: '',
     soloAprobados: true,
   })
@@ -47,39 +49,40 @@ export default function DescargarLoteModal({ isOpen, setIsOpen }: DescargarLoteM
         .select('id, periodo_mes, periodo_anio, estado, escuelas(codigo, nombre, empresa_supervision)')
         .eq('estado', 'aprobado')
 
-      // Aplicar filtros
-      if (filtros.tipo === 'periodo') {
-        // Convertir fechas a período (mes-año)
-        const desdeDate = new Date(filtros.periodoDesde)
-        const hastaDate = new Date(filtros.periodoHasta)
+      // Obtener todos los informes aprobados
+      const { data: allInformes } = await query
 
-        // Obtener todos y filtrar en memoria
-        const { data: allInformes } = await query
-
-        if (allInformes) {
-          const filtered = allInformes.filter((inf: any) => {
-            const infDate = new Date(inf.periodo_anio, inf.periodo_mes - 1)
-            return infDate >= desdeDate && infDate <= hastaDate
-          })
-          setInformesSeleccionados(filtered)
-        }
-      } else if (filtros.tipo === 'supervision') {
-        const { data } = await query
-        if (data) {
-          const filtered = data.filter((inf: any) =>
-            inf.escuelas?.empresa_supervision?.toLowerCase().includes(filtros.supervision.toLowerCase())
-          )
-          setInformesSeleccionados(filtered)
-        }
-      } else {
-        // Todo
-        const { data } = await query
-        setInformesSeleccionados(data || [])
+      if (!allInformes || allInformes.length === 0) {
+        throw new Error('No hay informes aprobados')
       }
 
+      // Filtrar por período (meses y año)
+      let filtered = allInformes.filter((inf: any) => {
+        return (
+          inf.periodo_anio === filtros.anio &&
+          inf.periodo_mes >= filtros.mesDesde &&
+          inf.periodo_mes <= filtros.mesHasta
+        )
+      })
+
+      // Si es por supervisión, filtrar además por supervisión
+      if (filtros.tipo === 'periodo-supervision') {
+        if (!filtros.supervision) {
+          throw new Error('Debes seleccionar una supervisión')
+        }
+        filtered = filtered.filter((inf: any) =>
+          inf.escuelas?.empresa_supervision?.toLowerCase().includes(filtros.supervision.toLowerCase())
+        )
+      }
+
+      if (filtered.length === 0) {
+        throw new Error('No hay informes que coincidan con tus criterios')
+      }
+
+      setInformesSeleccionados(filtered)
       setPaso('resumen')
     } catch (err) {
-      setError('Error al obtener informes. Intenta de nuevo.')
+      setError(err instanceof Error ? err.message : 'Error al obtener informes. Intenta de nuevo.')
       console.error(err)
     } finally {
       setCargando(false)

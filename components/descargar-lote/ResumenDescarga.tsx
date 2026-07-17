@@ -124,13 +124,15 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
   }
 
   const getTipoDescripcion = () => {
+    const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    const mesDesde = MESES[filtros.mesDesde - 1] || ''
+    const mesHasta = MESES[filtros.mesHasta - 1] || ''
+
     switch (filtros.tipo) {
-      case 'todo':
-        return 'Todos los informes aprobados'
-      case 'periodo':
-        return `Período: ${filtros.periodoDesde} a ${filtros.periodoHasta}`
-      case 'supervision':
-        return `Supervisión: ${filtros.supervision}`
+      case 'periodo-todos':
+        return `Período: ${mesDesde} - ${mesHasta} ${filtros.anio}`
+      case 'periodo-supervision':
+        return `Período: ${mesDesde} - ${mesHasta} ${filtros.anio} | Supervisión: ${filtros.supervision}`
       default:
         return ''
     }
