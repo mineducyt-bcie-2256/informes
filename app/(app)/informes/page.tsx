@@ -5,6 +5,7 @@ import BorrarInforme from './BorrarInforme'
 import AprobarInformeBtn from './AprobarInformeBtn'
 import DescargarExcel from './DescargarExcel'
 import DescargarExcelControl from './DescargarExcelControl'
+import DescargarInformeBtn from '@/components/DescargarInformeBtn'
 import { MESES } from '@/types'
 import PendienteCell from './PendienteCell'
 import { PendientesModal } from './PendientesModal'
@@ -514,6 +515,10 @@ export default async function InformesPage({
                       <Link href={`/informes/${inf.id}`} className="text-blue-600 hover:text-blue-800 font-medium text-xs">
                         Ver / Editar
                       </Link>
+                      <DescargarInformeBtn
+                        informeId={inf.id}
+                        estado={getEstadoVisual(inf)}
+                      />
                       <AprobarInformeBtn
                         informeId={inf.id}
                         estado={inf.estado}

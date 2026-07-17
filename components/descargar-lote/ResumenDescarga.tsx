@@ -21,112 +21,28 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
     setExito(false)
 
     try {
-      // Obtener lista de informes a descargar
-      const response = await fetch('/api/informes/descargar-lote', {
+      // Obtener ZIP directamente del servidor con todos los PDFs
+      const response = await fetch('/api/informes/descargar-lote-zip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           informe_ids: informes.map(i => i.id),
-          filtros,
         }),
       })
 
       if (!response.ok) {
-        throw new Error('Error al obtener informes')
-      }
-
-      const informesConURL = await response.json()
-
-      if (!informesConURL || informesConURL.length === 0) {
-        throw new Error('No se encontraron informes para descargar')
-      }
-
-      // Importar JSZip dinámicamente
-      const JSZip = (await import('jszip')).default
-      const zip = new JSZip()
-
-      setError(null)
-      const baseUrl = window.location.origin
-
-      // Descargar PDFs usando ventanas popup que se auto-descargan
-      const downloadPdfs = async () => {
-        const pdfs: { [key: string]: Blob } = {}
-
-        // Crear un iframe oculto para interceptar descargas
-        const form = document.createElement('form')
-        form.style.display = 'none'
-        document.body.appendChild(form)
-
-        for (let i = 0; i < informesConURL.length; i++) {
-          const informe = informesConURL[i]
-          const downloadUrl = `${baseUrl}/informes/${informe.id}/pdf?download=true`
-
-          try {
-            // Abrir en ventana popup que se descargará automáticamente
-            const popup = window.open(downloadUrl, `pdf_${i}`, 'width=800,height=600')
-
-            // Esperar un poco entre descargas
-            await new Promise(resolve => setTimeout(resolve, 2000))
-
-            if (popup && !popup.closed) {
-              popup.close()
-            }
-          } catch (err) {
-            console.error(`Error descargando ${informe.nombre}:`, err)
-          }
-        }
-
-        document.body.removeChild(form)
-
-        // Mostrar instrucciones para que el usuario agregue manualmente los PDFs al ZIP
-        setError('Se han abierto ventanas para descargar los PDFs. Por favor revisa tu carpeta de Descargas.')
-      }
-
-      // Alternativa: Descargar usando fetch desde la API simple
-      let descargadosExitosos = 0
-      let descargadosFallidos = 0
-
-      for (const informe of informesConURL) {
+        let errorMessage = `Error HTTP ${response.status}`
         try {
-          // Obtener PDF del endpoint simple
-          const pdfResponse = await fetch(`/api/informes/${informe.id}/pdf`)
-
-          if (!pdfResponse.ok) {
-            console.error(`Error HTTP descargando ${informe.nombre}: ${pdfResponse.status}`)
-            descargadosFallidos++
-            continue
-          }
-
-          const pdfBlob = await pdfResponse.blob()
-
-          // Verificar que el blob es válido
-          if (!pdfBlob || pdfBlob.size === 0) {
-            console.error(`PDF vacío para ${informe.nombre}`)
-            descargadosFallidos++
-            continue
-          }
-
-          const mes = String(informe.periodo_mes).padStart(2, '0')
-          const nombre = `Informe_${informe.periodo_anio}${mes}_${informe.codigo}_${informe.nombre}.pdf`
-
-          zip.file(nombre, pdfBlob)
-          descargadosExitosos++
-        } catch (err) {
-          console.error(`Error descargando ${informe.nombre}:`, err)
-          descargadosFallidos++
+          const errorData = await response.json()
+          errorMessage = errorData.error || errorData.details || errorMessage
+        } catch {
+          // Si no es JSON, usar el mensaje genérico
         }
+        throw new Error(errorMessage)
       }
 
-      if (descargadosExitosos === 0) {
-        throw new Error('No se pudieron descargar PDFs. Intenta nuevamente.')
-      }
-
-      if (descargadosFallidos > 0) {
-        console.warn(`Se descargaron ${descargadosExitosos} informes exitosamente, ${descargadosFallidos} fallaron`)
-      }
-
-      // Generar ZIP
-      const zipBlob = await zip.generateAsync({ type: 'blob' })
+      // Obtener ZIP como blob
+      const zipBlob = await response.blob()
 
       if (!zipBlob || zipBlob.size === 0) {
         throw new Error('El archivo ZIP está vacío.')
