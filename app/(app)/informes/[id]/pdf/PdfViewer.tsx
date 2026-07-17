@@ -4,7 +4,7 @@ import {
   PDFViewer, Image,
 } from '@react-pdf/renderer'
 import { Download, Eye } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { analizarCCT, obtenerColorNivel } from '@/lib/cctAnalyzer'
 
 // ═══════════════════════════════════════════════════════════════════
@@ -4365,6 +4365,7 @@ function SeccionCasosEspeciales({ data }: { data: any }) {
 export default function PdfViewer({ data }: { data: any }) {
   const [preview,      setPreview]      = useState(false)
   const [mapaBase64,   setMapaBase64]   = useState<string | null>(null)
+  const pdfDownloadRef = useRef<any>(null)
 
   // Convierte la URL del mapa a base64 para que react-pdf pueda usarla
   useEffect(() => {
@@ -4380,6 +4381,23 @@ export default function PdfViewer({ data }: { data: any }) {
       })
       .catch(() => {})
   }, [data.mapImageUrl])
+
+  // Si viene con ?download=true, automáticamente descarga el PDF
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('download') === 'true' && pdfDownloadRef.current) {
+      // Esperar un poco a que el componente esté listo
+      setTimeout(() => {
+        const button = pdfDownloadRef.current?.querySelector('button')
+        if (button) {
+          button.click()
+          // Cerrar la ventana después de descargar
+          setTimeout(() => window.close(), 1000)
+        }
+      }, 500)
+    }
+  }, [pdfDownloadRef])
 
   const filename = [
     'Informe_SCAS',
@@ -4435,6 +4453,7 @@ export default function PdfViewer({ data }: { data: any }) {
         {/* Botones */}
         <div className="flex gap-3">
           <PDFDownloadLink
+            ref={pdfDownloadRef}
             document={<InformePDF data={{ ...data, mapImageUrl: mapaBase64 ?? data.mapImageUrl }} />}
             fileName={filename}
             className="flex-1"

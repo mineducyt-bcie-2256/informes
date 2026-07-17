@@ -45,13 +45,50 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
       const JSZip = (await import('jszip')).default
       const zip = new JSZip()
 
+      setError(null)
+      const baseUrl = window.location.origin
+
+      // Descargar PDFs usando ventanas popup que se auto-descargan
+      const downloadPdfs = async () => {
+        const pdfs: { [key: string]: Blob } = {}
+
+        // Crear un iframe oculto para interceptar descargas
+        const form = document.createElement('form')
+        form.style.display = 'none'
+        document.body.appendChild(form)
+
+        for (let i = 0; i < informesConURL.length; i++) {
+          const informe = informesConURL[i]
+          const downloadUrl = `${baseUrl}/informes/${informe.id}/pdf?download=true`
+
+          try {
+            // Abrir en ventana popup que se descargará automáticamente
+            const popup = window.open(downloadUrl, `pdf_${i}`, 'width=800,height=600')
+
+            // Esperar un poco entre descargas
+            await new Promise(resolve => setTimeout(resolve, 2000))
+
+            if (popup && !popup.closed) {
+              popup.close()
+            }
+          } catch (err) {
+            console.error(`Error descargando ${informe.nombre}:`, err)
+          }
+        }
+
+        document.body.removeChild(form)
+
+        // Mostrar instrucciones para que el usuario agregue manualmente los PDFs al ZIP
+        setError('Se han abierto ventanas para descargar los PDFs. Por favor revisa tu carpeta de Descargas.')
+      }
+
+      // Alternativa: Descargar usando fetch desde la API simple
       let descargadosExitosos = 0
       let descargadosFallidos = 0
 
-      // Descargar cada PDF directamente del servidor
       for (const informe of informesConURL) {
         try {
-          // Usar el endpoint que genera PDF binario
+          // Obtener PDF del endpoint simple
           const pdfResponse = await fetch(`/api/informes/${informe.id}/pdf`)
 
           if (!pdfResponse.ok) {
@@ -62,15 +99,9 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
 
           const pdfBlob = await pdfResponse.blob()
 
-          // Verificar que el blob es válido y contiene un PDF
+          // Verificar que el blob es válido
           if (!pdfBlob || pdfBlob.size === 0) {
             console.error(`PDF vacío para ${informe.nombre}`)
-            descargadosFallidos++
-            continue
-          }
-
-          if (!pdfBlob.type.includes('pdf') && !pdfBlob.type.includes('octet-stream')) {
-            console.error(`Tipo MIME inválido para ${informe.nombre}: ${pdfBlob.type}`)
             descargadosFallidos++
             continue
           }
@@ -87,7 +118,7 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
       }
 
       if (descargadosExitosos === 0) {
-        throw new Error('No se pudieron descargar PDFs. Verifica que los informes existan y estén aprobados.')
+        throw new Error('No se pudieron descargar PDFs. Intenta nuevamente.')
       }
 
       if (descargadosFallidos > 0) {
@@ -98,7 +129,7 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
       const zipBlob = await zip.generateAsync({ type: 'blob' })
 
       if (!zipBlob || zipBlob.size === 0) {
-        throw new Error('El archivo ZIP está vacío. No se pudieron agregar los PDFs.')
+        throw new Error('El archivo ZIP está vacío.')
       }
 
       // Descargar ZIP
