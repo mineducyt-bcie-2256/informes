@@ -1,5 +1,8 @@
 import { jsPDF } from 'jspdf'
 import { createClient } from '@/lib/supabase/server'
+import { MESES } from '@/types'
+
+const MESES_ARRAY = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -19,7 +22,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { data: informe, error: informeError } = await supabase
       .from('informes')
-      .select('id, periodo_mes, periodo_anio, estado, escuelas(codigo, nombre, empresa_supervision)')
+      .select(`
+        id, periodo_mes, periodo_anio, estado,
+        escuelas(codigo, nombre, empresa_supervision),
+        informe_c1317(descripcion_condicion),
+        informe_hsso(descripcion_condicion),
+        informe_prt(descripcion_condicion)
+      `)
       .eq('id', id)
       .single()
 
@@ -27,69 +36,119 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       throw new Error(`Informe no encontrado: ${informeError?.message}`)
     }
 
-    // Crear PDF simple pero funcional con jsPDF
+    // Crear PDF mejorado con jsPDF
     const pdf = new jsPDF()
     const pageHeight = pdf.internal.pageSize.getHeight()
     const pageWidth = pdf.internal.pageSize.getWidth()
     let yPosition = 20
 
     const escuela = Array.isArray(informe.escuelas) ? informe.escuelas[0] : informe.escuelas
+    const mesNombre = MESES_ARRAY[informe.periodo_mes - 1] || `Mes ${informe.periodo_mes}`
 
-    // Encabezado
-    pdf.setFontSize(18)
-    pdf.text('INFORME TÉCNICO', 20, yPosition)
-    yPosition += 15
+    // ═══════════════════════════════════════════════════════════════
+    // PORTADA
+    // ═══════════════════════════════════════════════════════════════
+    pdf.setFont('Helvetica', 'bold')
+    pdf.setFontSize(24)
+    pdf.setTextColor(15, 45, 82)
+    pdf.text('INFORME TÉCNICO', pageWidth / 2, 40, { align: 'center' })
 
-    pdf.setFontSize(10)
-    pdf.text(`Centro Educativo: ${escuela?.nombre || 'N/A'}`, 20, yPosition)
-    yPosition += 8
-
-    pdf.text(`Código: ${escuela?.codigo || 'N/A'}`, 20, yPosition)
-    yPosition += 8
-
-    pdf.text(`Período: ${informe.periodo_mes}/${informe.periodo_anio}`, 20, yPosition)
-    yPosition += 8
-
-    pdf.text(`Estado: ${informe.estado}`, 20, yPosition)
-    yPosition += 15
+    pdf.setFont('Helvetica', 'normal')
+    pdf.setFontSize(11)
+    pdf.setTextColor(64, 64, 64)
+    pdf.text(`Plan Específico de Gestión Ambiental y Social - PEGAS`, pageWidth / 2, 55, { align: 'center' })
 
     // Línea divisora
-    pdf.setDrawColor(200)
-    pdf.line(20, yPosition, pageWidth - 20, yPosition)
+    pdf.setDrawColor(200, 169, 81)
+    pdf.setLineWidth(2)
+    pdf.line(40, 65, pageWidth - 40, 65)
+
+    yPosition = 85
+
+    // Información del proyecto
+    pdf.setFont('Helvetica', 'bold')
+    pdf.setFontSize(10)
+    pdf.setTextColor(15, 45, 82)
+    pdf.text('INFORMACIÓN DEL PROYECTO', 20, yPosition)
     yPosition += 10
 
-    // Información básica
-    pdf.setFontSize(12)
-    pdf.text('Información General', 20, yPosition)
-    yPosition += 8
-
+    pdf.setFont('Helvetica', 'normal')
     pdf.setFontSize(9)
-    const info = [
-      `Escuela: ${escuela?.nombre || 'N/A'}`,
+    pdf.setTextColor(64, 64, 64)
+
+    const projectInfo = [
+      `Centro Educativo: ${escuela?.nombre || 'N/A'}`,
       `Código: ${escuela?.codigo || 'N/A'}`,
       `Supervisión: ${escuela?.empresa_supervision || 'N/A'}`,
-      `Período: ${informe.periodo_mes}/${informe.periodo_anio}`,
-      `Estado: ${informe.estado}`,
-      `ID: ${informe.id}`,
+      ``,
+      `Período de Reporte: ${mesNombre} ${informe.periodo_anio}`,
+      `Estado: ${informe.estado?.toUpperCase() || 'N/A'}`,
+      ``,
+      `Identificador: ${informe.id}`,
+      `Generado: ${new Date().toLocaleString('es-SV')}`,
     ]
 
-    info.forEach((line) => {
-      if (yPosition > pageHeight - 40) {
+    projectInfo.forEach((line) => {
+      if (yPosition > pageHeight - 30) {
         pdf.addPage()
         yPosition = 20
       }
-      pdf.text(line, 20, yPosition)
+      if (line === '') {
+        yPosition += 3
+      } else {
+        pdf.text(line, 20, yPosition)
+        yPosition += 6
+      }
+    })
+
+    // ═══════════════════════════════════════════════════════════════
+    // RESUMEN DE MÓDULOS
+    // ═══════════════════════════════════════════════════════════════
+    pdf.addPage()
+    yPosition = 20
+
+    pdf.setFont('Helvetica', 'bold')
+    pdf.setFontSize(12)
+    pdf.setTextColor(15, 45, 82)
+    pdf.text('MÓDULOS INCLUIDOS EN ESTE INFORME', 20, yPosition)
+    yPosition += 12
+
+    pdf.setFont('Helvetica', 'normal')
+    pdf.setFontSize(9)
+    pdf.setTextColor(64, 64, 64)
+
+    const modulos = [
+      { nombre: 'Condiciones Generales', dato: informe.informe_c1317 },
+      { nombre: 'Higiene y Seguridad Ocupacional (HSSO)', dato: informe.informe_hsso },
+      { nombre: 'Plan de Reubicación Temporal (PRT)', dato: informe.informe_prt },
+    ]
+
+    modulos.forEach((mod) => {
+      const status = mod.dato ? '✓ Completo' : '○ Pendiente'
+      if (mod.dato) {
+        pdf.setTextColor(22, 163, 74)
+      } else {
+        pdf.setTextColor(148, 163, 176)
+      }
+      pdf.text(`${status} - ${mod.nombre}`, 25, yPosition)
       yPosition += 7
     })
 
-    // Footer
-    pdf.setFontSize(8)
-    pdf.setTextColor(128)
-    pdf.text(
-      `Generado: ${new Date().toLocaleString('es-SV')}`,
-      20,
-      pageHeight - 10
-    )
+    // Footer en todas las páginas
+    pdf.setFont('Helvetica', 'normal')
+    pdf.setFontSize(7)
+    pdf.setTextColor(128, 128, 128)
+
+    const totalPages = (pdf as any).internal.pages.length - 1
+    for (let i = 1; i <= totalPages; i++) {
+      pdf.setPage(i)
+      pdf.text(
+        `Página ${i} de ${totalPages}`,
+        pageWidth - 20,
+        pageHeight - 10,
+        { align: 'right' }
+      )
+    }
 
     // Obtener PDF como buffer
     const pdfBuffer = Buffer.from(pdf.output('arraybuffer'))
@@ -99,7 +158,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return new Response(pdfBuffer, {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="informe_${id}.pdf"`,
+        'Content-Disposition': `attachment; filename="Informe_${informe.periodo_anio}${String(informe.periodo_mes).padStart(2, '0')}_${escuela?.codigo || 'CENTRO'}.pdf"`,
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     })
