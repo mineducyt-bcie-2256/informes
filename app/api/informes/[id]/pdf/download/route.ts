@@ -2,6 +2,68 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import jsPDF from 'jspdf'
 
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // ✅ VERIFICAR AUTENTICACIÓN
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    }
+
+    const { id } = await params
+
+    // ✅ VERIFICAR PERMISOS: usuario puede descargar solo sus propios informes o si es admin
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('rol')
+      .eq('id', user.id)
+      .single()
+
+    // Obtener informe y verificar acceso
+    const { data: informe, error: informeError } = await supabase
+      .from('informes')
+      .select(`
+        *,
+        escuelas(nombre, codigo, grupo_id, grupos(numero))
+      `)
+      .eq('id', id)
+      .single()
+
+    if (informeError || !informe) {
+      return NextResponse.json({ error: 'Informe no encontrado' }, { status: 404 })
+    }
+
+    // Si no es admin y el informe no está aprobado, denegar acceso
+    if (userProfile?.rol !== 'administrador' && userProfile?.rol !== 'programador') {
+      if (informe.estado !== 'aprobado') {
+        return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      }
+    }
+
+    // Generar PDF
+    const pdfDoc = generarPDF(informe)
+    const pdfBlob = pdfDoc.output('blob')
+
+    const filename = `Informe_${informe.escuelas?.codigo || 'CE'}_${informe.periodo_anio}-${String(informe.periodo_mes).padStart(2, '0')}.pdf`
+
+    return new NextResponse(pdfBlob, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    })
+  } catch (error) {
+    console.error('Error downloading PDF:', error)
+    return NextResponse.json({ error: 'Error al descargar PDF' }, { status: 500 })
+  }
+}
+
 // Helper para generar PDF profesional
 function generarPDF(informe: any): jsPDF {
   const doc = new jsPDF()
