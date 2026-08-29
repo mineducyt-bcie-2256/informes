@@ -96,7 +96,9 @@
       "PowerShell(cd \"$env:TEMP\\\\claude\\\\C--informe-bcie\\\\d7db75e2-52d6-4c5a-80dc-fdfc12afd42f\\\\scratchpad\"; npm install docx)",
       "PowerShell(Copy-Item \"C:\\\\Users\\\\smart\\\\Informe-BCIE-Arquitectura-Completa.html\" \"C:\\\\informe-bcie\\\\\" -Force)",
       "PowerShell(node --version)",
-      "PowerShell(npm --version)"
+      "PowerShell(npm --version)",
+      "PowerShell(Get-Command node -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command npm -ErrorAction SilentlyContinue)"
     ]
   }
 }

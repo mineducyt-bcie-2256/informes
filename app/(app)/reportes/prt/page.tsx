@@ -178,12 +178,12 @@ export default function ReportePRTPage() {
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2" style={{display: 'flex', gap: '8px'}}>
               <button
                 onClick={() => console.log('click')}
-                className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition text-sm font-medium"
+                style={{padding: '8px 16px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500'}}
               >
-                Descargar Excel
+                📥 Descargar Excel
               </button>
               <button
                 onClick={() => setMostrarFiltros(!mostrarFiltros)}
