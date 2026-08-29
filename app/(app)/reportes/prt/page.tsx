@@ -157,6 +157,36 @@ export default function ReportePRTPage() {
     router.push('/reportes/prt')
   }
 
+  const descargarExcel = async () => {
+    try {
+      const response = await fetch('/api/descargar-sitios-reubicacion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          supervision,
+          empresaObras,
+          mesDesde: mesDesde ? parseInt(mesDesde) : null,
+          mesHasta: mesHasta ? parseInt(mesHasta) : null,
+          codigo,
+          centro,
+        }),
+      })
+
+      if (!response.ok) throw new Error('Error al descargar')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `Sitios_Reubicacion_PRT_${new Date().toISOString().split('T')[0]}.xlsx`
+      a.click()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error al descargar el archivo')
+    }
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
@@ -180,7 +210,7 @@ export default function ReportePRTPage() {
 
             <div className="flex gap-2" style={{display: 'flex', gap: '8px'}}>
               <button
-                onClick={() => console.log('click')}
+                onClick={descargarExcel}
                 style={{padding: '8px 16px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', cursor: 'pointer', fontSize: '14px', fontWeight: '500'}}
               >
                 📥 Descargar Excel
