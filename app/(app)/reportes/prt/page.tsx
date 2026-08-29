@@ -179,14 +179,12 @@ export default function ReportePRTPage() {
             </div>
 
             <div className="flex gap-2">
-              <DescargarExcelButton
-                supervision={supervision}
-                empresaObras={empresaObras}
-                mesDesde={mesDesde}
-                mesHasta={mesHasta}
-                codigo={codigo}
-                centro={centro}
-              />
+              <button
+                onClick={() => alert('Botón de descarga presionado')}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition"
+              >
+                📥 Descargar Excel
+              </button>
               <button
                 onClick={() => setMostrarFiltros(!mostrarFiltros)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
