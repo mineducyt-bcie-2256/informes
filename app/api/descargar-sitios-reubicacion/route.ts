@@ -1,6 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+function normalizarDireccion(dir: string): string {
+  return dir.toLowerCase().replace(/\s+/g, ' ').trim()
+}
+
+function calcularSimilitud(dir1: string, dir2: string): number {
+  const d1 = normalizarDireccion(dir1)
+  const d2 = normalizarDireccion(dir2)
+
+  if (d1 === d2) return 1.0
+
+  const palabras1 = new Set(d1.split(' '))
+  const palabras2 = new Set(d2.split(' '))
+
+  const palabrasComunes = [...palabras1].filter(p => palabras2.has(p)).length
+  const totalPalabras = Math.max(palabras1.size, palabras2.size)
+
+  return totalPalabras > 0 ? palabrasComunes / totalPalabras : 0
+}
+
+function sonParametrosSimilares(item1: any, item2: any): boolean {
+  const condicion1 = item1.condicion_uso === item2.condicion_uso
+  const modalidad1 = item1.modalidad === item2.modalidad
+  const est1 = (item1.est_ninos === item2.est_ninos) && (item1.est_ninas === item2.est_ninas)
+
+  return condicion1 && modalidad1 && est1
+}
+
+function esDuplicadoDireccion(item1: any, item2: any, umbralSimilitud: number = 0.85): boolean {
+  const similitud = calcularSimilitud(item1.sitio_reubicacion, item2.sitio_reubicacion)
+  return similitud >= umbralSimilitud && sonParametrosSimilares(item1, item2)
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -129,21 +161,67 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Agrupar por centro + sitio y obtener solo el registro más reciente
-    const sitiosMap = new Map<string, any>()
+    // Obtener mes actual y determinar mes anterior
+    const today = new Date()
+    const mesActual = today.getMonth() + 1
+    const mesAnterior = mesActual === 1 ? 12 : mesActual - 1
 
+    // Agrupar datos por centro educativo
+    const centroMap = new Map<string, any[]>()
     datosFiltrados.forEach(item => {
-      const key = `${item.centro}|${item.sitio_reubicacion}`
-      const existing = sitiosMap.get(key)
-
-      // Mantener el registro con el mes más reciente
-      if (!existing || item.periodo_mes > existing.periodo_mes) {
-        sitiosMap.set(key, item)
+      if (!centroMap.has(item.centro)) {
+        centroMap.set(item.centro, [])
       }
+      centroMap.get(item.centro)!.push(item)
     })
 
-    // Convertir map a array y ordenar por centro educativo
-    const datosUnicos = Array.from(sitiosMap.values())
+    // Para cada centro, buscar datos en meses anteriores retrocediendo
+    const datosUnicos: any[] = []
+
+    for (const [nombreCentro, registrosCentro] of centroMap) {
+      const sitiosAgregados = new Map<string, any>()
+
+      // Empezar desde el mes anterior al actual y retroceder
+      let mesActualBusqueda = mesAnterior
+      const mesesBuscados = new Set<number>()
+
+      while (sitiosAgregados.size === 0 || mesesBuscados.size < 12) {
+        const registrosMes = registrosCentro.filter(r => r.periodo_mes === mesActualBusqueda)
+
+        for (const registro of registrosMes) {
+          // Verificar si este sitio ya fue agregado (deduplicación)
+          const esDuplicado = Array.from(sitiosAgregados.values()).some(
+            existente => esDuplicadoDireccion(existente, registro)
+          )
+
+          if (!esDuplicado) {
+            const key = normalizarDireccion(registro.sitio_reubicacion)
+            if (!sitiosAgregados.has(key)) {
+              sitiosAgregados.set(key, registro)
+            }
+          }
+        }
+
+        mesesBuscados.add(mesActualBusqueda)
+
+        // Si encontramos datos en este mes, no buscar más atrás
+        if (sitiosAgregados.size > 0) {
+          break
+        }
+
+        // Retroceder al mes anterior
+        mesActualBusqueda = mesActualBusqueda === 1 ? 12 : mesActualBusqueda - 1
+
+        // Seguridad: no buscar más de 12 meses atrás
+        if (mesesBuscados.size >= 12) {
+          break
+        }
+      }
+
+      datosUnicos.push(...Array.from(sitiosAgregados.values()))
+    }
+
+    // Ordenar por centro educativo
     datosUnicos.sort((a, b) => a.centro.localeCompare(b.centro))
 
     // Generar Excel
