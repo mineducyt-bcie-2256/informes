@@ -129,13 +129,27 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Ordenar por centro educativo
-    datosFiltrados.sort((a, b) => a.centro.localeCompare(b.centro))
+    // Agrupar por centro + sitio y obtener solo el registro más reciente
+    const sitiosMap = new Map<string, any>()
+
+    datosFiltrados.forEach(item => {
+      const key = `${item.centro}|${item.sitio_reubicacion}`
+      const existing = sitiosMap.get(key)
+
+      // Mantener el registro con el mes más reciente
+      if (!existing || item.periodo_mes > existing.periodo_mes) {
+        sitiosMap.set(key, item)
+      }
+    })
+
+    // Convertir map a array y ordenar por centro educativo
+    const datosUnicos = Array.from(sitiosMap.values())
+    datosUnicos.sort((a, b) => a.centro.localeCompare(b.centro))
 
     // Generar Excel
     const XLSX = await import('xlsx')
 
-    const datosFormato = datosFiltrados.map(row => ({
+    const datosFormato = datosUnicos.map(row => ({
       'Código': row.codigo,
       'Centro Educativo': row.centro,
       'Departamento': row.departamento,
