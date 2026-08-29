@@ -180,9 +180,10 @@ export default function ReportePRTPage() {
 
             <div className="flex gap-2">
               <button
+                onClick={() => console.log('click')}
                 className="px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition text-sm font-medium"
               >
-                📥 Descargar Excel
+                Descargar Excel
               </button>
               <button
                 onClick={() => setMostrarFiltros(!mostrarFiltros)}
