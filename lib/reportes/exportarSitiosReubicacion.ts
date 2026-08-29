@@ -1,11 +1,9 @@
 import { createClient } from '@/lib/supabase/client'
-import XLSX from 'xlsx'
 
 export async function fetchSitiosReubicacionConDetalles() {
   const supabase = createClient()
 
   try {
-    // Obtener todos los informes con datos de escuelas
     const { data: informes, error: infError } = await supabase
       .from('informes')
       .select('id, periodo_mes, escuela_id, escuelas!inner(codigo, nombre, departamento, distrito)')
@@ -13,7 +11,6 @@ export async function fetchSitiosReubicacionConDetalles() {
     if (infError) throw infError
     if (!informes || informes.length === 0) return []
 
-    // Obtener todas las escuelas
     const { data: allEscuelas } = await supabase
       .from('escuelas')
       .select('id, empresa_supervision, empresa_obras')
@@ -26,14 +23,12 @@ export async function fetchSitiosReubicacionConDetalles() {
       }
     })
 
-    // Obtener datos PRT
     const informe_ids = informes.map((i: any) => i.id)
     const { data: prtData } = await supabase
       .from('informe_prt')
       .select('*')
       .in('informe_id', informe_ids)
 
-    // Procesar datos
     const resultado: any[] = []
 
     for (const informe of informes) {
@@ -42,7 +37,6 @@ export async function fetchSitiosReubicacionConDetalles() {
 
       if (prt?.lugares && Array.isArray(prt.lugares)) {
         for (const lugar of prt.lugares) {
-          // Extraer información de rubros
           const rubrosMap: Record<string, any> = {}
           if (lugar.rubros && Array.isArray(lugar.rubros)) {
             lugar.rubros.forEach((rubro: any) => {
@@ -50,7 +44,6 @@ export async function fetchSitiosReubicacionConDetalles() {
             })
           }
 
-          // Extraer adecuaciones activas
           const adecuacionesActivas = lugar.adecuaciones
             ? Object.entries(lugar.adecuaciones)
                 .filter(([_, adec]: [string, any]) => adec.activa)
@@ -58,7 +51,6 @@ export async function fetchSitiosReubicacionConDetalles() {
                 .join(', ')
             : ''
 
-          // Determinar condición de uso específica
           let condicionUso = lugar.condicion_uso || ''
           let prestamo = ''
           let alquiler = ''
@@ -67,7 +59,6 @@ export async function fetchSitiosReubicacionConDetalles() {
           let internet = ''
           let serviciosSanitarios = ''
 
-          // Procesar rubros
           if (rubrosMap['Alquiler de lugar']) {
             const rubro = rubrosMap['Alquiler de lugar']
             if (rubro.unidad === 'Alquiler') {
@@ -122,8 +113,9 @@ export async function fetchSitiosReubicacionConDetalles() {
   }
 }
 
-export function exportarSitiosReubicacionExcel(datos: any[]) {
-  // Preparar datos para Excel
+export async function exportarSitiosReubicacionExcel(datos: any[]) {
+  const XLSX = await import('xlsx')
+
   const datosFormato = datos.map(row => ({
     'Código': row.codigo,
     'Centro Educativo': row.centro,
@@ -142,30 +134,27 @@ export function exportarSitiosReubicacionExcel(datos: any[]) {
     'Est. Niñas': row.est_ninas,
   }))
 
-  // Crear worksheet
   const ws = XLSX.utils.json_to_sheet(datosFormato)
 
-  // Ajustar ancho de columnas
   const colWidths = [
-    { wch: 12 }, // Código
-    { wch: 25 }, // Centro Educativo
-    { wch: 18 }, // Departamento
-    { wch: 18 }, // Distrito
-    { wch: 35 }, // Sitio de Reubicación
-    { wch: 15 }, // Condición de Uso
-    { wch: 12 }, // Préstamo
-    { wch: 12 }, // Alquiler
-    { wch: 18 }, // Energía Eléctrica
-    { wch: 15 }, // Agua Potable
-    { wch: 12 }, // Internet
-    { wch: 18 }, // Servicios Sanitarios
-    { wch: 25 }, // Adecuaciones
-    { wch: 12 }, // Est. Niños
-    { wch: 12 }, // Est. Niñas
+    { wch: 12 },
+    { wch: 25 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 35 },
+    { wch: 15 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 18 },
+    { wch: 15 },
+    { wch: 12 },
+    { wch: 18 },
+    { wch: 25 },
+    { wch: 12 },
+    { wch: 12 },
   ]
   ws['!cols'] = colWidths
 
-  // Aplicar estilos a encabezados
   const range = XLSX.utils.decode_range(ws['!ref'] || 'A1')
   for (let C = range.s.c; C <= range.e.c; ++C) {
     const address = XLSX.utils.encode_col(C) + '1'
@@ -177,14 +166,11 @@ export function exportarSitiosReubicacionExcel(datos: any[]) {
     }
   }
 
-  // Crear workbook
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Sitios de Reubicación')
 
-  // Generar nombre del archivo
   const timestamp = new Date().toISOString().split('T')[0]
   const filename = `Sitios_Reubicacion_PRT_${timestamp}.xlsx`
 
-  // Descargar
   XLSX.writeFile(wb, filename)
 }
