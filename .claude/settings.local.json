@@ -87,7 +87,16 @@
       "Bash(git commit -m 'Remove PRT from reports dashboard *)",
       "Bash(git commit -m 'Fix TypeScript errors in reports page *)",
       "Bash(git commit -m 'Update PPPI report name to Participación de Partes Interesadas *)",
-      "Bash(git commit -m 'Add PRT report with proper filters and modalidad specifications *)"
+      "Bash(git commit -m 'Add PRT report with proper filters and modalidad specifications *)",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "Bash(node crear_documento_word.js)",
+      "PowerShell(cd \"$env:TEMP\\\\claude\\\\C--informe-bcie\\\\d7db75e2-52d6-4c5a-80dc-fdfc12afd42f\\\\scratchpad\"; node crear_documento_word.js)",
+      "PowerShell(npm install -g docx)",
+      "PowerShell(cd \"$env:TEMP\\\\claude\\\\C--informe-bcie\\\\d7db75e2-52d6-4c5a-80dc-fdfc12afd42f\\\\scratchpad\"; npm install docx)",
+      "PowerShell(Copy-Item \"C:\\\\Users\\\\smart\\\\Informe-BCIE-Arquitectura-Completa.html\" \"C:\\\\informe-bcie\\\\\" -Force)",
+      "PowerShell(node --version)",
+      "PowerShell(npm --version)"
     ]
   }
 }

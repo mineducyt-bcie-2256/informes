@@ -1,0 +1,1985 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitectura Completa - Informe BCIE</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background: #f5f7fa;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: #1a202c;
+                color: #e2e8f0;
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #0f2d52 0%, #3182ce 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            margin-bottom: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        /* Tabla de contenidos */
+        .toc {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .toc {
+                background: #2d3748;
+            }
+        }
+
+        .toc h2 {
+            color: #0f2d52;
+            margin-bottom: 20px;
+        }
+
+        .toc ul {
+            list-style: none;
+            columns: 2;
+            gap: 40px;
+        }
+
+        .toc li {
+            margin-bottom: 12px;
+        }
+
+        .toc a {
+            color: #3182ce;
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        /* Secciones */
+        section {
+            background: white;
+            padding: 40px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            section {
+                background: #2d3748;
+            }
+        }
+
+        h2 {
+            color: #0f2d52;
+            font-size: 2em;
+            margin-bottom: 20px;
+            border-bottom: 3px solid #3182ce;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: #3182ce;
+            font-size: 1.4em;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+
+        h4 {
+            color: #555;
+            font-size: 1.1em;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            background: #f7fafc;
+            padding: 10px;
+            border-left: 4px solid #3182ce;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            h3, h4 {
+                color: #90cdf4;
+            }
+        }
+
+        p {
+            margin-bottom: 15px;
+            line-height: 1.8;
+        }
+
+        /* Diagrama de flujo */
+        .flow-diagram {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #3182ce;
+            font-family: monospace;
+            overflow-x: auto;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .flow-diagram {
+                background: #1a202c;
+                color: #90cdf4;
+            }
+        }
+
+        /* Código/Pre */
+        pre {
+            background: #f7fafc;
+            padding: 20px;
+            border-left: 4px solid #3182ce;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            border-radius: 4px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            pre {
+                background: #1a202c;
+                color: #90cdf4;
+            }
+        }
+
+        /* Tablas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th {
+            background: #0f2d52;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            td {
+                border-bottom-color: #4a5568;
+            }
+        }
+
+        tr:hover {
+            background: #f7fafc;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            tr:hover {
+                background: #4a5568;
+            }
+        }
+
+        /* Listas */
+        ul, ol {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        /* Cajas de información */
+        .info-box {
+            background: #e0f2fe;
+            border-left: 4px solid #0284c7;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .info-box {
+                background: #003d7a;
+                border-left-color: #0284c7;
+            }
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #d97706;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        .success-box {
+            background: #dcfce7;
+            border-left: 4px solid #16a34a;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+
+        /* Grid para columnas */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3182ce;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .card {
+                background: #4a5568;
+            }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .badge-success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .badge-warning {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+
+        .badge-error {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .badge-info {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #718096;
+            border-top: 1px solid #e2e8f0;
+            margin-top: 60px;
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #3182ce;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+
+        .back-to-top.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📐 Arquitectura Completa del Proyecto Informe BCIE</h1>
+        <p>Análisis minucioso de estructura, flujos, componentes e interacciones</p>
+    </header>
+
+    <div class="container">
+        <!-- Tabla de Contenidos -->
+        <div class="toc">
+            <h2>📋 Tabla de Contenidos</h2>
+            <ul>
+                <li><a href="#sec1">1. Visión General del Sistema</a></li>
+                <li><a href="#sec2">2. Arquitectura de Capas</a></li>
+                <li><a href="#sec3">3. Flujo de Autenticación</a></li>
+                <li><a href="#sec4">4. Estructura de Datos y Tipos</a></li>
+                <li><a href="#sec5">5. Ciclo de Vida de un Informe</a></li>
+                <li><a href="#sec6">6. Componentes Frontend</a></li>
+                <li><a href="#sec7">7. API Routes y Backend</a></li>
+                <li><a href="#sec8">8. Generación de PDFs</a></li>
+                <li><a href="#sec9">9. Descarga en Lote (ZIP)</a></li>
+                <li><a href="#sec10">10. Sistema de Roles y Permisos</a></li>
+                <li><a href="#sec11">11. Flujo de Datos Completo</a></li>
+                <li><a href="#sec12">12. Base de Datos - Esquema</a></li>
+            </ul>
+        </div>
+
+        <!-- Sección 1 -->
+        <section id="sec1">
+            <h2>1. Visión General del Sistema</h2>
+            <p>El sistema <strong>informe-bcie</strong> es una aplicación web para gestionar informes ambientales y sociales en proyectos escolares. Está construido como una <strong>aplicación monolítica</strong> con arquitectura de capas.</p>
+
+            <h3>Componentes Principales</h3>
+            <div class="grid-3">
+                <div class="card">
+                    <h4>🎨 Frontend (React)</h4>
+                    <p>Interfaz de usuario con 12+ páginas, componentes reutilizables y generación de PDFs en cliente</p>
+                </div>
+                <div class="card">
+                    <h4>⚙️ Backend (Next.js API)</h4>
+                    <p>11+ endpoints para gestión de informes, usuarios, escuelas y descarga de archivos</p>
+                </div>
+                <div class="card">
+                    <h4>🗄️ Base de Datos (PostgreSQL)</h4>
+                    <p>Supabase con 17+ tablas incluyendo informes, módulos, perfiles y escuelas</p>
+                </div>
+            </div>
+
+            <h3>Stack Tecnológico</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Capa</th>
+                        <th>Tecnología</th>
+                        <th>Propósito</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Frontend</strong></td>
+                        <td>React 19.2.4 + Next.js 16.2.3</td>
+                        <td>Interfaz de usuario, formularios, tablas</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Estilos</strong></td>
+                        <td>Tailwind CSS 4.x</td>
+                        <td>Diseño responsivo y temas</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Lenguaje</strong></td>
+                        <td>TypeScript 5.x</td>
+                        <td>Tipado estático para seguridad</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Backend</strong></td>
+                        <td>Next.js API Routes</td>
+                        <td>Endpoints serverless</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Base de Datos</strong></td>
+                        <td>PostgreSQL (Supabase)</td>
+                        <td>Persistencia de datos con RLS</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Autenticación</strong></td>
+                        <td>Supabase Auth</td>
+                        <td>JWT, sesiones, roles</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PDF</strong></td>
+                        <td>@react-pdf/renderer + jsPDF</td>
+                        <td>Generación de PDFs cliente/servidor</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gráficos</strong></td>
+                        <td>Recharts</td>
+                        <td>Visualización de datos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Excel</strong></td>
+                        <td>XLSX</td>
+                        <td>Exportación de reportes</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Sección 2 -->
+        <section id="sec2">
+            <h2>2. Arquitectura de Capas</h2>
+
+            <h3>Estructura en Capas (Layers)</h3>
+            <div class="flow-diagram">
+┌─────────────────────────────────────────────────────────┐
+│              CAPA 1: PRESENTACIÓN (UI)                  │
+│  ├── Páginas (informes/, escuelas/, usuarios/)          │
+│  ├── Componentes (Sidebar, Forms, Tables)              │
+│  └── Estilos (Tailwind CSS + Temas)                    │
+└─────────────────────────────────────────────────────────┘
+                          ↕
+┌─────────────────────────────────────────────────────────┐
+│              CAPA 2: LÓGICA DE NEGOCIO                  │
+│  ├── Hooks personalizados                              │
+│  ├── Utilidades (reportes, análisis)                   │
+│  └── Tipos TypeScript                                  │
+└─────────────────────────────────────────────────────────┘
+                          ↕
+┌─────────────────────────────────────────────────────────┐
+│              CAPA 3: API / BACKEND                      │
+│  ├── /api/informes/* (Operaciones CRUD)                │
+│  ├── /api/create-user, /api/delete-informe             │
+│  └── Validación de permisos                            │
+└─────────────────────────────────────────────────────────┘
+                          ↕
+┌─────────────────────────────────────────────────────────┐
+│              CAPA 4: DATOS (PostgreSQL)                 │
+│  ├── Tablas: informes, profiles, escuelas             │
+│  ├── RLS Policies para seguridad                       │
+│  └── Relaciones y constraints                          │
+└─────────────────────────────────────────────────────────┘
+            </div>
+
+            <h3>Flujo de Datos entre Capas</h3>
+            <pre>
+USUARIO interactúa con UI
+    ↓
+React Component llama a API Route
+    ↓
+API Route valida autenticación + permisos
+    ↓
+Query a Base de Datos (Supabase)
+    ↓
+Datos procesados + retornados a Frontend
+    ↓
+Componente actualiza estado
+    ↓
+UI renderiza cambios
+            </pre>
+        </section>
+
+        <!-- Sección 3 -->
+        <section id="sec3">
+            <h2>3. Flujo de Autenticación</h2>
+
+            <h3>Proceso de Login Paso a Paso</h3>
+            <div class="flow-diagram">
+1. Usuario entra a /login
+   └─ Página LoginForm (client component)
+
+2. Usuario ingresa username + password
+   └─ Escucha evento onSubmit del formulario
+
+3. Frontend llama POST /api/lookup-user
+   └─ Busca email asociado al username
+
+4. Backend retorna email (o error)
+   └─ Si error → mostrar "Usuario incorrecto"
+
+5. Frontend llama supabase.auth.signInWithPassword()
+   └─ Supabase valida email + password
+
+6. Si éxito: Supabase retorna JWT token
+   └─ Token almacenado en cookies
+
+7. Frontend llama supabase.auth.getUser()
+   └─ Obtiene perfil del usuario
+
+8. Determina rol y redirige:
+   └─ rol === 'usuario' → /informes
+   └─ rol === 'programador' → /dashboard
+   └─ rol === 'administrador' → /dashboard
+
+9. Router.push(destino)
+   └─ Usuario ve página protegida
+            </div>
+
+            <h3>Roles Actuales en el Sistema</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rol</th>
+                        <th>Acceso Principal</th>
+                        <th>Características Especiales</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="badge badge-success">programador</span></td>
+                        <td>/dashboard, /informes, /usuarios, /escuelas, /reportes</td>
+                        <td>Acceso a seed-users, puede crear usuarios demo</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-success">administrador</span></td>
+                        <td>/dashboard, /informes, /usuarios, /escuelas, /reportes</td>
+                        <td>Gestión completa de usuarios y escuelas</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-info">usuario</span></td>
+                        <td>/informes (restringido)</td>
+                        <td>Solo ve informes de su empresa de supervisión</td>
+                    </tr>
+                    <tr>
+                        <td><span class="badge badge-warning">visitante</span></td>
+                        <td>/informes (demo)</td>
+                        <td>Solo lectura, solo escuelas de demostración</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Middleware de Autenticación</h3>
+            <pre>
+// app/(app)/layout.tsx
+export default async function AppLayout({ children }) {
+  // 1. Obtener usuario autenticado
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // 2. Si no está autenticado → redireccionar a /login
+  if (!user) {
+    redirect('/login')
+  }
+
+  // 3. Obtener perfil de la BD
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
+  // 4. Pasar perfil a Sidebar y mostrar UI protegida
+  return (
+    &lt;Sidebar profile={profile} /&gt;
+    &lt;main&gt;{children}&lt;/main&gt;
+  )
+}
+            </pre>
+        </section>
+
+        <!-- Sección 4 -->
+        <section id="sec4">
+            <h2>4. Estructura de Datos y Tipos</h2>
+
+            <h3>Tipos TypeScript Definidos (types/index.ts)</h3>
+            <pre>
+// Usuario
+export interface Profile {
+  id: string              // UUID (vinculado a auth.users)
+  username: string | null // Username único
+  nombre: string          // Nombre completo
+  email: string           // Email único
+  rol: Rol                // 'programador' | 'administrador' | 'usuario'
+  cargo: string | null    // Puesto/cargo
+  grupo_id: number | null // FK a grupos
+  activo: boolean         // Usuario activo
+  created_at: string      // Timestamp
+}
+
+// Grupo (empresa de supervisión)
+export interface Grupo {
+  id: number
+  numero: number
+  empresa_supervision: string
+}
+
+// Escuela / Centro Educativo
+export interface Escuela {
+  id: number
+  codigo: string          // Código único de la escuela
+  nombre: string          // Nombre completo
+  departamento: string    // Departamento (geográfico)
+  distrito: string        // Distrito educativo
+  latitud: number         // Ubicación GPS
+  longitud: number        // Ubicación GPS
+  grupo_id: number        // FK a grupos
+  empresa_obras: string   // Empresa constructora
+  numero_contrato: string // Número de contrato BCIE
+  empresa_supervision: string // Empresa supervisora
+  administrador_contrato: string
+  etapa: string           // Etapa del proyecto
+  porcentaje_avance: string // % de avance
+  pegas_elaboracion: string  // Plan PEGAS Elaboración
+  pegas_ejecucion: string    // Plan PEGAS Ejecución
+  accidentes_acumulados: number // Contador de accidentes
+  reubicacion_temporal: string   // Si hay reubicación
+  activa: boolean         // Escuela activa
+  grupos?: Grupo          // Relación con grupos
+}
+
+// Informe (documento principal)
+export interface Informe {
+  id: string              // UUID
+  escuela_id: number      // FK a escuelas
+  periodo_mes: number     // 1-12
+  periodo_anio: number    // Ej: 2026
+  creado_por: string      // UUID del usuario
+  estado: InformeEstado   // borrador|enviado|aprobado
+  pdf_url: string | null  // URL del PDF generado
+  created_at: string      // Fecha de creación
+  updated_at: string      // Última actualización
+  escuelas?: Escuela      // Relación
+  profiles?: Profile      // Relación
+}
+
+// Constantes
+export const MESES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+]
+
+export const CONDICIONES = [
+  { key: 'portada', label: 'Portada del Informe', short: 'PORTADA' },
+  { key: 'hsso', label: 'Higiene, Salud y Seguridad', short: 'HSSO' },
+  { key: 'maqr', label: 'Mecanismo de Quejas', short: 'MAQR' },
+  { key: 'pppi', label: 'Partes Interesadas', short: 'PPPI' },
+  // ... más 8 módulos
+]
+            </pre>
+
+            <h3>Relaciones entre Tablas</h3>
+            <pre>
+profiles (usuarios)
+  ├── FK: id → auth.users.id
+  └── FK: grupo_id → grupos.id
+
+escuelas
+  ├── FK: grupo_id → grupos.id
+  └── Información geográfica, contratual, de avance
+
+informes
+  ├── FK: escuela_id → escuelas.id
+  ├── FK: creado_por → profiles.id
+  └── Estados: borrador → enviado → aprobado
+
+informe_hsso, informe_maqr, ... (módulos)
+  ├── FK: informe_id → informes.id
+  └── Datos específicos de cada módulo
+            </pre>
+        </section>
+
+        <!-- Sección 5 -->
+        <section id="sec5">
+            <h2>5. Ciclo de Vida de un Informe</h2>
+
+            <h3>Estados de un Informe</h3>
+            <div class="flow-diagram">
+1. BORRADOR (Estado inicial)
+   ├─ Usuario crea informe nuevo
+   ├─ Puede editar todos los módulos
+   ├─ No visible para otros usuarios
+   └─ Guardar es automático (autosave)
+
+2. ENVIADO
+   ├─ Usuario presiona "Enviar"
+   ├─ Informe visible para coordinadores
+   ├─ Coordinador puede ver pendientes
+   └─ Usuario no puede editar
+
+3. OBSERVADO (opcional)
+   ├─ Coordinador agrega observaciones
+   ├─ Si hay observaciones → estado "observado"
+   ├─ Usuario ve observaciones
+   └─ Usuario puede editar para resolver
+
+4. RESUELTO
+   ├─ Usuario resuelve observaciones
+   ├─ Marca observaciones como resueltas
+   ├─ Vuelve a ENVIADO
+   └─ Coordinador revisa de nuevo
+
+5. APROBADO (Final)
+   ├─ Coordinador aprueba
+   ├─ Informe completado
+   ├─ Botón de descarga PDF habilitado
+   └─ No se puede editar más
+            </div>
+
+            <h3>Transiciones Permitidas</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Estado Actual</th>
+                        <th>Usuario (rol)</th>
+                        <th>Acción Posible</th>
+                        <th>Nuevo Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>borrador</td>
+                        <td>usuario/especialista</td>
+                        <td>Hacer clic en "Enviar"</td>
+                        <td>enviado</td>
+                    </tr>
+                    <tr>
+                        <td>enviado</td>
+                        <td>coordinador</td>
+                        <td>Agregar observaciones</td>
+                        <td>observado</td>
+                    </tr>
+                    <tr>
+                        <td>enviado</td>
+                        <td>coordinador</td>
+                        <td>Hacer clic en "Aprobar"</td>
+                        <td>aprobado</td>
+                    </tr>
+                    <tr>
+                        <td>observado</td>
+                        <td>usuario/especialista</td>
+                        <td>Resolver observaciones</td>
+                        <td>resuelto</td>
+                    </tr>
+                    <tr>
+                        <td>resuelto</td>
+                        <td>coordinador</td>
+                        <td>Revisar y aprobar</td>
+                        <td>aprobado</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Flujo Completo de un Usuario</h3>
+            <pre>
+ESPECIALISTA (usuario especialista)
+1. Va a /informes
+2. Busca escuela y mes/año
+3. Si no existe → hace clic "Nuevo Informe"
+4. Sistema crea borrador vacío
+5. Navega por módulos (HSSO, MAQR, PPPI, etc)
+6. Completa cada módulo con datos
+7. Cada cambio se guarda automáticamente
+8. Cuando termina → hace clic "Enviar"
+9. Informe cambia a estado "enviado"
+10. Ya no puede editar
+
+COORDINADOR (usuario coordinación)
+11. Ve informe en estado "enviado"
+12. Revisa cada módulo
+13. Si hay problemas → agrega "Observaciones"
+14. Sistema marca informe como "observado"
+15. Especialista es notificado
+
+ESPECIALISTA (nuevamente)
+16. Ve que hay observaciones
+17. Va a la sección "Pendientes"
+18. Lee observaciones
+19. Va al módulo correspondiente
+20. Corrige lo que se pide
+21. Marca observación como "Resuelta"
+22. Informe cambia a "resuelto"
+
+COORDINADOR (final)
+23. Revisa correcciones
+24. Si todo está bien → hace clic "Aprobar"
+25. Informe cambia a "aprobado"
+26. Especialista puede descargar PDF
+            </pre>
+        </section>
+
+        <!-- Sección 6 -->
+        <section id="sec6">
+            <h2>6. Componentes Frontend (React)</h2>
+
+            <h3>Componentes Principales</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Componente</th>
+                        <th>Tipo</th>
+                        <th>Ubicación</th>
+                        <th>Función</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Sidebar</strong></td>
+                        <td>Server Component</td>
+                        <td>components/Sidebar.tsx</td>
+                        <td>Menú lateral con navegación según rol</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PdfViewer</strong></td>
+                        <td>Client Component</td>
+                        <td>app/(app)/informes/[id]/pdf/</td>
+                        <td>Visualiza PDF con @react-pdf/renderer</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DescargarInformeBtn</strong></td>
+                        <td>Client Component</td>
+                        <td>components/DescargarInformeBtn.tsx</td>
+                        <td>Botón descarga, solo si estado=aprobado</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AprobarInformeBtn</strong></td>
+                        <td>Client Component</td>
+                        <td>components/AprobarInformeBtn.tsx</td>
+                        <td>Botón para coordinador apruebe informe</td>
+                    </tr>
+                    <tr>
+                        <td><strong>PendientesModal</strong></td>
+                        <td>Client Component</td>
+                        <td>components/PendientesModal.tsx</td>
+                        <td>Modal que muestra observaciones pendientes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DescargarLoteModal</strong></td>
+                        <td>Client Component</td>
+                        <td>components/descargar-lote/</td>
+                        <td>Modal para seleccionar y descargar múltiples PDFs</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DashboardCharts</strong></td>
+                        <td>Client Component</td>
+                        <td>components/dashboard/DashboardCharts.tsx</td>
+                        <td>Gráficos con Recharts (estado, módulos, etc)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Arquitectura de Componentes (Ejemplo: Página Informes)</h3>
+            <pre>
+InformesPage (Server Component)
+├── Obtiene supabase client
+├── Obtiene perfil del usuario
+├── Determina filtros según rol
+├── Query a BD: SELECT * FROM informes WHERE ...
+├── Retorna {informes, perfil}
+└── Renderiza:
+    ├── Header con título
+    ├── FiltrosInformes (Client Component)
+    │   └── onChange → actualizaSearchParams
+    ├── Tabla de Informes
+    │   ├── Fila 1: Informe
+    │   │   ├── Nombre escuela
+    │   │   ├── Período
+    │   │   ├── Estado badge
+    │   │   ├── Celda Pendientes (PendienteCell)
+    │   │   ├── Botón Ver detalles
+    │   │   ├── DescargarInformeBtn (solo si aprobado)
+    │   │   └── AprobarInformeBtn (solo si coordinador)
+    │   ├── Fila 2: Informe
+    │   │   └── ... igual
+    │   └── ...
+    └── Paginación (opcional)
+            </pre>
+        </section>
+
+        <!-- Sección 7 -->
+        <section id="sec7">
+            <h2>7. API Routes y Backend</h2>
+
+            <h3>Endpoints Disponibles</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Endpoint</th>
+                        <th>Método</th>
+                        <th>Autenticación</th>
+                        <th>Función</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>/api/lookup-user</td>
+                        <td>POST</td>
+                        <td>Pública</td>
+                        <td>Busca email por username (para login)</td>
+                    </tr>
+                    <tr>
+                        <td>/api/create-user</td>
+                        <td>POST</td>
+                        <td>Admin/Programador</td>
+                        <td>Crea usuario nuevo en Supabase</td>
+                    </tr>
+                    <tr>
+                        <td>/api/update-user</td>
+                        <td>POST</td>
+                        <td>Admin/Programador</td>
+                        <td>Actualiza perfil de usuario</td>
+                    </tr>
+                    <tr>
+                        <td>/api/delete-user</td>
+                        <td>POST</td>
+                        <td>Admin/Programador</td>
+                        <td>Elimina usuario (soft delete)</td>
+                    </tr>
+                    <tr>
+                        <td>/api/delete-informe</td>
+                        <td>POST</td>
+                        <td>Admin/Usuario propietario</td>
+                        <td>Elimina un informe completo</td>
+                    </tr>
+                    <tr>
+                        <td>/api/informes/descargar-lote</td>
+                        <td>POST</td>
+                        <td>Autenticado</td>
+                        <td>Obtiene lista de informes con filtros</td>
+                    </tr>
+                    <tr>
+                        <td>/api/informes/descargar-lote-zip</td>
+                        <td>POST</td>
+                        <td>Autenticado</td>
+                        <td>Genera ZIP con PDFs de múltiples informes</td>
+                    </tr>
+                    <tr>
+                        <td>/api/informes/[id]/pdf/download</td>
+                        <td>GET</td>
+                        <td>Autenticado + Validación permisos</td>
+                        <td>Descarga PDF individual de un informe</td>
+                    </tr>
+                    <tr>
+                        <td>/api/seed-users</td>
+                        <td>GET</td>
+                        <td>Programador</td>
+                        <td>Crea usuarios de demostración</td>
+                    </tr>
+                    <tr>
+                        <td>/api/import-escuelas</td>
+                        <td>POST</td>
+                        <td>Admin/Programador</td>
+                        <td>Importa escuelas desde archivo Excel</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Ejemplo de API Route: Descarga de PDF</h3>
+            <pre>
+// app/api/informes/[id]/pdf/download/route.ts
+export async function GET(req, { params }) {
+  try {
+    // 1. VERIFICAR AUTENTICACIÓN
+    const supabase = await createClient()
+    const { data: { user }, error: authError } =
+      await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: 'No autenticado' },
+        { status: 401 }
+      )
+    }
+
+    const { id } = await params
+
+    // 2. VERIFICAR PERMISOS
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('rol')
+      .eq('id', user.id)
+      .single()
+
+    // 3. OBTENER INFORME
+    const { data: informe, error: informeError } = await supabase
+      .from('informes')
+      .select(`
+        *,
+        escuelas(nombre, codigo, grupo_id, grupos(numero))
+      `)
+      .eq('id', id)
+      .single()
+
+    if (informeError || !informe) {
+      return NextResponse.json(
+        { error: 'Informe no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // 4. VERIFICAR SI ESTÁ APROBADO
+    if (userProfile?.rol !== 'administrador' &&
+        userProfile?.rol !== 'programador') {
+      if (informe.estado !== 'aprobado') {
+        return NextResponse.json(
+          { error: 'Acceso denegado' },
+          { status: 403 }
+        )
+      }
+    }
+
+    // 5. GENERAR PDF CON jsPDF
+    const pdfDoc = generarPDF(informe)
+    const pdfBlob = pdfDoc.output('blob')
+
+    // 6. RETORNAR COMO DESCARGA
+    const filename =
+      `Informe_${informe.escuelas?.codigo}_${informe.periodo_anio}-${informe.periodo_mes}.pdf`
+
+    return new NextResponse(pdfBlob, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-store',
+      },
+    })
+
+  } catch (error) {
+    console.error('Error:', error)
+    return NextResponse.json(
+      { error: 'Error al descargar PDF' },
+      { status: 500 }
+    )
+  }
+}
+
+function generarPDF(informe) {
+  const doc = new jsPDF()
+
+  // Configurar estilos
+  const NAVY = '#0f2d52'
+  const GOLD = '#c8a951'
+
+  // Portada
+  doc.setFillColor(15, 45, 82)
+  doc.rect(0, 0, 210, 40, 'F')
+
+  doc.setTextColor(200, 169, 81)
+  doc.setFontSize(18)
+  doc.text('PROGRAMA MI NUEVA ESCUELA', 105, 15, { align: 'center' })
+
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(12)
+  doc.text('INFORME MENSUAL DE SUPERVISIÓN', 105, 28, { align: 'center' })
+
+  // Datos
+  doc.setTextColor(15, 45, 82)
+  doc.setFontSize(14)
+  doc.text('DATOS DEL INFORME', 20, 60)
+
+  doc.setFontSize(10)
+  doc.setTextColor(0, 0, 0)
+  doc.text(`Centro: ${informe.escuelas?.nombre}`, 20, 75)
+  doc.text(`Código: ${informe.escuelas?.codigo}`, 20, 85)
+  doc.text(`Período: ${informe.periodo_mes}/${informe.periodo_anio}`, 20, 95)
+
+  return doc
+}
+            </pre>
+        </section>
+
+        <!-- Sección 8 -->
+        <section id="sec8">
+            <h2>8. Generación de PDFs</h2>
+
+            <h3>Dos Formas de Generar PDFs</h3>
+
+            <h4>Opción 1: Cliente (React PDF Viewer)</h4>
+            <pre>
+// app/(app)/informes/[id]/pdf/PdfViewer.tsx
+'use client'
+
+import { PDFViewer, Document, Page, Text } from '@react-pdf/renderer'
+import { useState } from 'react'
+
+export default function PdfViewer({ informe }) {
+  const [loading, setLoading] = useState(false)
+
+  return (
+    &lt;div&gt;
+      {/* Vista previa en navegador */}
+      &lt;PDFViewer style={{ width: '100%', height: '600px' }}&gt;
+        &lt;Document&gt;
+          &lt;Page style={styles.page}&gt;
+            {/* PORTADA */}
+            &lt;View style={styles.coverPage}&gt;
+              &lt;Text style={styles.coverTitle}&gt;
+                PROGRAMA MI NUEVA ESCUELA
+              &lt;/Text&gt;
+              &lt;Text style={styles.coverSubtitle}&gt;
+                INFORME MENSUAL DE SUPERVISIÓN
+              &lt;/Text&gt;
+            &lt;/View&gt;
+
+            {/* DATOS DEL INFORME */}
+            &lt;View style={styles.section}&gt;
+              &lt;Text style={styles.sectionTitle}&gt;
+                DATOS DEL INFORME
+              &lt;/Text&gt;
+              &lt;Text style={styles.field}&gt;
+                Centro: {informe.escuelas?.nombre}
+              &lt;/Text&gt;
+              &lt;Text style={styles.field}&gt;
+                Código: {informe.escuelas?.codigo}
+              &lt;/Text&gt;
+            &lt;/View&gt;
+
+            {/* Módulos completados */}
+            {informe.hsso && (
+              &lt;View style={styles.section}&gt;
+                &lt;Text style={styles.sectionTitle}&gt;HSSO&lt;/Text&gt;
+                &lt;Text&gt;{informe.hsso.descripcion}&lt;/Text&gt;
+              &lt;/View&gt;
+            )}
+
+            {/* ... más módulos */}
+          &lt;/Page&gt;
+        &lt;/Document&gt;
+      &lt;/PDFViewer&gt;
+
+      {/* Botón descarga */}
+      &lt;PDFDownloadLink
+        document={&lt;MiPDF informe={informe} /&gt;}
+        fileName={`Informe_${informe.id}.pdf`}
+      &gt;
+        Descargar PDF
+      &lt;/PDFDownloadLink&gt;
+    &lt;/div&gt;
+  )
+}
+            </pre>
+
+            <h4>Opción 2: Servidor (jsPDF para descarga en lote)</h4>
+            <pre>
+// app/api/informes/descargar-lote-zip/route.ts
+import { jsPDF } from 'jspdf'
+import JSZip from 'jszip'
+
+export async function POST(req) {
+  const { informeIds } = await req.json()
+
+  const zip = new JSZip()
+
+  // Iterar sobre cada informe
+  for (const informeId of informeIds) {
+    // Obtener datos del informe desde BD
+    const informe = await getInformeFromDb(informeId)
+
+    // Generar PDF con jsPDF
+    const pdf = new jsPDF()
+    pdf.text('PROGRAMA MI NUEVA ESCUELA', 105, 20, { align: 'center' })
+    pdf.text('Centro: ' + informe.escuelas.nombre, 20, 40)
+    pdf.text('Período: ' + informe.periodo_mes + '/' + informe.periodo_anio, 20, 50)
+
+    // Agregar PDF al ZIP
+    const pdfBlob = pdf.output('blob')
+    const filename = `Informe_${informe.escuelas.codigo}_${informe.periodo_anio}-${informe.periodo_mes}.pdf`
+    zip.file(filename, pdfBlob)
+  }
+
+  // Generar y retornar ZIP
+  const zipBlob = await zip.generateAsync({ type: 'blob' })
+
+  return new NextResponse(zipBlob, {
+    headers: {
+      'Content-Type': 'application/zip',
+      'Content-Disposition': 'attachment; filename="informes.zip"'
+    }
+  })
+}
+            </pre>
+
+            <h3>Diferencias entre Métodos</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Aspecto</th>
+                        <th>@react-pdf (Cliente)</th>
+                        <th>jsPDF (Servidor)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Ejecución</td>
+                        <td>En el navegador del usuario</td>
+                        <td>En el servidor</td>
+                    </tr>
+                    <tr>
+                        <td>Rendimiento</td>
+                        <td>Lento si datos grandes</td>
+                        <td>Rápido, en paralelo</td>
+                    </tr>
+                    <tr>
+                        <td>Capacidad</td>
+                        <td>1 PDF a la vez</td>
+                        <td>Múltiples PDFs (ZIP)</td>
+                    </tr>
+                    <tr>
+                        <td>Uso Actual</td>
+                        <td>Vista previa en /pdf</td>
+                        <td>Descarga en lote</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Sección 9 -->
+        <section id="sec9">
+            <h2>9. Descarga en Lote (ZIP)</h2>
+
+            <h3>Proceso Paso a Paso</h3>
+            <div class="flow-diagram">
+1. Usuario va a /descargar-lote
+   └─ Ve formulario de filtros
+
+2. Selecciona filtros:
+   ├─ Rango de meses
+   ├─ Año
+   ├─ Estado (aprobados, todos, etc)
+   ├─ Escuelas
+   └─ Empresa de supervisión (si aplica)
+
+3. Hace clic "Buscar" o "Vista Previa"
+   └─ Llamada a /api/informes/descargar-lote
+
+4. Backend ejecuta query:
+   ├─ SELECT * FROM informes
+   ├─ WHERE periodo_mes IN (...)
+   ├─ AND periodo_anio = ...
+   ├─ AND estado = 'aprobado'
+   ├─ AND escuela_id IN (...)
+   └─ Retorna lista
+
+5. Frontend muestra tabla con resultados
+   ├─ Nombre escuela
+   ├─ Código
+   ├─ Período
+   ├─ Estado
+   └─ Checkbox para seleccionar
+
+6. Usuario selecciona informes
+   ├─ Hace clic checkboxes
+   ├─ Cuenta se actualiza en tiempo real
+   └─ Ejemplo: "Seleccionados: 5 de 23"
+
+7. Usuario hace clic "Descargar ZIP"
+   └─ Llamada a /api/informes/descargar-lote-zip
+
+8. Backend genera PDFs:
+   ├─ Por cada informe seleccionado:
+   │  ├─ Obtener datos de BD
+   │  ├─ Generar PDF con jsPDF
+   │  └─ Agregar al ZIP
+   └─ Retorna archivo ZIP
+
+9. Frontend recibe ZIP
+   ├─ Crea blob
+   ├─ Crea descarga automática
+   └─ Usuario recibe: informes.zip
+
+10. Usuario descomprime ZIP
+    └─ Ve archivos: Informe_CE001_2026-03.pdf, Informe_CE002_2026-03.pdf, ...
+            </div>
+
+            <h3>Componente DescargarLote</h3>
+            <pre>
+// app/(app)/descargar-lote/page.tsx
+'use client'
+
+export default function DescargarLotePage() {
+  const [filtros, setFiltros] = useState({
+    mesDesde: 1,
+    mesHasta: 12,
+    anio: 2026,
+    estado: 'aprobado',
+    supervision: ''
+  })
+
+  const [informes, setInformes] = useState([])
+  const [seleccionados, setSeleccionados] = useState(new Set())
+  const [loading, setLoading] = useState(false)
+
+  // Buscar informes
+  async function buscar() {
+    setLoading(true)
+    const res = await fetch('/api/informes/descargar-lote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(filtros)
+    })
+    const data = await res.json()
+    setInformes(data)
+    setSeleccionados(new Set())
+    setLoading(false)
+  }
+
+  // Descargar ZIP
+  async function descargar() {
+    const ids = Array.from(seleccionados)
+
+    const res = await fetch('/api/informes/descargar-lote-zip', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ informeIds: ids })
+    })
+
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'informes.zip'
+    a.click()
+  }
+
+  return (
+    &lt;div&gt;
+      {/* FILTROS */}
+      &lt;div className="filtros"&gt;
+        &lt;input
+          type="number"
+          placeholder="Mes desde"
+          value={filtros.mesDesde}
+          onChange={(e) => setFiltros({...filtros, mesDesde: parseInt(e.target.value)})}
+        /&gt;
+        &lt;input
+          type="number"
+          placeholder="Mes hasta"
+          value={filtros.mesHasta}
+          onChange={(e) => setFiltros({...filtros, mesHasta: parseInt(e.target.value)})}
+        /&gt;
+        &lt;input
+          type="number"
+          placeholder="Año"
+          value={filtros.anio}
+          onChange={(e) => setFiltros({...filtros, anio: parseInt(e.target.value)})}
+        /&gt;
+        &lt;select
+          value={filtros.estado}
+          onChange={(e) => setFiltros({...filtros, estado: e.target.value})}
+        &gt;
+          &lt;option value="aprobado"&gt;Aprobados&lt;/option&gt;
+          &lt;option value=""&gt;Todos&lt;/option&gt;
+        &lt;/select&gt;
+        &lt;button onClick={buscar} disabled={loading}&gt;
+          {loading ? 'Buscando...' : 'Buscar'}
+        &lt;/button&gt;
+      &lt;/div&gt;
+
+      {/* TABLA DE RESULTADOS */}
+      {informes.length > 0 && (
+        &lt;&gt;
+          &lt;p&gt;Seleccionados: {seleccionados.size} de {informes.length}&lt;/p&gt;
+          &lt;table&gt;
+            &lt;thead&gt;
+              &lt;tr&gt;
+                &lt;th&gt;
+                  &lt;input
+                    type="checkbox"
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSeleccionados(new Set(informes.map(i => i.id)))
+                      } else {
+                        setSeleccionados(new Set())
+                      }
+                    }}
+                  /&gt;
+                &lt;/th&gt;
+                &lt;th&gt;Escuela&lt;/th&gt;
+                &lt;th&gt;Período&lt;/th&gt;
+                &lt;th&gt;Estado&lt;/th&gt;
+              &lt;/tr&gt;
+            &lt;/thead&gt;
+            &lt;tbody&gt;
+              {informes.map(inf => (
+                &lt;tr key={inf.id}&gt;
+                  &lt;td&gt;
+                    &lt;input
+                      type="checkbox"
+                      checked={seleccionados.has(inf.id)}
+                      onChange={(e) => {
+                        const nuevo = new Set(seleccionados)
+                        if (e.target.checked) {
+                          nuevo.add(inf.id)
+                        } else {
+                          nuevo.delete(inf.id)
+                        }
+                        setSeleccionados(nuevo)
+                      }}
+                    /&gt;
+                  &lt;/td&gt;
+                  &lt;td&gt;{inf.escuelas?.nombre}&lt;/td&gt;
+                  &lt;td&gt;{inf.periodo_mes}/{inf.periodo_anio}&lt;/td&gt;
+                  &lt;td&gt;{inf.estado}&lt;/td&gt;
+                &lt;/tr&gt;
+              ))}
+            &lt;/tbody&gt;
+          &lt;/table&gt;
+
+          &lt;button
+            onClick={descargar}
+            disabled={seleccionados.size === 0}
+          &gt;
+            Descargar {seleccionados.size} PDF como ZIP
+          &lt;/button&gt;
+        &lt;/&gt;
+      )}
+    &lt;/div&gt;
+  )
+}
+            </pre>
+        </section>
+
+        <!-- Sección 10 -->
+        <section id="sec10">
+            <h2>10. Sistema de Roles y Permisos</h2>
+
+            <h3>Matriz de Control de Acceso</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Página/Función</th>
+                        <th>Programador</th>
+                        <th>Administrador</th>
+                        <th>Usuario (Especialista)</th>
+                        <th>Visitante</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>/dashboard</td>
+                        <td>✅ Ver todo</td>
+                        <td>✅ Ver todo</td>
+                        <td>❌ Redirecciona</td>
+                        <td>❌ Solo demo</td>
+                    </tr>
+                    <tr>
+                        <td>/informes (lista)</td>
+                        <td>✅ Ver todo</td>
+                        <td>✅ Ver todo</td>
+                        <td>✅ Solo suyos</td>
+                        <td>✅ Solo demo</td>
+                    </tr>
+                    <tr>
+                        <td>/informes/nuevo</td>
+                        <td>✅ Crear</td>
+                        <td>✅ Crear</td>
+                        <td>✅ Crear</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td>/informes/[id]/hsso</td>
+                        <td>✅ Editar</td>
+                        <td>✅ Editar</td>
+                        <td>✅ Si owner</td>
+                        <td>❌ Solo lectura</td>
+                    </tr>
+                    <tr>
+                        <td>Enviar informe</td>
+                        <td>✅ Permitido</td>
+                        <td>✅ Permitido</td>
+                        <td>✅ Permitido</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td>Agregar observaciones</td>
+                        <td>✅ Sí</td>
+                        <td>✅ Sí</td>
+                        <td>❌ No</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td>Aprobar informe</td>
+                        <td>✅ Sí</td>
+                        <td>✅ Sí</td>
+                        <td>❌ No</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td>/usuarios</td>
+                        <td>✅ CRUD</td>
+                        <td>✅ CRUD</td>
+                        <td>❌ No</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td>/escuelas</td>
+                        <td>✅ Ver/Editar</td>
+                        <td>✅ Ver/Editar</td>
+                        <td>❌ No</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td>/reportes</td>
+                        <td>✅ Ver</td>
+                        <td>✅ Ver</td>
+                        <td>❌ No</td>
+                        <td>❌ No</td>
+                    </tr>
+                    <tr>
+                        <td>Descargar PDF (aprobado)</td>
+                        <td>✅ Sí</td>
+                        <td>✅ Sí</td>
+                        <td>✅ Sí</td>
+                        <td>✅ Sí</td>
+                    </tr>
+                    <tr>
+                        <td>Descargar en lote</td>
+                        <td>✅ Sí</td>
+                        <td>✅ Sí</td>
+                        <td>❌ No</td>
+                        <td>❌ No</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Validación de Permisos en Backend</h3>
+            <pre>
+// Ejemplo: Verificar permiso antes de descargar
+async function validarPermiso(userId, informeId, accion) {
+  const supabase = await createClient()
+
+  // 1. Obtener rol del usuario
+  const { data: user } = await supabase
+    .from('profiles')
+    .select('rol')
+    .eq('id', userId)
+    .single()
+
+  // 2. Admin/Programador siempre pueden
+  if (['administrador', 'programador'].includes(user.rol)) {
+    return true
+  }
+
+  // 3. Usuario normal: solo sus informes
+  if (user.rol === 'usuario') {
+    const { data: informe } = await supabase
+      .from('informes')
+      .select('creado_por')
+      .eq('id', informeId)
+      .single()
+
+    return informe?.creado_por === userId
+  }
+
+  // 4. Visitante: solo lectura
+  if (user.rol === 'visitante') {
+    return accion === 'leer'
+  }
+
+  return false
+}
+            </pre>
+        </section>
+
+        <!-- Sección 11 -->
+        <section id="sec11">
+            <h2>11. Flujo de Datos Completo (Ejemplo Real)</h2>
+
+            <h3>Escenario: Especialista Completa Informe HSSO</h3>
+            <pre>
+┌────────────────────────────────────────────────────────┐
+│ 1. ESPECIALISTA ENTRA A /informes/[id]/hsso            │
+└────────────────────────────────────────────────────────┘
+
+Server Component ejecuta:
+├─ const supabase = await createClient()
+├─ const { data: { user } } = await supabase.auth.getUser()
+├─ const { data: informe } = await supabase
+│   .from('informes')
+│   .select('*, informe_hsso(*), escuelas(*)')
+│   .eq('id', id)
+│   .single()
+└─ Retorna: { informe, user }
+
+┌────────────────────────────────────────────────────────┐
+│ 2. FRONTEND RENDERIZA FORMULARIO                       │
+└────────────────────────────────────────────────────────┘
+
+Página renderiza:
+├─ Nombre escuela: "Escuela Rural #1"
+├─ Período: "Marzo / 2026"
+├─ Estado actual: "borrador"
+└─ Formulario con campos:
+   ├─ [ ] Accidentes en obra (checkbox)
+   ├─ Número de accidentes: [0]
+   ├─ Personal involucrado: [__________]
+   ├─ Descripción: [_________________________________]
+   └─ [...más campos]
+
+┌────────────────────────────────────────────────────────┐
+│ 3. ESPECIALISTA COMPLETA CAMPOS                        │
+└────────────────────────────────────────────────────────┘
+
+Cambios en formulario:
+├─ [x] Accidentes en obra (MARCADO)
+├─ Número de accidentes: [1]
+├─ Personal involucrado: [Juan Pérez]
+├─ Descripción: [Caída de andamio, sin daños personales]
+└─ Presiona Tab → siguiente campo
+
+┌────────────────────────────────────────────────────────┐
+│ 4. AUTOSAVE - CAMBIOS SE GUARDAN AUTOMÁTICAMENTE      │
+└────────────────────────────────────────────────────────┘
+
+Frontend ejecuta (cada 2-3 segundos):
+├─ POST /api/informes/[id]/hsso/save
+├─ Body: {
+│   accidentes_en_obra: true,
+│   numero_accidentes: 1,
+│   personal_involucrado: "Juan Pérez",
+│   descripcion: "Caída de andamio, sin daños personales"
+│  }
+└─ Response: { success: true, updated_at: "2026-03-15T10:30:00" }
+
+Backend en API route:
+├─ Verifica autenticación
+├─ Verifica que sea propietario del informe
+├─ UPDATE informe_hsso SET (campos) WHERE id = ?
+└─ Retorna confirmación
+
+┌────────────────────────────────────────────────────────┐
+│ 5. ESPECIALISTA TERMINA Y ENVÍA                        │
+└────────────────────────────────────────────────────────┘
+
+Usuario presiona "Enviar Informe":
+├─ Frontend valida campos requeridos
+├─ POST /api/informes/[id]/send
+├─ Backend:
+│  ├─ Verifica que TODOS los módulos estén completos
+│  ├─ Valida datos
+│  ├─ UPDATE informes SET estado = 'enviado'
+│  └─ Retorna: { success: true }
+└─ Frontend redirige a /informes
+
+┌────────────────────────────────────────────────────────┐
+│ 6. COORDINADOR VE INFORME ENVIADO                      │
+└────────────────────────────────────────────────────────┘
+
+Coordinador entra a /informes:
+├─ Ve tabla con informes
+├─ Columna "Estado": visor Badge azul con "Enviado"
+├─ Columna "Pendientes": botón "Ver" (muestra modal vacío)
+└─ Columna Acciones: botón verde "Descargar" habilitado
+
+┌────────────────────────────────────────────────────────┐
+│ 7. COORDINADOR REVISA MÓDULO HSSO                      │
+└────────────────────────────────────────────────────────┘
+
+Coordinador hace clic en informe → /informes/[id]:
+├─ Ve resumen de todos los módulos
+├─ Hace clic "HSSO" → /informes/[id]/hsso (modo lectura)
+├─ Lee: "Accidentes: Sí, 1 accidente (caída de andamio)"
+├─ Determina que falta más detalle
+└─ Vuelve a lista de informes
+
+┌────────────────────────────────────────────────────────┐
+│ 8. COORDINADOR AGREGA OBSERVACIÓN                      │
+└────────────────────────────────────────────────────────┘
+
+En lista de informes, hace clic "Ver Pendientes":
+├─ Modal PendientesModal abre
+├─ Texto: "Ingresa observaciones para este informe"
+├─ Campo textarea: [_________________________________]
+│  Escribe: "Necesitas más detalles sobre quién atendió
+│            el accidente, y cuál fue el resultado."
+├─ Dropdown "Módulo": selecciona "HSSO"
+├─ Botón "Agregar Observación"
+└─ POST /api/informes/[id]/add-observation
+
+Backend:
+├─ INSERT informe_observaciones
+│  VALUES (
+│    informe_id = "abc123",
+│    modulo = "hsso",
+│    observacion = "Necesitas más...",
+│    estado = "pendiente",
+│    creada_por = "coordinador_id"
+│  )
+├─ UPDATE informes SET estado = 'observado'
+└─ Retorna éxito
+
+┌────────────────────────────────────────────────────────┐
+│ 9. ESPECIALISTA VE OBSERVACIÓN (NOTIFICACIÓN)         │
+└────────────────────────────────────────────────────────┘
+
+Especialista recibe notificación (badge roja en /informes):
+├─ "Tienes 1 observación pendiente"
+├─ Hace clic en informe
+├─ Ve tabla con "Pendientes": 1
+├─ Hace clic botón "Pendientes" → modal abre
+├─ Lee: "HSSO: Necesitas más detalles..."
+└─ Entiende qué debe corregir
+
+┌────────────────────────────────────────────────────────┐
+│ 10. ESPECIALISTA CORRIGE Y RESUELVE                    │
+└─────────────────────────────────────────────────────────┘
+
+Especialista entra nuevamente a /informes/[id]/hsso:
+├─ Campo ahora editable (estado === 'observado')
+├─ Modifica campos con más detalle:
+│  ├─ Atendido por: "Dr. Roberto Martínez"
+│  ├─ Resultado: "Fractura leve, remitido a hospital"
+│  └─ Fecha: "2026-03-15"
+└─ Autosave guarda cambios
+
+Especialista marca observación como resuelta:
+├─ En modal "Pendientes" → checkbox "Resuelto"
+├─ PUT /api/informes/[id]/observation/[id]/resolve
+├─ Backend: UPDATE informe_observaciones SET estado = 'resuelto'
+└─ Informe vuelve a estado "resuelto"
+
+┌────────────────────────────────────────────────────────┐
+│ 11. COORDINADOR APRUEBA INFORME                        │
+└────────────────────────────────────────────────────────┘
+
+Coordinador ve informe en estado "resuelto":
+├─ Revisa correcciones
+├─ Todo está correcto
+├─ Botón "Aprobar" (verde, habilitado)
+├─ Hace clic
+├─ POST /api/informes/[id]/approve
+├─ Backend:
+│  ├─ Valida que sea coordinador
+│  ├─ UPDATE informes SET estado = 'aprobado'
+│  ├─ Posiblemente genere PDF automático
+│  └─ Retorna éxito
+└─ Frontend redirige a /informes
+
+┌────────────────────────────────────────────────────────┐
+│ 12. ESPECIALISTA DESCARGA PDF                          │
+└────────────────────────────────────────────────────────┘
+
+Especialista ve informe aprobado:
+├─ Estado: Badge verde "Aprobado"
+├─ Botón "Descargar" (verde, habilitado) aparece
+├─ Hace clic "Descargar"
+├─ Llamada GET /api/informes/[id]/pdf/download
+├─ Backend:
+│  ├─ Verifica autenticación
+│  ├─ Obtiene datos de informe desde BD
+│  ├─ Genera PDF con jsPDF (portada + datos + módulos)
+│  └─ Retorna PDF como descarga
+├─ Navegador descarga: Informe_CE001_2026-03.pdf
+└─ Especialista recibe archivo en carpeta Descargas
+            </pre>
+        </section>
+
+        <!-- Sección 12 -->
+        <section id="sec12">
+            <h2>12. Base de Datos - Esquema Completo</h2>
+
+            <h3>Tablas Principales</h3>
+            <pre>
+auth.users (Sistema Supabase)
+├─ id: UUID (PRIMARY KEY)
+├─ email: VARCHAR
+├─ encrypted_password: VARCHAR
+├─ email_confirmed_at: TIMESTAMP
+├─ last_sign_in_at: TIMESTAMP
+└─ created_at: TIMESTAMP
+
+profiles (Vinculada a auth.users)
+├─ id: UUID (FK → auth.users.id, PRIMARY KEY)
+├─ username: VARCHAR UNIQUE
+├─ nombre: VARCHAR
+├─ email: VARCHAR UNIQUE
+├─ rol: ENUM ('programador', 'administrador', 'usuario', 'visitante')
+├─ cargo: VARCHAR
+├─ grupo_id: INTEGER (FK → grupos.id)
+├─ empresa_supervision: VARCHAR
+├─ activo: BOOLEAN (DEFAULT true)
+├─ created_at: TIMESTAMP
+└─ INDEX: (rol, activo)
+
+grupos (Empresas de supervisión)
+├─ id: SERIAL PRIMARY KEY
+├─ numero: INTEGER UNIQUE
+├─ empresa_supervision: VARCHAR
+├─ descripcion: TEXT
+└─ created_at: TIMESTAMP
+
+escuelas (Centros educativos)
+├─ id: SERIAL PRIMARY KEY
+├─ codigo: VARCHAR UNIQUE
+├─ nombre: VARCHAR
+├─ departamento: VARCHAR
+├─ distrito: VARCHAR
+├─ latitud: NUMERIC
+├─ longitud: NUMERIC
+├─ grupo_id: INTEGER (FK → grupos.id)
+├─ empresa_obras: VARCHAR
+├─ numero_contrato: VARCHAR
+├─ empresa_supervision: VARCHAR
+├─ administrador_contrato: VARCHAR
+├─ etapa: VARCHAR
+├─ porcentaje_avance: VARCHAR
+├─ pegas_elaboracion: TEXT
+├─ pegas_ejecucion: TEXT
+├─ accidentes_acumulados: INTEGER
+├─ reubicacion_temporal: VARCHAR
+├─ es_demo: BOOLEAN (DEFAULT false)
+├─ activa: BOOLEAN (DEFAULT true)
+├─ created_at: TIMESTAMP
+└─ INDEXES: (codigo), (grupo_id), (es_demo), (activa)
+
+informes (Informes principales)
+├─ id: UUID PRIMARY KEY
+├─ escuela_id: INTEGER (FK → escuelas.id)
+├─ periodo_mes: INTEGER (1-12)
+├─ periodo_anio: INTEGER
+├─ creado_por: UUID (FK → profiles.id)
+├─ estado: ENUM ('borrador','enviado','observado','resuelto','aprobado')
+├─ pdf_url: VARCHAR
+├─ created_at: TIMESTAMP
+├─ updated_at: TIMESTAMP
+├─ INDEXES: (escuela_id, periodo_mes, periodo_anio)
+├─ INDEXES: (estado, creado_por)
+└─ UNIQUE: (escuela_id, periodo_mes, periodo_anio)
+
+informe_hsso (Módulo HSSO)
+├─ id: UUID PRIMARY KEY
+├─ informe_id: UUID (FK → informes.id, CASCADE DELETE)
+├─ accidentes_en_obra: BOOLEAN
+├─ numero_accidentes: INTEGER
+├─ personal_involucrado: TEXT
+├─ descripcion: TEXT
+├─ atendido_por: VARCHAR
+├─ resultado: VARCHAR
+├─ fecha_accidente: DATE
+├─ created_at: TIMESTAMP
+├─ updated_at: TIMESTAMP
+└─ INDEX: (informe_id)
+
+informe_maqr (Módulo MAQR)
+├─ id: UUID PRIMARY KEY
+├─ informe_id: UUID (FK → informes.id, CASCADE DELETE)
+├─ quejas_recibidas: INTEGER
+├─ quejas_resueltas: INTEGER
+├─ descripcion: TEXT
+├─ [...más campos]
+└─ INDEX: (informe_id)
+
+informe_pppi (Módulo PPPI)
+├─ id: UUID PRIMARY KEY
+├─ informe_id: UUID (FK → informes.id, CASCADE DELETE)
+├─ partes_interesadas_consultadas: TEXT
+├─ participacion_comunitaria: TEXT
+├─ [...más campos]
+└─ INDEX: (informe_id)
+
+[... informe_pgr, informe_prt, informe_garo, informe_mcear, informe_cct ...]
+
+informe_observaciones (Comentarios/Observaciones)
+├─ id: UUID PRIMARY KEY
+├─ informe_id: UUID (FK → informes.id, CASCADE DELETE)
+├─ modulo: VARCHAR (hsso, maqr, pppi, etc)
+├─ observacion: TEXT
+├─ estado: ENUM ('pendiente', 'resuelto')
+├─ creada_por: UUID (FK → profiles.id)
+├─ created_at: TIMESTAMP
+└─ INDEXES: (informe_id, estado)
+            </pre>
+
+            <h3>Relaciones Visuales</h3>
+            <pre>
+auth.users
+    |
+    ↓ (1 a 1)
+profiles ← crear informe → informes ← pertenece a → escuelas
+    |                           |                        |
+    +── grupo_id ──────→ grupos ←─────── grupo_id ──────┘
+
+informes tiene relación 1 a N con:
+├─ informe_hsso
+├─ informe_maqr
+├─ informe_pppi
+├─ informe_pgr
+├─ informe_prt
+├─ informe_garo
+├─ informe_mcear
+├─ informe_cct
+└─ informe_observaciones
+
+RLS (Row Level Security) protege:
+├─ Usuario solo ve/edita sus propios informes
+├─ Coordinador ve informes de su grupo
+├─ Admin ve todos los informes
+└─ Visitante solo ve demos
+            </pre>
+        </section>
+
+        <section>
+            <h2>Resumen Final</h2>
+            <div class="success-box">
+                <h4>✅ Arquitectura Completa Documentada</h4>
+                <p>Se ha proporcionado un análisis minucioso de:</p>
+                <ul>
+                    <li>Estructura de capas (UI → Lógica → API → BD)</li>
+                    <li>Flujo de autenticación y roles</li>
+                    <li>Ciclo de vida completo de un informe</li>
+                    <li>Componentes React y su interacción</li>
+                    <li>API Routes y backend logic</li>
+                    <li>Generación de PDFs (cliente vs servidor)</li>
+                    <li>Descarga en lote con ZIP</li>
+                    <li>Sistema de permisos granular</li>
+                    <li>Flujo real de usuario especialista</li>
+                    <li>Esquema de base de datos completo</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>📄 Documentación Completa - Proyecto Informe BCIE</p>
+        <p>Análisis minucioso de estructura, funcionamiento e interacciones</p>
+    </footer>
+
+    <div class="back-to-top" id="backToTop">↑</div>
+
+    <script>
+        const backToTopButton = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                backToTopButton.classList.add('show');
+            } else {
+                backToTopButton.classList.remove('show');
+            }
+        });
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    </script>
+</body>
+</html>

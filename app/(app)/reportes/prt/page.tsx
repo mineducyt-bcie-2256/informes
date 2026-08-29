@@ -1,9 +1,10 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ChevronLeft, Filter } from 'lucide-react'
+import { ChevronLeft, Filter, Download } from 'lucide-react'
 import { MESES } from '@/types'
 import { fetchPRTData } from '@/lib/reportes/fetchPRT'
+import { fetchSitiosReubicacionConDetalles, exportarSitiosReubicacionExcel } from '@/lib/reportes/exportarSitiosReubicacion'
 
 export default function ReportePRTPage() {
   const router = useRouter()
@@ -12,6 +13,7 @@ export default function ReportePRTPage() {
   const [datosFiltrados, setDatosFiltrados] = useState<any[]>([])
   const [cargando, setCargando] = useState(true)
   const [mostrarFiltros, setMostrarFiltros] = useState(false)
+  const [descargando, setDescargando] = useState(false)
 
   // Estado de filtros
   const [supervision, setSupervision] = useState(searchParams.get('supervision') || '')
@@ -156,6 +158,50 @@ export default function ReportePRTPage() {
     router.push('/reportes/prt')
   }
 
+  const handleDescargarExcel = async () => {
+    try {
+      setDescargando(true)
+      const datosCompletos = await fetchSitiosReubicacionConDetalles()
+
+      // Aplicar los mismos filtros a los datos completos
+      let datosFiltradosExcel = datosCompletos
+
+      if (supervision) {
+        datosFiltradosExcel = datosFiltradosExcel.filter(d =>
+          d.supervision?.toLowerCase().includes(supervision.toLowerCase())
+        )
+      }
+      if (empresaObras) {
+        datosFiltradosExcel = datosFiltradosExcel.filter(d =>
+          d.empresa_obras?.toLowerCase().includes(empresaObras.toLowerCase())
+        )
+      }
+      if (mesDesde) {
+        datosFiltradosExcel = datosFiltradosExcel.filter(d => d.periodo_mes >= parseInt(mesDesde))
+      }
+      if (mesHasta) {
+        datosFiltradosExcel = datosFiltradosExcel.filter(d => d.periodo_mes <= parseInt(mesHasta))
+      }
+      if (codigo) {
+        datosFiltradosExcel = datosFiltradosExcel.filter(d =>
+          d.codigo?.toLowerCase().includes(codigo.toLowerCase())
+        )
+      }
+      if (centro) {
+        datosFiltradosExcel = datosFiltradosExcel.filter(d =>
+          d.centro?.toLowerCase().includes(centro.toLowerCase())
+        )
+      }
+
+      exportarSitiosReubicacionExcel(datosFiltradosExcel)
+    } catch (error) {
+      console.error('Error al descargar Excel:', error)
+      alert('Error al descargar el archivo')
+    } finally {
+      setDescargando(false)
+    }
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--background)' }}>
       {/* Header */}
@@ -177,17 +223,27 @@ export default function ReportePRTPage() {
               </div>
             </div>
 
-            <button
-              onClick={() => setMostrarFiltros(!mostrarFiltros)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
-                mostrarFiltros
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white/20 hover:bg-white/30 text-white'
-              }`}
-            >
-              <Filter size={18} />
-              Filtros
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDescargarExcel}
+                disabled={descargando}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download size={18} />
+                {descargando ? 'Descargando...' : 'Descargar Excel'}
+              </button>
+              <button
+                onClick={() => setMostrarFiltros(!mostrarFiltros)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition ${
+                  mostrarFiltros
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white/20 hover:bg-white/30 text-white'
+                }`}
+              >
+                <Filter size={18} />
+                Filtros
+              </button>
+            </div>
           </div>
         </div>
       </div>
