@@ -8,7 +8,6 @@ export async function POST(req: NextRequest) {
 
     const supabase = await createClient()
 
-    // Obtener datos de sitios de reubicación
     const { data: informes } = await supabase
       .from('informes')
       .select('id, periodo_mes, escuela_id, escuelas!inner(codigo, nombre, departamento, distrito)')
@@ -43,24 +42,39 @@ export async function POST(req: NextRequest) {
 
       if (prt?.lugares && Array.isArray(prt.lugares)) {
         for (const lugar of prt.lugares) {
-          let prestamo = ''
-          let alquiler = ''
-
+          const rubrosMap: Record<string, any> = {}
           if (lugar.rubros && Array.isArray(lugar.rubros)) {
             lugar.rubros.forEach((rubro: any) => {
-              if (rubro.nombre === 'Alquiler de lugar') {
-                if (rubro.unidad === 'Alquiler') alquiler = rubro.activo ? 'Sí' : 'No'
-                else if (rubro.unidad === 'Préstamo') prestamo = rubro.activo ? 'Sí' : 'No'
-              }
+              rubrosMap[rubro.nombre] = rubro
             })
           }
 
-          const adecuacionesActivas = lugar.adecuaciones
-            ? Object.entries(lugar.adecuaciones)
-                .filter(([_, adec]: [string, any]) => adec.activa)
-                .map(([nombre]) => nombre)
-                .join(', ')
-            : ''
+          // Modalidad
+          const modalidad = Array.isArray(prt.modalidad) ? prt.modalidad.join(', ') : prt.modalidad || ''
+
+          // Condición de uso
+          let condicionUso = lugar.condicion_uso || ''
+          let condicionMonto = '-'
+
+          if (rubrosMap['Alquiler de lugar']) {
+            const rubro = rubrosMap['Alquiler de lugar']
+            if (rubro.activo) {
+              if (rubro.unidad === 'Alquiler') {
+                condicionUso = 'Alquiler'
+                condicionMonto = rubro.costo_unitario ? rubro.costo_unitario.toString() : '-'
+              } else if (rubro.unidad === 'Préstamo') {
+                condicionUso = 'Préstamo'
+                condicionMonto = '-'
+              }
+            }
+          }
+
+          // Servicios
+          const getMontoServicio = (nombre: string) => {
+            const rubro = rubrosMap[nombre]
+            if (!rubro || !rubro.activo) return '-'
+            return rubro.costo_unitario ? rubro.costo_unitario.toString() : '-'
+          }
 
           datos.push({
             codigo: escuelaData?.codigo || '',
@@ -68,9 +82,13 @@ export async function POST(req: NextRequest) {
             departamento: escuelaData?.departamento || '',
             distrito: escuelaData?.distrito || '',
             sitio_reubicacion: lugar.direccion || '',
-            prestamo,
-            alquiler,
-            adecuaciones: adecuacionesActivas,
+            modalidad,
+            condicion_uso: condicionUso,
+            condicion_monto: condicionMonto,
+            energia_electrica: getMontoServicio('Energía eléctrica'),
+            agua_potable: getMontoServicio('Agua potable'),
+            internet: getMontoServicio('Internet'),
+            servicios_sanitarios: getMontoServicio('Servicios sanitarios'),
             est_ninos: lugar.est_ninos || 0,
             est_ninas: lugar.est_ninas || 0,
             periodo_mes: informe.periodo_mes,
@@ -111,6 +129,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Ordenar por centro educativo
+    datosFiltrados.sort((a, b) => a.centro.localeCompare(b.centro))
+
     // Generar Excel
     const XLSX = await import('xlsx')
 
@@ -120,9 +141,13 @@ export async function POST(req: NextRequest) {
       'Departamento': row.departamento,
       'Distrito': row.distrito,
       'Sitio de Reubicación': row.sitio_reubicacion,
-      'Préstamo': row.prestamo,
-      'Alquiler': row.alquiler,
-      'Adecuaciones': row.adecuaciones,
+      'Modalidad': row.modalidad,
+      'Condición de Uso': row.condicion_uso,
+      'Monto Condición': row.condicion_monto,
+      'Energía Eléctrica': row.energia_electrica,
+      'Agua Potable': row.agua_potable,
+      'Internet': row.internet,
+      'Servicios Sanitarios': row.servicios_sanitarios,
       'Est. Niños': row.est_ninos,
       'Est. Niñas': row.est_ninas,
     }))
