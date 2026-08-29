@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-const XLSX = require('xlsx')
+import XLSX from 'xlsx'
 
 export async function fetchSitiosReubicacionConDetalles() {
   const supabase = createClient()
