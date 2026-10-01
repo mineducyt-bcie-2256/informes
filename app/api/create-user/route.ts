@@ -68,37 +68,8 @@ export async function POST(req: NextRequest) {
       if (!userId) return NextResponse.json({ error: 'No se pudo obtener el ID del usuario' }, { status: 500 })
     }
 
-    // Crear perfil - primero intentar INSERT, si falla hacer UPDATE
-    const profileData = {
-      id:                  userId,
-      username:            username?.trim().toLowerCase() || null,
-      nombre:              nombre   || null,
-      cargo:               cargo    || null,
-      rol:                 rol      || 'usuario',
-      activo:              fromRegistro ? true : (activo ?? true),
-      email,
-      empresa_supervision: empresa_supervision || null,
-      institucion:         institucion         || null,
-    }
-
-    // Intentar insertar
-    let profErr = null
-    const { error: insertErr } = await adminClient.from('profiles').insert([profileData])
-
-    if (insertErr) {
-      // Si falla, intentar update
-      const { error: updateErr } = await adminClient
-        .from('profiles')
-        .update(profileData)
-        .eq('id', userId)
-
-      profErr = updateErr
-    }
-
-    if (profErr) {
-      return NextResponse.json({ error: 'Error en perfil: ' + profErr.message }, { status: 500 })
-    }
-
+    // Usuario creado en auth.users
+    // El perfil será actualizado por trigger de Supabase automáticamente
     return NextResponse.json({ ok: true, userId })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
