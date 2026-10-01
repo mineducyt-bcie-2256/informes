@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       email,
       empresa_supervision: empresa_supervision || null,
       institucion:         institucion         || null,
-    })
+    }, { onConflict: 'id' })
 
     if (profErr) {
       return NextResponse.json({ error: 'Usuario creado pero error en perfil: ' + profErr.message }, { status: 500 })
