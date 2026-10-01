@@ -58,10 +58,11 @@ export async function POST(req: NextRequest) {
       })
 
       if (authErr) {
+        console.error('Auth error:', authErr)
         const msg = authErr.message.includes('already') || authErr.message.includes('registered')
           ? 'Ese correo ya está registrado.'
           : authErr.message
-        return NextResponse.json({ error: msg }, { status: 400 })
+        return NextResponse.json({ error: msg, details: authErr.message }, { status: 400 })
       }
 
       userId = data.user?.id ?? ''
