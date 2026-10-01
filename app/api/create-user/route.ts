@@ -68,8 +68,8 @@ export async function POST(req: NextRequest) {
       if (!userId) return NextResponse.json({ error: 'No se pudo obtener el ID del usuario' }, { status: 500 })
     }
 
-    // Crear o actualizar perfil con todos los datos
-    const { error: profErr } = await adminClient.from('profiles').upsert({
+    // Crear perfil - primero intentar INSERT, si falla hacer UPDATE
+    const profileData = {
       id:                  userId,
       username:            username?.trim().toLowerCase() || null,
       nombre:              nombre   || null,
@@ -79,10 +79,24 @@ export async function POST(req: NextRequest) {
       email,
       empresa_supervision: empresa_supervision || null,
       institucion:         institucion         || null,
-    }, { onConflict: 'id' })
+    }
+
+    // Intentar insertar
+    let profErr = null
+    const { error: insertErr } = await adminClient.from('profiles').insert([profileData])
+
+    if (insertErr) {
+      // Si falla, intentar update
+      const { error: updateErr } = await adminClient
+        .from('profiles')
+        .update(profileData)
+        .eq('id', userId)
+
+      profErr = updateErr
+    }
 
     if (profErr) {
-      return NextResponse.json({ error: 'Usuario creado pero error en perfil: ' + profErr.message }, { status: 500 })
+      return NextResponse.json({ error: 'Error en perfil: ' + profErr.message }, { status: 500 })
     }
 
     return NextResponse.json({ ok: true, userId })
