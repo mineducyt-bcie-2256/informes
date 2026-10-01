@@ -19,20 +19,18 @@ export async function POST(req: NextRequest) {
       .from('profiles')
       .select('id')
       .eq('username', username.toLowerCase().trim())
-      .single()
 
-    // Si hay error de "no rows", el usuario está disponible
-    if (error && error.code === 'PGRST116') {
-      return NextResponse.json({ available: true }, { status: 200 })
+    if (error) {
+      return NextResponse.json({ error: 'Error al verificar usuario: ' + error.message }, { status: 500 })
     }
 
-    // Si encontró un registro, el usuario ya existe
-    if (data) {
+    // Si hay resultados, el usuario ya existe
+    if (data && data.length > 0) {
       return NextResponse.json({ available: false }, { status: 200 })
     }
 
-    // Error inesperado
-    return NextResponse.json({ error: 'Error al verificar usuario' }, { status: 500 })
+    // Si no hay resultados, el usuario está disponible
+    return NextResponse.json({ available: true }, { status: 200 })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
