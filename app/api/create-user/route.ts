@@ -68,19 +68,18 @@ export async function POST(req: NextRequest) {
       if (!userId) return NextResponse.json({ error: 'No se pudo obtener el ID del usuario' }, { status: 500 })
     }
 
-    // Actualizar perfil con todos los datos
-    const { error: profErr } = await adminClient.from('profiles').update({
+    // Crear o actualizar perfil con todos los datos
+    const { error: profErr } = await adminClient.from('profiles').upsert({
+      id:                  userId,
       username:            username?.trim().toLowerCase() || null,
       nombre:              nombre   || null,
       cargo:               cargo    || null,
       rol:                 rol      || 'usuario',
-      // Auto-registro: activo=true, el email de verificación es el control de acceso
-      // Creación manual: usa el valor que pase el programador
       activo:              fromRegistro ? true : (activo ?? true),
       email,
       empresa_supervision: empresa_supervision || null,
       institucion:         institucion         || null,
-    }).eq('id', userId)
+    })
 
     if (profErr) {
       return NextResponse.json({ error: 'Usuario creado pero error en perfil: ' + profErr.message }, { status: 500 })
