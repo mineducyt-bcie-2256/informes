@@ -39,8 +39,12 @@ export async function PATCH(req: NextRequest) {
     if (password) authUpdates.password = password
 
     if (Object.keys(authUpdates).length > 0) {
-      const { error: authErr } = await adminClient.auth.admin.updateUserById(userId, authUpdates)
-      if (authErr) return NextResponse.json({ error: authErr.message }, { status: 500 })
+      const { error: authErr, data: authData } = await adminClient.auth.admin.updateUserById(userId, authUpdates)
+      if (authErr) {
+        console.error('Auth update error:', authErr)
+        return NextResponse.json({ error: 'Error actualizando auth: ' + authErr.message }, { status: 500 })
+      }
+      console.log('Auth updated successfully:', authData)
     }
 
     return NextResponse.json({ ok: true })
