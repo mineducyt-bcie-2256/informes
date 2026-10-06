@@ -1,29 +1,118 @@
 import { createClient } from '@/lib/supabase/server'
 import JSZip from 'jszip'
+import puppeteer from 'puppeteer'
 
 const MESES_ARRAY = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
-async function obtenerPDFCompleto(informe_id: string): Promise<Buffer | null> {
+async function generarPDFCompleto(informe: any): Promise<Buffer | null> {
+  let browser = null
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('.supabase.co', '.vercel.app') || 'https://informes-nu.vercel.app'
-    const url = `${baseUrl}/api/informes/${informe_id}/pdf/download`
+    // Generar HTML del informe
+    const html = generarHTMLInforme(informe)
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'User-Agent': 'vercel-internal-pdf-downloader' }
+    // Iniciar Puppeteer
+    browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      headless: true,
     })
 
-    if (!response.ok) {
-      console.warn(`[PDF] Error descargando PDF ${informe_id}: ${response.status}`)
-      return null
-    }
+    const page = await browser.createPage()
+    await page.setContent(html, { waitUntil: 'networkidle0' })
 
-    const arrayBuffer = await response.arrayBuffer()
-    return Buffer.from(arrayBuffer)
+    // Generar PDF
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      margin: { top: 20, bottom: 20, left: 20, right: 20 },
+      displayHeaderFooter: true,
+      footerTemplate: `<div style="font-size: 10px; width: 100%; text-align: center; color: #999;">Página <span class="pageNumber"></span> de <span class="totalPages"></span></div>`,
+    })
+
+    return Buffer.from(pdfBuffer)
   } catch (err) {
-    console.error(`[PDF] Error obtiendo PDF ${informe_id}:`, err)
+    console.error(`[PDF] Error generando PDF:`, err)
     return null
+  } finally {
+    if (browser) await browser.close()
   }
+}
+
+function generarHTMLInforme(informe: any): string {
+  const escuela = Array.isArray(informe.escuelas) ? informe.escuelas[0] : informe.escuelas
+  const mes = MESES_ARRAY[informe.periodo_mes - 1] || ''
+  const fecha = new Date().toLocaleDateString('es-SV')
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; color: #333; line-height: 1.6; }
+        .header { background: #0f2d52; color: white; padding: 30px; text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 24px; margin-bottom: 5px; }
+        .header p { font-size: 12px; color: #c8a951; }
+        .section { margin-bottom: 25px; }
+        .section-title { font-size: 14px; font-weight: bold; color: #0f2d52; border-bottom: 2px solid #c8a951; padding-bottom: 8px; margin-bottom: 15px; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .info-item { border-left: 3px solid #c8a951; padding-left: 10px; }
+        .info-label { font-size: 11px; color: #999; font-weight: bold; }
+        .info-value { font-size: 13px; color: #333; font-weight: 500; margin-top: 3px; }
+        .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: bold; }
+        .status-borrador { background: #fef3c7; color: #92400e; }
+        .status-enviado { background: #bfdbfe; color: #1e40af; }
+        .status-aprobado { background: #dcfce7; color: #166534; }
+        .footer { margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #999; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>PROGRAMA MI NUEVA ESCUELA</h1>
+        <p>INFORME MENSUAL DE SUPERVISIÓN</p>
+      </div>
+
+      <div class="section">
+        <div class="section-title">INFORMACIÓN DEL INFORME</div>
+        <div class="info-grid">
+          <div class="info-item">
+            <div class="info-label">Centro Educativo</div>
+            <div class="info-value">${escuela?.nombre || 'N/A'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Código</div>
+            <div class="info-value">${escuela?.codigo || 'N/A'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Período</div>
+            <div class="info-value">${mes} ${informe.periodo_anio}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Estado</div>
+            <div class="info-value">
+              <span class="status-badge status-${informe.estado}">
+                ${informe.estado.charAt(0).toUpperCase() + informe.estado.slice(1)}
+              </span>
+            </div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Departamento</div>
+            <div class="info-value">${escuela?.departamento || 'N/A'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Empresa Contratista</div>
+            <div class="info-value">${escuela?.empresa_obras || 'N/A'}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>Generado: ${fecha} | ID del Informe: ${informe.id}</p>
+        <p>Este PDF contiene un resumen del informe mensual de supervisión del Programa Mi Nueva Escuela.</p>
+      </div>
+    </body>
+    </html>
+  `
 }
 
 export async function POST(request: Request) {
@@ -58,10 +147,10 @@ export async function POST(request: Request) {
 
     for (const informe of informes) {
       try {
-        const pdfBuffer = await obtenerPDFCompleto(informe.id)
+        const pdfBuffer = await generarPDFCompleto(informe)
 
         if (!pdfBuffer) {
-          console.warn(`No se pudo obtener PDF para ${informe.id}`)
+          console.warn(`No se pudo generar PDF para ${informe.id}`)
           fallidos++
           continue
         }
@@ -73,7 +162,7 @@ export async function POST(request: Request) {
         zip.file(nombre, pdfBuffer)
         generados++
       } catch (err) {
-        console.error(`Error descargando PDF para ${informe.id}:`, err)
+        console.error(`Error generando PDF para ${informe.id}:`, err)
         fallidos++
       }
     }
