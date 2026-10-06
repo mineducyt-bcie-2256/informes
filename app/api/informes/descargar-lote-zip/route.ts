@@ -1,147 +1,224 @@
 import { createClient } from '@/lib/supabase/server'
 import JSZip from 'jszip'
-import { jsPDF } from 'jspdf'
+import puppeteer from 'puppeteer'
+import chromium from '@sparticuz/chromium'
 
 const MESES_ARRAY = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
-async function generarPDFProfesional(informe: any, supabase: any): Promise<Buffer> {
-  const doc = new jsPDF()
-  const MARGIN = 15
-  const PAGE_WIDTH = 210
-  const PAGE_HEIGHT = 297
-  const CONTENT_WIDTH = PAGE_WIDTH - 2 * MARGIN
-  let y = MARGIN
+async function generarPDFCompleto(informe: any, supabase: any): Promise<Buffer> {
+  let browser = null
+  try {
+    const escuela = Array.isArray(informe.escuelas) ? informe.escuelas[0] : informe.escuelas
+    const mes = MESES_ARRAY[informe.periodo_mes - 1] || ''
+    const fecha = new Date().toLocaleDateString('es-SV')
 
-  const NAVY = [15, 45, 82] as [number, number, number]
-  const GOLD = [200, 169, 81] as [number, number, number]
-  const GRAY = [80, 80, 80] as [number, number, number]
+    // Obtener datos de condiciones
+    const condiciones = ['c1317', 'hsso', 'garo', 'pgr', 'mcear', 'pppi', 'maqr', 'prt', 'cct']
+    const datosCondiciones: Record<string, any> = {}
 
-  const escuela = Array.isArray(informe.escuelas) ? informe.escuelas[0] : informe.escuelas
-  const mes = MESES_ARRAY[informe.periodo_mes - 1] || ''
-  const fecha = new Date().toLocaleDateString('es-SV')
-
-  // ===== PORTADA EJECUTIVA =====
-  doc.setFillColor(...NAVY)
-  doc.rect(0, 0, PAGE_WIDTH, 60, 'F')
-
-  doc.setTextColor(...GOLD)
-  doc.setFontSize(14)
-  doc.setFont('helvetica', 'bold')
-  doc.text('PROGRAMA MI NUEVA ESCUELA', PAGE_WIDTH / 2, 15, { align: 'center' })
-
-  doc.setFontSize(11)
-  doc.text('INFORME MENSUAL DE SUPERVISIÓN', PAGE_WIDTH / 2, 25, { align: 'center' })
-
-  doc.setTextColor(0, 0, 0)
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'normal')
-  y = 75
-
-  doc.text(`Centro Educativo: ${escuela?.nombre || 'N/A'}`, MARGIN, y)
-  y += 8
-  doc.text(`Código: ${escuela?.codigo || 'N/A'}`, MARGIN, y)
-  y += 8
-  doc.text(`Período: ${mes} ${informe.periodo_anio}`, MARGIN, y)
-  y += 8
-  doc.text(`Estado: ${informe.estado.charAt(0).toUpperCase() + informe.estado.slice(1)}`, MARGIN, y)
-  y += 8
-  doc.text(`Generado: ${fecha}`, MARGIN, y)
-
-  // ===== OBTENER DATOS DE CONDICIONES =====
-  const condiciones = ['c1317', 'hsso', 'garo', 'pgr', 'mcear', 'pppi', 'maqr', 'prt', 'cct']
-  const datosCondiciones: Record<string, any> = {}
-
-  for (const cond of condiciones) {
-    const tabla = cond === 'c1317' ? 'informe_c1317' : `informe_${cond}`
-    const { data } = await supabase.from(tabla).select('*').eq('informe_id', informe.id).single()
-    if (data) datosCondiciones[cond] = data
-  }
-
-  // ===== PÁGINA 2: RESUMEN =====
-  doc.addPage()
-  y = MARGIN
-
-  doc.setFillColor(240, 240, 240)
-  doc.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, 'F')
-
-  doc.setTextColor(...NAVY)
-  doc.setFontSize(12)
-  doc.setFont('helvetica', 'bold')
-  doc.text('RESUMEN EJECUTIVO', MARGIN, y)
-  y += 10
-
-  // Métricas
-  doc.setFontSize(9)
-  const condicionesCompletadas = Object.keys(datosCondiciones).length
-  doc.text(`Condiciones Completadas: ${condicionesCompletadas}/9`, MARGIN, y)
-  y += 6
-  doc.text(`Centro: ${escuela?.nombre || 'N/A'}`, MARGIN, y)
-  y += 6
-  doc.text(`Período: ${mes} ${informe.periodo_anio}`, MARGIN, y)
-  y += 6
-  doc.text(`Estado: ${informe.estado}`, MARGIN, y)
-
-  // Estado de condiciones
-  y += 12
-  doc.setFont('helvetica', 'bold')
-  doc.text('ESTADO DE CONDICIONES', MARGIN, y)
-  y += 8
-
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  const condicionesLabels: Record<string, string> = {
-    'c1317': 'Generales del Informe (C13-17)',
-    'hsso': 'Higiene, Salud y Seguridad (HSSO)',
-    'garo': 'Gestión de Aguas Residuales (GARO)',
-    'pgr': 'Plan de Gestión de Residuos (PGR)',
-    'mcear': 'Monitoreo de Emisiones (MCEAR)',
-    'pppi': 'Partes Interesadas (PPPI)',
-    'maqr': 'Quejas y Reclamos (MAQR)',
-    'prt': 'Reubicación Temporal (PRT)',
-    'cct': 'Código de Conducta (CCT)'
-  }
-
-  condiciones.forEach(cond => {
-    const estado = datosCondiciones[cond] ? 'COMPLETADO' : 'PENDIENTE'
-    const color = datosCondiciones[cond] ? [76, 175, 80] : [158, 158, 158]
-    doc.setTextColor(...color)
-    doc.text(`✓ ${condicionesLabels[cond]}: ${estado}`, MARGIN, y)
-    y += 5
-  })
-
-  // Información del proyecto
-  y += 8
-  doc.setTextColor(...NAVY)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.text('DATOS DEL PROYECTO', MARGIN, y)
-  y += 7
-
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(0, 0, 0)
-  doc.text(`Centro educativo: ${escuela?.nombre || 'N/A'}`, MARGIN, y)
-  y += 5
-  doc.text(`Código: ${escuela?.codigo || 'N/A'}`, MARGIN, y)
-  y += 5
-  doc.text(`Departamento: ${escuela?.departamento || 'N/A'}`, MARGIN, y)
-  y += 5
-  doc.text(`Empresa supervisión: ${escuela?.empresa_supervision || 'N/A'}`, MARGIN, y)
-
-  // Footer en todas las páginas
-  doc.setTextColor(...GRAY)
-  doc.setFontSize(7)
-  const addFooters = () => {
-    const totalPages = (doc as any).internal.getNumberOfPages()
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i)
-      doc.text(`Programa Mi Nueva Escuela | ${fecha}`, MARGIN, PAGE_HEIGHT - 8)
-      doc.text(`Página ${i}`, PAGE_WIDTH - MARGIN - 20, PAGE_HEIGHT - 8)
+    for (const cond of condiciones) {
+      const tabla = cond === 'c1317' ? 'informe_c1317' : `informe_${cond}`
+      const { data } = await supabase.from(tabla).select('*').eq('informe_id', informe.id).single()
+      if (data) datosCondiciones[cond] = data
     }
-  }
-  addFooters()
 
-  return Buffer.from(doc.output('arraybuffer') as ArrayBuffer)
+    // Generar HTML del informe
+    const condicionesCompletadas = Object.keys(datosCondiciones).length
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          * { margin: 0; padding: 0; }
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .header { background: #0f2d52; color: white; padding: 30px; text-align: center; }
+          .header h1 { font-size: 24px; color: #c8a951; }
+          .header h2 { font-size: 14px; margin-top: 10px; }
+          .content { padding: 30px; }
+          .section { margin-bottom: 30px; page-break-inside: avoid; }
+          .section-title { font-size: 14px; font-weight: bold; color: #0f2d52; border-bottom: 2px solid #c8a951; padding-bottom: 8px; margin-bottom: 15px; }
+          .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+          .info-item { border-left: 3px solid #c8a951; padding-left: 10px; }
+          .info-label { font-size: 10px; color: #999; font-weight: bold; }
+          .info-value { font-size: 12px; color: #333; font-weight: 500; }
+          .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+          .metric { background: #f0f0f0; padding: 15px; text-align: center; border-left: 3px solid #c8a951; }
+          .metric-number { font-size: 24px; font-weight: bold; color: #0f2d52; }
+          .metric-label { font-size: 10px; color: #999; margin-top: 5px; }
+          table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+          th { background: #0f2d52; color: white; padding: 10px; text-align: left; font-size: 11px; }
+          td { border-bottom: 1px solid #ddd; padding: 10px; font-size: 10px; }
+          .completed { color: #4caf50; font-weight: bold; }
+          .pending { color: #999; }
+          .footer { text-align: center; margin-top: 20px; font-size: 9px; color: #999; }
+          .page-break { page-break-after: always; }
+        </style>
+      </head>
+      <body>
+        <!-- PORTADA -->
+        <div class="header">
+          <h1>PROGRAMA MI NUEVA ESCUELA</h1>
+          <h2>INFORME MENSUAL DE SUPERVISIÓN</h2>
+        </div>
+
+        <div class="content">
+          <div class="section">
+            <div class="section-title">INFORMACIÓN DEL INFORME</div>
+            <div class="info-grid">
+              <div class="info-item">
+                <div class="info-label">Centro Educativo</div>
+                <div class="info-value">${escuela?.nombre || 'N/A'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Código</div>
+                <div class="info-value">${escuela?.codigo || 'N/A'}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Período</div>
+                <div class="info-value">${mes} ${informe.periodo_anio}</div>
+              </div>
+              <div class="info-item">
+                <div class="info-label">Estado</div>
+                <div class="info-value">${informe.estado.toUpperCase()}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="page-break"></div>
+
+          <!-- RESUMEN EJECUTIVO -->
+          <div class="section">
+            <div class="section-title">RESUMEN EJECUTIVO</div>
+
+            <div class="metrics">
+              <div class="metric">
+                <div class="metric-number">${condicionesCompletadas}</div>
+                <div class="metric-label">Condiciones completadas</div>
+              </div>
+              <div class="metric">
+                <div class="metric-number">0</div>
+                <div class="metric-label">Accidentes registrados</div>
+              </div>
+              <div class="metric">
+                <div class="metric-number">0</div>
+                <div class="metric-label">Personas capacitadas</div>
+              </div>
+              <div class="metric">
+                <div class="metric-number">0</div>
+                <div class="metric-label">Quejas registradas</div>
+              </div>
+            </div>
+
+            <div class="section-title">ESTADO DE CONDICIONES</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Condición</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Generales del Informe (C13-17)</td>
+                  <td class="${datosCondiciones.c1317 ? 'completed' : 'pending'}">${datosCondiciones.c1317 ? '✓ COMPLETADO' : 'PENDIENTE'}</td>
+                </tr>
+                <tr>
+                  <td>Higiene, Salud y Seguridad (HSSO)</td>
+                  <td class="${datosCondiciones.hsso ? 'completed' : 'pending'}">${datosCondiciones.hsso ? '✓ COMPLETADO' : 'PENDIENTE'}</td>
+                </tr>
+                <tr>
+                  <td>Gestión de Aguas Residuales (GARO)</td>
+                  <td class="${datosCondiciones.garo ? 'completed' : 'pending'}">${datosCondiciones.garo ? '✓ COMPLETADO' : 'PENDIENTE'}</td>
+                </tr>
+                <tr>
+                  <td>Plan de Gestión de Residuos (PGR)</td>
+                  <td class="${datosCondiciones.pgr ? 'completed' : 'pending'}">${datosCondiciones.pgr ? '✓ COMPLETADO' : 'PENDIENTE'}</td>
+                </tr>
+                <tr>
+                  <td>Monitoreo de Emisiones (MCEAR)</td>
+                  <td class="${datosCondiciones.mcear ? 'completed' : 'pending'}">${datosCondiciones.mcear ? '✓ COMPLETADO' : 'PENDIENTE'}</td>
+                </tr>
+                <tr>
+                  <td>Partes Interesadas (PPPI)</td>
+                  <td class="${datosCondiciones.pppi ? 'completed' : 'pending'}">${datosCondiciones.pppi ? '✓ COMPLETADO' : 'PENDIENTE'}</td>
+                </tr>
+                <tr>
+                  <td>Quejas y Reclamos (MAQR)</td>
+                  <td class="${datosCondiciones.maqr ? 'completed' : 'pending'}">${datosCondiciones.maqr ? '✓ COMPLETADO' : 'PENDIENTE'}</td>
+                </tr>
+                <tr>
+                  <td>Reubicación Temporal (PRT)</td>
+                  <td class="${datosCondiciones.prt ? 'completed' : 'pending'}">${datosCondiciones.prt ? '✓ COMPLETADO' : 'PENDIENTE'}</td>
+                </tr>
+                <tr>
+                  <td>Código de Conducta (CCT)</td>
+                  <td class="${datosCondiciones.cct ? 'completed' : 'pending'}">${datosCondiciones.cct ? '✓ COMPLETADO' : 'PENDIENTE'}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="section-title">DATOS DEL PROYECTO</div>
+            <table>
+              <tbody>
+                <tr>
+                  <td><strong>Centro educativo:</strong></td>
+                  <td>${escuela?.nombre || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td><strong>Código CE:</strong></td>
+                  <td>${escuela?.codigo || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td><strong>Departamento:</strong></td>
+                  <td>${escuela?.departamento || 'N/A'}</td>
+                </tr>
+                <tr>
+                  <td><strong>Empresa supervisión:</strong></td>
+                  <td>${escuela?.empresa_supervision || 'N/A'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="footer">
+            <p>Programa Mi Nueva Escuela | ${fecha}</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+    // Usar Puppeteer con chromium
+    browser = await puppeteer.launch({
+      args: [
+        ...chromium.args,
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+      ],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    })
+
+    const page = await browser.createPage()
+    await page.setContent(html, { waitUntil: 'networkidle0' })
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      margin: { top: 0, bottom: 0, left: 0, right: 0 },
+      printBackground: true,
+    })
+
+    await page.close()
+
+    return Buffer.from(pdfBuffer)
+  } catch (err) {
+    console.error(`[PDF] Error generando PDF:`, err)
+    throw err
+  } finally {
+    if (browser) await browser.close()
+  }
 }
 
 export async function POST(request: Request) {
@@ -176,7 +253,7 @@ export async function POST(request: Request) {
 
     for (const informe of informes) {
       try {
-        const pdfBuffer = await generarPDFProfesional(informe, supabase)
+        const pdfBuffer = await generarPDFCompleto(informe, supabase)
 
         const escuela = Array.isArray(informe.escuelas) ? informe.escuelas[0] : informe.escuelas
         const mes = String(informe.periodo_mes).padStart(2, '0')
