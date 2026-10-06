@@ -24,7 +24,7 @@ function generarPDFCompleto(informe: any): Buffer {
 
     doc.setTextColor(...GOLD)
     doc.setFontSize(16)
-    doc.setFont(undefined, 'bold')
+    doc.setFont('helvetica', 'bold')
     doc.text('PROGRAMA MI NUEVA ESCUELA', MARGIN, 15)
 
     doc.setTextColor(255, 255, 255)
@@ -36,7 +36,7 @@ function generarPDFCompleto(informe: any): Buffer {
     // Título sección
     doc.setTextColor(...NAVY)
     doc.setFontSize(12)
-    doc.setFont(undefined, 'bold')
+    doc.setFont('helvetica', 'bold')
     doc.text('INFORMACIÓN DEL INFORME', MARGIN, y)
     y += 10
 
@@ -53,7 +53,7 @@ function generarPDFCompleto(informe: any): Buffer {
 
     doc.setTextColor(0, 0, 0)
     doc.setFontSize(9)
-    doc.setFont(undefined, 'normal')
+    doc.setFont('helvetica', 'normal')
 
     const datos = [
       [`Centro Educativo: ${escuela?.nombre || 'N/A'}`, ''],
@@ -74,7 +74,7 @@ function generarPDFCompleto(informe: any): Buffer {
 
     // Nota final
     doc.setFontSize(8)
-    doc.setFont(undefined, 'italic')
+    doc.setFont('helvetica', 'italic')
     doc.setTextColor(...GRAY)
     doc.text('El PDF contiene un resumen del informe mensual de supervisión.', MARGIN, y)
 
