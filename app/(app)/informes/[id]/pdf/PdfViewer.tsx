@@ -3960,7 +3960,7 @@ function SeccionCCT({ data }: { data: any }) {
 // ═══════════════════════════════════════════════════════════════════
 // DOCUMENTO COMPLETO
 // ═══════════════════════════════════════════════════════════════════
-function InformePDF({ data }: { data: any }) {
+export function InformePDF({ data }: { data: any }) {
   return (
     <Document
       title={`Informe SCAS — ${data.esc?.nombre ?? ''} — ${data.periodo}`}
