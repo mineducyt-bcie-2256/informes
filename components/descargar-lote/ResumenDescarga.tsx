@@ -175,17 +175,17 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
                   <button
                     onClick={() => handleDescargarIndividual(inf)}
                     disabled={descargandoIndividual === inf.id}
-                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:bg-slate-400 transition flex items-center gap-1 whitespace-nowrap"
+                    className="flex items-center justify-center gap-2 bg-blue-900 text-white px-4 py-2 rounded-xl font-semibold hover:bg-blue-800 transition disabled:opacity-60 text-sm whitespace-nowrap"
                   >
                     {descargandoIndividual === inf.id ? (
                       <>
-                        <Loader2 size={14} className="animate-spin" />
+                        <Loader2 size={16} className="animate-spin" />
                         Descargando
                       </>
                     ) : (
                       <>
-                        <Download size={14} />
-                        Descargar
+                        <Download size={16} />
+                        Descargar PDF
                       </>
                     )}
                   </button>
