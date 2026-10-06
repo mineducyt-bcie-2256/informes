@@ -21,42 +21,42 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
     setExito(false)
 
     try {
-      // Obtener ZIP directamente del servidor con todos los PDFs
-      const response = await fetch('/api/informes/descargar-lote-zip', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          informe_ids: informes.map(i => i.id),
-        }),
-      })
+      // Descargar cada PDF individual
+      for (const informe of informes) {
+        const response = await fetch(`/api/informes/${informe.id}/pdf/download`, {
+          method: 'GET',
+        })
 
-      if (!response.ok) {
-        let errorMessage = `Error HTTP ${response.status}`
-        try {
-          const errorData = await response.json()
-          errorMessage = errorData.error || errorData.details || errorMessage
-        } catch {
-          // Si no es JSON, usar el mensaje genérico
+        if (!response.ok) {
+          console.warn(`Error descargando PDF para ${informe.id}: ${response.status}`)
+          continue
         }
-        throw new Error(errorMessage)
+
+        const pdfBlob = await response.blob()
+
+        if (!pdfBlob || pdfBlob.size === 0) {
+          console.warn(`PDF vacío para ${informe.id}`)
+          continue
+        }
+
+        // Descargar PDF individual
+        const url = window.URL.createObjectURL(pdfBlob)
+        const a = document.createElement('a')
+        a.href = url
+
+        // Nombre del archivo con código y período
+        const codigo = informe.escuelas?.codigo || 'CENTRO'
+        const mes = String(informe.periodo_mes).padStart(2, '0')
+        a.download = `Informe_SCAS_${codigo}_${informe.periodo_anio}${mes}.pdf`
+
+        document.body.appendChild(a)
+        a.click()
+        window.URL.revokeObjectURL(url)
+        document.body.removeChild(a)
+
+        // Pequeño delay entre descargas para evitar sobrecargar
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
-
-      // Obtener ZIP como blob
-      const zipBlob = await response.blob()
-
-      if (!zipBlob || zipBlob.size === 0) {
-        throw new Error('El archivo ZIP está vacío.')
-      }
-
-      // Descargar ZIP
-      const url = window.URL.createObjectURL(zipBlob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `Informes_${new Date().toISOString().split('T')[0]}.zip`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
 
       setExito(true)
       setTimeout(() => {
@@ -93,7 +93,7 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
         </div>
         <h3 className="text-2xl font-bold mb-2 text-green-600">¡Descarga Completada!</h3>
         <p className="text-slate-600 dark:text-slate-400 mb-4">
-          Tu archivo ZIP está siendo descargado con {informes.length} informe{informes.length !== 1 ? 's' : ''}
+          Se han descargado {informes.length} informe{informes.length !== 1 ? 's' : ''} en formato PDF
         </p>
         <p className="text-sm text-slate-500">Cerrando en unos momentos...</p>
       </div>
@@ -171,8 +171,8 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
       {/* Info */}
       <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
         <p className="text-sm text-green-900 dark:text-green-100">
-          📦 Se generará un ZIP con {informes.length} informe{informes.length !== 1 ? 's' : ''} en formato PDF,
-          nombrados automáticamente
+          📥 Se descargarán {informes.length} informe{informes.length !== 1 ? 's' : ''} en formato PDF de forma individual,
+          nombrados automáticamente con código y período
         </p>
       </div>
 
