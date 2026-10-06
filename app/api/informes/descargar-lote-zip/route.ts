@@ -4,86 +4,91 @@ import { jsPDF } from 'jspdf'
 
 const MESES_ARRAY = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
-function generarPDFCompleto(informe: any): Buffer {
+async function generarPDFCompleto(informe: any, supabase: any): Promise<Buffer> {
   try {
     const doc = new jsPDF()
-    const MARGIN = 20
+    const MARGIN = 15
     const PAGE_WIDTH = 210
     const PAGE_HEIGHT = 297
     const CONTENT_WIDTH = PAGE_WIDTH - 2 * MARGIN
     let y = MARGIN
 
-    // Colores
     const NAVY = [15, 45, 82] as [number, number, number]
     const GOLD = [200, 169, 81] as [number, number, number]
     const GRAY = [100, 100, 100] as [number, number, number]
 
-    // Header
-    doc.setFillColor(...NAVY)
-    doc.rect(0, 0, PAGE_WIDTH, 40, 'F')
-
-    doc.setTextColor(...GOLD)
-    doc.setFontSize(16)
-    doc.setFont('helvetica', 'bold')
-    doc.text('PROGRAMA MI NUEVA ESCUELA', MARGIN, 15)
-
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(10)
-    doc.text('INFORME MENSUAL DE SUPERVISIÓN', MARGIN, 28)
-
-    y = 55
-
-    // Título sección
-    doc.setTextColor(...NAVY)
-    doc.setFontSize(12)
-    doc.setFont('helvetica', 'bold')
-    doc.text('INFORMACIÓN DEL INFORME', MARGIN, y)
-    y += 10
-
-    // Línea decorativa
-    doc.setDrawColor(...GOLD)
-    doc.setLineWidth(0.5)
-    doc.line(MARGIN, y - 2, MARGIN + CONTENT_WIDTH, y - 2)
-
-    y += 8
-
-    // Datos del informe
     const escuela = Array.isArray(informe.escuelas) ? informe.escuelas[0] : informe.escuelas
     const mes = MESES_ARRAY[informe.periodo_mes - 1] || ''
+    const fecha = new Date().toLocaleDateString('es-SV')
+
+    // Portada ejecutiva
+    doc.setFillColor(...NAVY)
+    doc.rect(0, 0, PAGE_WIDTH, 50, 'F')
+
+    doc.setTextColor(...GOLD)
+    doc.setFontSize(18)
+    doc.setFont('helvetica', 'bold')
+    doc.text('PROGRAMA MI NUEVA ESCUELA', PAGE_WIDTH / 2, 20, { align: 'center' })
+    doc.setFontSize(12)
+    doc.text('INFORME MENSUAL DE SUPERVISIÓN', PAGE_WIDTH / 2, 32, { align: 'center' })
 
     doc.setTextColor(0, 0, 0)
-    doc.setFontSize(9)
+    doc.setFontSize(11)
     doc.setFont('helvetica', 'normal')
+    y = 65
 
-    const datos = [
-      [`Centro Educativo: ${escuela?.nombre || 'N/A'}`, ''],
-      [`Código: ${escuela?.codigo || 'N/A'}`, `Departamento: ${escuela?.departamento || 'N/A'}`],
-      [`Período: ${mes} ${informe.periodo_anio}`, `Estado: ${informe.estado.toUpperCase()}`],
-      [`Empresa Contratista: ${escuela?.empresa_obras || 'N/A'}`, `ID: ${informe.id}`],
-    ]
+    doc.text(`Centro Educativo: ${escuela?.nombre || 'N/A'}`, MARGIN, y)
+    y += 8
+    doc.text(`Código: ${escuela?.codigo || 'N/A'} | Período: ${mes} ${informe.periodo_anio}`, MARGIN, y)
+    y += 8
+    doc.text(`Estado: ${informe.estado.charAt(0).toUpperCase() + informe.estado.slice(1)} | Generado: ${fecha}`, MARGIN, y)
 
-    datos.forEach((row) => {
-      doc.text(row[0], MARGIN, y)
-      if (row[1]) {
-        doc.text(row[1], MARGIN + CONTENT_WIDTH / 2, y)
+    // Obtener datos de todas las condiciones
+    const condiciones = ['c1317', 'hsso', 'garo', 'pgr', 'mcear', 'pppi', 'maqr', 'prt', 'cct', 'cumplimiento_ambiental', 'casos_especiales']
+    const datosCondiciones: Record<string, any> = {}
+
+    for (const cond of condiciones) {
+      const tabla = cond === 'c1317' ? 'informe_c1317' : `informe_${cond}`
+      const { data } = await supabase.from(tabla).select('*').eq('informe_id', informe.id).single()
+      if (data) datosCondiciones[cond] = data
+    }
+
+    // Agregar sección de resumen de condiciones completadas
+    y += 15
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.text('RESUMEN DE CONDICIONES', MARGIN, y)
+    y += 7
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    let condicionesCompletadas = 0
+    const condicionesLabels: Record<string, string> = {
+      'c1317': 'Generales del Informe', 'hsso': 'Higiene y Seguridad',
+      'garo': 'Aguas Residuales', 'pgr': 'Gestión de Residuos',
+      'mcear': 'Emisiones y Ruido', 'pppi': 'Partes Interesadas',
+      'maqr': 'Mecanismo de Quejas', 'prt': 'Plan de Reubicación',
+      'cct': 'Código de Conducta', 'cumplimiento_ambiental': 'Cumplimiento Ambiental',
+      'casos_especiales': 'Casos Especiales'
+    }
+
+    Object.keys(datosCondiciones).forEach(cond => {
+      if (datosCondiciones[cond]) {
+        doc.text(`✓ ${condicionesLabels[cond] || cond}`, MARGIN + 5, y)
+        condicionesCompletadas++
+        y += 6
       }
-      y += 7
     })
 
-    y += 10
-
-    // Nota final
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'italic')
     doc.setTextColor(...GRAY)
-    doc.text('El PDF contiene un resumen del informe mensual de supervisión.', MARGIN, y)
+    doc.setFontSize(8)
+    y += 5
+    doc.text(`Total: ${condicionesCompletadas}/${condiciones.length} condiciones completadas`, MARGIN, y)
 
     // Footer
     doc.setTextColor(...GRAY)
     doc.setFontSize(7)
-    const fecha = new Date().toLocaleDateString('es-SV')
-    doc.text(`Generado: ${fecha}`, MARGIN, PAGE_HEIGHT - 10)
-    doc.text(`Página 1`, PAGE_WIDTH / 2 - 10, PAGE_HEIGHT - 10)
+    doc.text(`Página 1 | ${fecha}`, MARGIN, PAGE_HEIGHT - 8)
 
     const pdfOutput = doc.output('arraybuffer') as ArrayBuffer
     return Buffer.from(pdfOutput)
@@ -125,7 +130,7 @@ export async function POST(request: Request) {
 
     for (const informe of informes) {
       try {
-        const pdfBuffer = generarPDFCompleto(informe)
+        const pdfBuffer = await generarPDFCompleto(informe, supabase)
 
         const escuela = Array.isArray(informe.escuelas) ? informe.escuelas[0] : informe.escuelas
         const mes = String(informe.periodo_mes).padStart(2, '0')
