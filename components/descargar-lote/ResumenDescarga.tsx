@@ -192,7 +192,7 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
           {descargando ? (
             <>
               <Loader2 size={18} className="animate-spin" />
-              Generando ZIP...
+              Descargando PDFs...
             </>
           ) : (
             <>
