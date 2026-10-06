@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { Download, ChevronLeft, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import { Download, ChevronLeft, Loader2, AlertCircle, CheckCircle, ExternalLink } from 'lucide-react'
 import { MESES } from '@/types'
 
 interface ResumenDescargaProps {
@@ -11,87 +11,7 @@ interface ResumenDescargaProps {
 }
 
 export default function ResumenDescarga({ informes, filtros, onBack, onClose }: ResumenDescargaProps) {
-  const [descargando, setDescargando] = useState(false)
-  const [descargandoIndividual, setDescargandoIndividual] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [exito, setExito] = useState(false)
-
-  const descargarPDF = async (informe: any) => {
-    try {
-      const response = await fetch(`/api/informes/${informe.id}/pdf/download`, {
-        method: 'GET',
-      })
-
-      if (!response.ok) {
-        throw new Error(`Error al descargar: ${response.status}`)
-      }
-
-      const pdfBlob = await response.blob()
-
-      if (!pdfBlob || pdfBlob.size === 0) {
-        throw new Error('PDF vacío')
-      }
-
-      // Descargar PDF
-      const url = window.URL.createObjectURL(pdfBlob)
-      const a = document.createElement('a')
-      a.href = url
-
-      // Nombre del archivo con código y período
-      const codigo = informe.escuelas?.codigo || 'CENTRO'
-      const mes = String(informe.periodo_mes).padStart(2, '0')
-      a.download = `Informe_SCAS_${codigo}_${informe.periodo_anio}${mes}.pdf`
-
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido')
-      console.error(err)
-      throw err
-    }
-  }
-
-  const handleDescargarIndividual = async (informe: any) => {
-    setDescargandoIndividual(informe.id)
-    setError(null)
-    try {
-      await descargarPDF(informe)
-    } finally {
-      setDescargandoIndividual(null)
-    }
-  }
-
-  const handleDescargar = async () => {
-    setDescargando(true)
-    setError(null)
-    setExito(false)
-
-    try {
-      // Descargar cada PDF individual
-      for (const informe of informes) {
-        try {
-          await descargarPDF(informe)
-          // Pequeño delay entre descargas para evitar sobrecargar
-          await new Promise(resolve => setTimeout(resolve, 500))
-        } catch (err) {
-          console.warn(`Error descargando ${informe.id}:`, err)
-          continue
-        }
-      }
-
-      setExito(true)
-      setTimeout(() => {
-        onClose()
-      }, 2000)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido')
-      console.error(err)
-    } finally {
-      setDescargando(false)
-    }
-  }
 
   const getTipoDescripcion = () => {
     const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -172,23 +92,15 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
                   <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 px-2 py-1 rounded-full">
                     {inf.estado}
                   </span>
-                  <button
-                    onClick={() => handleDescargarIndividual(inf)}
-                    disabled={descargandoIndividual === inf.id}
-                    className="flex items-center justify-center gap-2 bg-blue-900 text-white px-4 py-2 rounded-xl font-semibold hover:bg-blue-800 transition disabled:opacity-60 text-sm whitespace-nowrap"
+                  <a
+                    href={`/informes/${inf.id}/pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 bg-blue-900 text-white px-4 py-2 rounded-xl font-semibold hover:bg-blue-800 transition text-sm whitespace-nowrap"
                   >
-                    {descargandoIndividual === inf.id ? (
-                      <>
-                        <Loader2 size={16} className="animate-spin" />
-                        Descargando
-                      </>
-                    ) : (
-                      <>
-                        <Download size={16} />
-                        Descargar PDF
-                      </>
-                    )}
-                  </button>
+                    <Download size={16} />
+                    Descargar PDF
+                  </a>
                 </div>
               ))}
             </div>
@@ -223,23 +135,6 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
           className="px-6 py-2 border border-slate-300 dark:border-slate-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
         >
           Atrás
-        </button>
-        <button
-          onClick={handleDescargar}
-          disabled={descargando || informes.length === 0}
-          className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-slate-400 transition flex items-center gap-2"
-        >
-          {descargando ? (
-            <>
-              <Loader2 size={18} className="animate-spin" />
-              Descargando PDFs...
-            </>
-          ) : (
-            <>
-              <Download size={18} />
-              Descargar ({informes.length})
-            </>
-          )}
         </button>
       </div>
     </div>
