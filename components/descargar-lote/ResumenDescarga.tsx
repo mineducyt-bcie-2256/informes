@@ -12,8 +12,56 @@ interface ResumenDescargaProps {
 
 export default function ResumenDescarga({ informes, filtros, onBack, onClose }: ResumenDescargaProps) {
   const [descargando, setDescargando] = useState(false)
+  const [descargandoIndividual, setDescargandoIndividual] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [exito, setExito] = useState(false)
+
+  const descargarPDF = async (informe: any) => {
+    try {
+      const response = await fetch(`/api/informes/${informe.id}/pdf/download`, {
+        method: 'GET',
+      })
+
+      if (!response.ok) {
+        throw new Error(`Error al descargar: ${response.status}`)
+      }
+
+      const pdfBlob = await response.blob()
+
+      if (!pdfBlob || pdfBlob.size === 0) {
+        throw new Error('PDF vacío')
+      }
+
+      // Descargar PDF
+      const url = window.URL.createObjectURL(pdfBlob)
+      const a = document.createElement('a')
+      a.href = url
+
+      // Nombre del archivo con código y período
+      const codigo = informe.escuelas?.codigo || 'CENTRO'
+      const mes = String(informe.periodo_mes).padStart(2, '0')
+      a.download = `Informe_SCAS_${codigo}_${informe.periodo_anio}${mes}.pdf`
+
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error desconocido')
+      console.error(err)
+      throw err
+    }
+  }
+
+  const handleDescargarIndividual = async (informe: any) => {
+    setDescargandoIndividual(informe.id)
+    setError(null)
+    try {
+      await descargarPDF(informe)
+    } finally {
+      setDescargandoIndividual(null)
+    }
+  }
 
   const handleDescargar = async () => {
     setDescargando(true)
@@ -23,39 +71,14 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
     try {
       // Descargar cada PDF individual
       for (const informe of informes) {
-        const response = await fetch(`/api/informes/${informe.id}/pdf/download`, {
-          method: 'GET',
-        })
-
-        if (!response.ok) {
-          console.warn(`Error descargando PDF para ${informe.id}: ${response.status}`)
+        try {
+          await descargarPDF(informe)
+          // Pequeño delay entre descargas para evitar sobrecargar
+          await new Promise(resolve => setTimeout(resolve, 500))
+        } catch (err) {
+          console.warn(`Error descargando ${informe.id}:`, err)
           continue
         }
-
-        const pdfBlob = await response.blob()
-
-        if (!pdfBlob || pdfBlob.size === 0) {
-          console.warn(`PDF vacío para ${informe.id}`)
-          continue
-        }
-
-        // Descargar PDF individual
-        const url = window.URL.createObjectURL(pdfBlob)
-        const a = document.createElement('a')
-        a.href = url
-
-        // Nombre del archivo con código y período
-        const codigo = informe.escuelas?.codigo || 'CENTRO'
-        const mes = String(informe.periodo_mes).padStart(2, '0')
-        a.download = `Informe_SCAS_${codigo}_${informe.periodo_anio}${mes}.pdf`
-
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
-
-        // Pequeño delay entre descargas para evitar sobrecargar
-        await new Promise(resolve => setTimeout(resolve, 500))
       }
 
       setExito(true)
@@ -129,7 +152,7 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
               {informes.map((inf, idx) => (
                 <div
                   key={inf.id}
-                  className={`px-4 py-3 flex items-start gap-3 ${
+                  className={`px-4 py-3 flex items-center gap-3 ${
                     idx % 2 === 0
                       ? 'bg-white dark:bg-slate-800'
                       : 'bg-slate-50 dark:bg-slate-700'
@@ -149,6 +172,23 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
                   <span className="text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-200 px-2 py-1 rounded-full">
                     {inf.estado}
                   </span>
+                  <button
+                    onClick={() => handleDescargarIndividual(inf)}
+                    disabled={descargandoIndividual === inf.id}
+                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:bg-slate-400 transition flex items-center gap-1 whitespace-nowrap"
+                  >
+                    {descargandoIndividual === inf.id ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        Descargando
+                      </>
+                    ) : (
+                      <>
+                        <Download size={14} />
+                        Descargar
+                      </>
+                    )}
+                  </button>
                 </div>
               ))}
             </div>
