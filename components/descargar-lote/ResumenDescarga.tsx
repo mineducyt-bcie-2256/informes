@@ -28,21 +28,6 @@ export default function ResumenDescarga({ informes, filtros, onBack, onClose }: 
     }
   }
 
-  if (exito) {
-    return (
-      <div className="text-center py-12">
-        <div className="mb-4 flex justify-center">
-          <CheckCircle size={64} className="text-green-600" />
-        </div>
-        <h3 className="text-2xl font-bold mb-2 text-green-600">¡Descarga Completada!</h3>
-        <p className="text-slate-600 dark:text-slate-400 mb-4">
-          Se han descargado {informes.length} informe{informes.length !== 1 ? 's' : ''} en formato PDF
-        </p>
-        <p className="text-sm text-slate-500">Cerrando en unos momentos...</p>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Header */}
