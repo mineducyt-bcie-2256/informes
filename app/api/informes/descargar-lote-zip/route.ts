@@ -1,107 +1,29 @@
 import { createClient } from '@/lib/supabase/server'
-import { jsPDF } from 'jspdf'
 import JSZip from 'jszip'
 
 const MESES_ARRAY = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
-function generarPDF(informe: any): Buffer {
-  const pdf = new jsPDF()
-  const pageHeight = pdf.internal.pageSize.getHeight()
-  const pageWidth = pdf.internal.pageSize.getWidth()
-  let yPosition = 20
+async function obtenerPDFCompleto(informe_id: string): Promise<Buffer | null> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('.supabase.co', '.vercel.app') || 'https://informes-nu.vercel.app'
+    const url = `${baseUrl}/api/informes/${informe_id}/pdf/download`
 
-  const escuela = Array.isArray(informe.escuelas) ? informe.escuelas[0] : informe.escuelas
-  const mesNombre = MESES_ARRAY[informe.periodo_mes - 1] || `Mes ${informe.periodo_mes}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'User-Agent': 'vercel-internal-pdf-downloader' }
+    })
 
-  // PORTADA
-  pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(20)
-  pdf.setTextColor(15, 45, 82)
-  pdf.text('PROGRAMA MI NUEVA ESCUELA', pageWidth / 2, 30, { align: 'center' })
-
-  pdf.setFontSize(16)
-  pdf.text('INFORME MENSUAL DE SUPERVISIÓN', pageWidth / 2, 45, { align: 'center' })
-
-  pdf.setFont('Helvetica', 'normal')
-  pdf.setFontSize(11)
-  pdf.setTextColor(200, 169, 81)
-  pdf.text('Implementación de condiciones ambientales y sociales', pageWidth / 2, 58, { align: 'center' })
-  pdf.text('Etapa de construcción', pageWidth / 2, 65, { align: 'center' })
-  pdf.text('Plan Específico de Gestión Ambiental y Social — PEGAS', pageWidth / 2, 72, { align: 'center' })
-
-  // Línea divisora
-  pdf.setDrawColor(200, 169, 81)
-  pdf.setLineWidth(2)
-  pdf.line(30, 80, pageWidth - 30, 80)
-
-  yPosition = 95
-
-  // INFORMACIÓN DEL CENTRO
-  pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(10)
-  pdf.setTextColor(15, 45, 82)
-  pdf.text('Centro Educativo', 20, yPosition)
-  yPosition += 8
-
-  pdf.setFont('Helvetica', 'normal')
-  pdf.setFontSize(9)
-  pdf.setTextColor(64, 64, 64)
-  pdf.text(escuela?.nombre || 'N/A', 25, yPosition)
-  yPosition += 6
-
-  pdf.setFontSize(8)
-  pdf.setTextColor(120, 120, 120)
-  pdf.text(`Código: ${escuela?.codigo || 'N/A'}`, 25, yPosition)
-  yPosition += 5
-  pdf.text(`Supervisión: ${escuela?.empresa_supervision || 'N/A'}`, 25, yPosition)
-  yPosition += 12
-
-  // Línea
-  pdf.setDrawColor(200, 200, 200)
-  pdf.setLineWidth(0.5)
-  pdf.line(20, yPosition, pageWidth - 20, yPosition)
-  yPosition += 8
-
-  // INFORMACIÓN DEL PROYECTO
-  pdf.setFont('Helvetica', 'bold')
-  pdf.setFontSize(10)
-  pdf.setTextColor(15, 45, 82)
-  pdf.text('Información del Proyecto', 20, yPosition)
-  yPosition += 8
-
-  pdf.setFont('Helvetica', 'normal')
-  pdf.setFontSize(8.5)
-  pdf.setTextColor(64, 64, 64)
-
-  const projectInfo = [
-    `Proyecto: Préstamo BCIE No. 2256-SV`,
-    `Código de proyecto: No. 7800`,
-    `Programa: mi Nueva Escuela de El Salvador`,
-    `Período: ${mesNombre} ${informe.periodo_anio}`,
-    `Estado: ${informe.estado?.toUpperCase() || 'N/A'}`,
-  ]
-
-  projectInfo.forEach((line) => {
-    if (yPosition > pageHeight - 40) {
-      pdf.addPage()
-      yPosition = 20
+    if (!response.ok) {
+      console.warn(`[PDF] Error descargando PDF ${informe_id}: ${response.status}`)
+      return null
     }
-    pdf.text(line, 25, yPosition)
-    yPosition += 5
-  })
 
-  // Footer
-  yPosition = pageHeight - 10
-  pdf.setFont('Helvetica', 'normal')
-  pdf.setFontSize(7)
-  pdf.setTextColor(150, 150, 150)
-  pdf.text(
-    `Generado: ${new Date().toLocaleString('es-SV')} | ID: ${informe.id}`,
-    20,
-    yPosition
-  )
-
-  return Buffer.from(pdf.output('arraybuffer'))
+    const arrayBuffer = await response.arrayBuffer()
+    return Buffer.from(arrayBuffer)
+  } catch (err) {
+    console.error(`[PDF] Error obtiendo PDF ${informe_id}:`, err)
+    return null
+  }
 }
 
 export async function POST(request: Request) {
@@ -136,7 +58,14 @@ export async function POST(request: Request) {
 
     for (const informe of informes) {
       try {
-        const pdfBuffer = generarPDF(informe)
+        const pdfBuffer = await obtenerPDFCompleto(informe.id)
+
+        if (!pdfBuffer) {
+          console.warn(`No se pudo obtener PDF para ${informe.id}`)
+          fallidos++
+          continue
+        }
+
         const escuela = Array.isArray(informe.escuelas) ? informe.escuelas[0] : informe.escuelas
         const mes = String(informe.periodo_mes).padStart(2, '0')
         const nombre = `Informe_${informe.periodo_anio}${mes}_${escuela?.codigo || 'CENTRO'}_${escuela?.nombre?.substring(0, 20) || 'Educativo'}.pdf`
@@ -144,7 +73,7 @@ export async function POST(request: Request) {
         zip.file(nombre, pdfBuffer)
         generados++
       } catch (err) {
-        console.error(`Error generando PDF para ${informe.id}:`, err)
+        console.error(`Error descargando PDF para ${informe.id}:`, err)
         fallidos++
       }
     }
