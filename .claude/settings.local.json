@@ -98,7 +98,8 @@
       "PowerShell(node --version)",
       "PowerShell(npm --version)",
       "PowerShell(Get-Command node -ErrorAction SilentlyContinue)",
-      "PowerShell(Get-Command npm -ErrorAction SilentlyContinue)"
+      "PowerShell(Get-Command npm -ErrorAction SilentlyContinue)",
+      "Bash(npx tsc *)"
     ]
   }
 }

@@ -132,7 +132,11 @@ async function generarPDFCompleto(informe: any, supabase: any): Promise<Buffer> 
   doc.setTextColor(0, 0, 0)
   condicionesData.forEach(cond => {
     const completado = condicionesObj[cond.key as keyof typeof condicionesObj]
-    doc.setFillColor(completado ? 220, 250, 220 : 240, 240, 240)
+    if (completado) {
+      doc.setFillColor(220, 250, 220)
+    } else {
+      doc.setFillColor(240, 240, 240)
+    }
     doc.rect(MARGIN, y, CONTENT_WIDTH, 5, 'F')
 
     doc.setTextColor(0, 0, 0)
