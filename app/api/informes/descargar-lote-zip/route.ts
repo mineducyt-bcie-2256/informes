@@ -85,7 +85,8 @@ function generarPDFCompleto(informe: any): Buffer {
     doc.text(`Generado: ${fecha}`, MARGIN, PAGE_HEIGHT - 10)
     doc.text(`Página 1`, PAGE_WIDTH / 2 - 10, PAGE_HEIGHT - 10)
 
-    return Buffer.from(doc.output('arraybuffer'))
+    const pdfOutput = doc.output('arraybuffer') as ArrayBuffer
+    return Buffer.from(pdfOutput)
   } catch (err) {
     console.error(`[PDF] Error generando PDF:`, err)
     throw err
