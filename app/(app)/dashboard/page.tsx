@@ -333,8 +333,11 @@ export default async function DashboardPage({
   const cumpleCriterio  = totalUnidades >= unidadesMinimas && totalUnidadesH > 0 && totalUnidadesM > 0
 
   // ── PGR: residuos ─────────────────────────────────────────────
-  interface MaterialResiduos { nombre: string; peso_kg: number; unidad?: string }
-  interface ResiduoReg { categoria: string; materiales: MaterialResiduos[] }
+  interface MaterialResiduos { nombre: string; peso_kg: number; unidad?: string; manejo?: string }
+  interface ResiduoReg {
+    categoria: string; tipo_residuo: string; materiales: MaterialResiduos[]
+    lugar_acopio?: string; sitio_recepcion?: string
+  }
   let pgrData: { residuos_demolicion: ResiduoReg[]; residuos_construccion: ResiduoReg[] }[] = []
   if (informeIds.length > 0) {
     const { data: rawPgr } = await admin
@@ -345,29 +348,173 @@ export default async function DashboardPage({
   }
 
   const CATEGORIAS_PGR = ['Inertes', 'No Peligrosos', 'Peligrosos'] as const
-  type CategoriaPgr = typeof CATEGORIAS_PGR[number]
 
-  function sumKg(residuos: ResiduoReg[], cat: string) {
-    return residuos
-      .filter(r => r.categoria === cat)
-      .flatMap(r => r.materiales ?? [])
-      .filter(m => !m.unidad || m.unidad === 'kg')
-      .reduce((s, m) => s + (parseFloat(String(m.peso_kg)) || 0), 0)
+  function resumenResiduos(regs: ResiduoReg[]) {
+    const porCategoria: Record<string, { kg: number; nMat: number }> = {}
+    for (const c of CATEGORIAS_PGR) porCategoria[c] = { kg: 0, nMat: 0 }
+    const otrasUnidades: Record<string, number> = {}
+    const porTipo: Record<string, { categoria: string; kg: number; nMat: number }> = {}
+    const materiales: { nombre: string; categoria: string; tipo: string; peso: number; unidad: string; manejo: string }[] = []
+    const acopio = new Set<string>()
+    const recepcion = new Set<string>()
+
+    for (const r of regs) {
+      const cat = r.categoria || 'Sin categoría'
+      if (!porCategoria[cat]) porCategoria[cat] = { kg: 0, nMat: 0 }
+      const tipoKey = `${cat}|${r.tipo_residuo || 'Sin tipo'}`
+      if (!porTipo[tipoKey]) porTipo[tipoKey] = { categoria: cat, kg: 0, nMat: 0 }
+      if (r.lugar_acopio?.trim()) acopio.add(r.lugar_acopio.trim())
+      if (r.sitio_recepcion?.trim()) recepcion.add(r.sitio_recepcion.trim())
+
+      for (const m of r.materiales ?? []) {
+        const peso = parseFloat(String(m.peso_kg)) || 0
+        const unidad = m.unidad || 'kg'
+        porCategoria[cat].nMat++
+        porTipo[tipoKey].nMat++
+        if (unidad === 'kg') {
+          porCategoria[cat].kg += peso
+          porTipo[tipoKey].kg += peso
+        } else {
+          otrasUnidades[unidad] = (otrasUnidades[unidad] ?? 0) + peso
+        }
+        materiales.push({ nombre: m.nombre, categoria: cat, tipo: r.tipo_residuo || 'Sin tipo', peso, unidad, manejo: m.manejo ?? '' })
+      }
+    }
+
+    const totalKg = Object.values(porCategoria).reduce((s, v) => s + v.kg, 0)
+    return {
+      porCategoria, otrasUnidades, totalKg,
+      porTipo: Object.entries(porTipo).map(([k, v]) => ({ tipo: k.split('|')[1], ...v })),
+      materiales,
+      acopio: Array.from(acopio),
+      recepcion: Array.from(recepcion),
+    }
   }
 
-  const pgrDemolicion: Record<CategoriaPgr, number> = {
-    'Inertes':        pgrData.reduce((s, p) => s + sumKg(p.residuos_demolicion ?? [], 'Inertes'), 0),
-    'No Peligrosos':  pgrData.reduce((s, p) => s + sumKg(p.residuos_demolicion ?? [], 'No Peligrosos'), 0),
-    'Peligrosos':     pgrData.reduce((s, p) => s + sumKg(p.residuos_demolicion ?? [], 'Peligrosos'), 0),
+  const regsDemolicion   = pgrData.flatMap(p => p.residuos_demolicion ?? [])
+  const regsConstruccion = pgrData.flatMap(p => p.residuos_construccion ?? [])
+  const resDemolicion    = resumenResiduos(regsDemolicion)
+  const resConstruccion  = resumenResiduos(regsConstruccion)
+  const totalDemolicion   = resDemolicion.totalKg
+  const totalConstruccion = resConstruccion.totalKg
+  const hayPgr = regsDemolicion.length > 0 || regsConstruccion.length > 0
+
+  const COLOR_CAT_PGR: Record<string, { text: string; bg: string; border: string; bar: string }> = {
+    'Inertes':       { text: '#94a3b8', bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.25)', bar: 'rgba(100,116,139,0.7)' },
+    'No Peligrosos': { text: '#10b981', bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.25)',  bar: 'rgba(16,185,129,0.7)' },
+    'Peligrosos':    { text: '#ef4444', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.25)',   bar: 'rgba(239,68,68,0.7)' },
   }
-  const pgrConstruccion: Record<CategoriaPgr, number> = {
-    'Inertes':        pgrData.reduce((s, p) => s + sumKg(p.residuos_construccion ?? [], 'Inertes'), 0),
-    'No Peligrosos':  pgrData.reduce((s, p) => s + sumKg(p.residuos_construccion ?? [], 'No Peligrosos'), 0),
-    'Peligrosos':     pgrData.reduce((s, p) => s + sumKg(p.residuos_construccion ?? [], 'Peligrosos'), 0),
+  const colorCat = (cat: string) => COLOR_CAT_PGR[cat] ?? { text: 'var(--muted)', bg: 'rgba(100,116,139,0.08)', border: 'rgba(100,116,139,0.25)', bar: 'rgba(100,116,139,0.7)' }
+
+  function renderEtapaResiduos(titulo: string, res: ReturnType<typeof resumenResiduos>) {
+    const cardStyle = { background: 'var(--card-bg)', border: '1px solid var(--card-border)' }
+    const sectionTitle = 'text-xs font-semibold uppercase tracking-wide mb-2'
+    const chip = (texto: string, key: string, cat?: string) => {
+      const c = cat ? colorCat(cat) : { text: 'var(--foreground)', bg: 'rgba(14,165,233,0.08)', border: 'rgba(14,165,233,0.25)', bar: '' }
+      return (
+        <span key={key} className="text-xs font-medium px-2.5 py-1 rounded-lg" style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.text }}>{texto}</span>
+      )
+    }
+    const otrasUnidadesTxt = Object.entries(res.otrasUnidades).map(([u, v]) => `${v.toLocaleString()} ${u}`)
+
+    return (
+      <div key={titulo} className="rounded-2xl p-5 flex flex-col gap-5" style={cardStyle}>
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{titulo}</p>
+          <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: 'rgba(100,116,139,0.12)', color: 'var(--muted)' }}>
+            {res.totalKg.toLocaleString()} kg
+          </span>
+        </div>
+
+        <div>
+          <p className={sectionTitle} style={{ color: 'var(--muted)' }}>Categorías</p>
+          <div className="space-y-2">
+            {CATEGORIAS_PGR.map(cat => {
+              const { kg, nMat } = res.porCategoria[cat] ?? { kg: 0, nMat: 0 }
+              const pct = res.totalKg > 0 ? Math.round((kg / res.totalKg) * 100) : 0
+              const c = colorCat(cat)
+              return (
+                <div key={cat} className="flex items-center gap-3">
+                  <span className="text-xs font-semibold w-28 shrink-0" style={{ color: c.text }}>{cat}</span>
+                  <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: c.bg }}>
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: c.bar }} />
+                  </div>
+                  <span className="text-xs font-bold w-44 text-right" style={{ color: 'var(--foreground)' }}>
+                    {kg.toLocaleString()} kg · {nMat} material{nMat !== 1 ? 'es' : ''}
+                  </span>
+                </div>
+              )
+            })}
+            {otrasUnidadesTxt.length > 0 && (
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>Otras unidades: {otrasUnidadesTxt.join(' · ')}</p>
+            )}
+          </div>
+        </div>
+
+        {res.porTipo.length > 0 && (
+          <div>
+            <p className={sectionTitle} style={{ color: 'var(--muted)' }}>Tipo de residuo</p>
+            <div className="space-y-2">
+              {res.porTipo.map(t => (
+                <div key={`${t.categoria}-${t.tipo}`} className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl" style={{ background: colorCat(t.categoria).bg, border: `1px solid ${colorCat(t.categoria).border}` }}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0" style={{ color: colorCat(t.categoria).text, border: `1px solid ${colorCat(t.categoria).border}` }}>{t.categoria}</span>
+                    <span className="text-xs font-medium truncate" style={{ color: 'var(--foreground)' }}>{t.tipo}</span>
+                  </div>
+                  <span className="text-xs font-bold shrink-0" style={{ color: 'var(--foreground)' }}>{t.kg.toLocaleString()} kg · {t.nMat} mat.</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {res.materiales.length > 0 && (
+          <div>
+            <p className={sectionTitle} style={{ color: 'var(--muted)' }}>Materiales presentes en la obra</p>
+            <div className="overflow-x-auto rounded-xl" style={{ border: '1px solid var(--card-border)' }}>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr style={{ background: 'rgba(100,116,139,0.08)', color: 'var(--muted)' }}>
+                    <th className="text-left font-semibold px-3 py-2">Material</th>
+                    <th className="text-left font-semibold px-3 py-2">Categoría</th>
+                    <th className="text-left font-semibold px-3 py-2">Tipo</th>
+                    <th className="text-right font-semibold px-3 py-2">Cantidad</th>
+                    <th className="text-left font-semibold px-3 py-2">Manejo</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {res.materiales.map((m, i) => (
+                    <tr key={i} style={{ borderTop: '1px solid var(--card-border)', color: 'var(--foreground)' }}>
+                      <td className="px-3 py-2 font-medium">{m.nombre}</td>
+                      <td className="px-3 py-2"><span style={{ color: colorCat(m.categoria).text }}>{m.categoria}</span></td>
+                      <td className="px-3 py-2">{m.tipo}</td>
+                      <td className="px-3 py-2 text-right font-bold">{m.peso.toLocaleString()} {m.unidad}</td>
+                      <td className="px-3 py-2">{m.manejo || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <p className={sectionTitle} style={{ color: 'var(--muted)' }}>Lugares de acopio</p>
+            {res.acopio.length > 0
+              ? <div className="flex flex-wrap gap-2">{res.acopio.map((a, i) => chip(a, `ac-${i}`))}</div>
+              : <p className="text-xs" style={{ color: 'var(--muted)' }}>Sin lugares de acopio registrados</p>}
+          </div>
+          <div>
+            <p className={sectionTitle} style={{ color: 'var(--muted)' }}>Sitios de recepción temporal</p>
+            {res.recepcion.length > 0
+              ? <div className="flex flex-wrap gap-2">{res.recepcion.map((r, i) => chip(r, `rc-${i}`))}</div>
+              : <p className="text-xs" style={{ color: 'var(--muted)' }}>Sin sitios de recepción registrados</p>}
+          </div>
+        </div>
+      </div>
+    )
   }
-  const totalDemolicion   = Object.values(pgrDemolicion).reduce((s, v) => s + v, 0)
-  const totalConstruccion = Object.values(pgrConstruccion).reduce((s, v) => s + v, 0)
-  const hayPgr = totalDemolicion > 0 || totalConstruccion > 0
 
   // ── MCEAR: calidad de aire y emisiones ────────────────────────
   interface MedicionAire    { clasificacion: string; actividades: string[]; no_registrado: boolean; pm10: string; pm25: string; ica: string; co2: string }
@@ -1358,74 +1505,9 @@ export default async function DashboardPage({
           </h2>
           <p className="text-sm font-semibold mb-3" style={{ color: 'var(--foreground)' }}>Implementación del plan de gestión de residuos</p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-            {/* Tarjeta: Demolición */}
-            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>
-                  Etapa de demolición y desmontaje
-                </p>
-                <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: 'rgba(100,116,139,0.12)', color: 'var(--muted)' }}>
-                  {totalDemolicion.toLocaleString()} kg
-                </span>
-              </div>
-              <div className="space-y-2 mt-1">
-                {([
-                  { cat: 'Inertes',       color: 'rgba(100,116,139,', border: 'rgba(100,116,139,0.3)', text: '#94a3b8' },
-                  { cat: 'No Peligrosos', color: 'rgba(16,185,129,',  border: 'rgba(16,185,129,0.3)',  text: '#10b981' },
-                  { cat: 'Peligrosos',    color: 'rgba(239,68,68,',   border: 'rgba(239,68,68,0.3)',   text: '#ef4444' },
-                ] as const).map(({ cat, color, border, text }) => {
-                  const kg = pgrDemolicion[cat as CategoriaPgr]
-                  const pct = totalDemolicion > 0 ? Math.round((kg / totalDemolicion) * 100) : 0
-                  return (
-                    <div key={cat} className="flex items-center gap-3">
-                      <span className="text-xs font-semibold w-28 shrink-0" style={{ color: text }}>{cat}</span>
-                      <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: `${color}0.12)` }}>
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `${color}0.7)` }} />
-                      </div>
-                      <span className="text-xs font-bold w-20 text-right" style={{ color: 'var(--foreground)' }}>
-                        {kg > 0 ? `${kg.toLocaleString()} kg` : '—'}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Tarjeta: Construcción */}
-            <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>
-                  Etapa de construcción
-                </p>
-                <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: 'rgba(100,116,139,0.12)', color: 'var(--muted)' }}>
-                  {totalConstruccion.toLocaleString()} kg
-                </span>
-              </div>
-              <div className="space-y-2 mt-1">
-                {([
-                  { cat: 'Inertes',       color: 'rgba(100,116,139,', border: 'rgba(100,116,139,0.3)', text: '#94a3b8' },
-                  { cat: 'No Peligrosos', color: 'rgba(16,185,129,',  border: 'rgba(16,185,129,0.3)',  text: '#10b981' },
-                  { cat: 'Peligrosos',    color: 'rgba(239,68,68,',   border: 'rgba(239,68,68,0.3)',   text: '#ef4444' },
-                ] as const).map(({ cat, color, border, text }) => {
-                  const kg = pgrConstruccion[cat as CategoriaPgr]
-                  const pct = totalConstruccion > 0 ? Math.round((kg / totalConstruccion) * 100) : 0
-                  return (
-                    <div key={cat} className="flex items-center gap-3">
-                      <span className="text-xs font-semibold w-28 shrink-0" style={{ color: text }}>{cat}</span>
-                      <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: `${color}0.12)` }}>
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `${color}0.7)` }} />
-                      </div>
-                      <span className="text-xs font-bold w-20 text-right" style={{ color: 'var(--foreground)' }}>
-                        {kg > 0 ? `${kg.toLocaleString()} kg` : '—'}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-
+          <div className="flex flex-col gap-4">
+            {renderEtapaResiduos('Etapa de demolición y desmontaje', resDemolicion)}
+            {renderEtapaResiduos('Etapa de construcción', resConstruccion)}
           </div>
         </div>
       )}
