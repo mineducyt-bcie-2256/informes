@@ -10,7 +10,6 @@ interface FiltrosDashboardProps {
   escuelasDeEmpresa: { id: string; nombre: string }[]
   esRestringido: boolean
   empresaEfectiva: string | null
-  basePath?: string
   filtrosActuales: {
     empresa?: string
     escuela_id?: string
@@ -26,7 +25,6 @@ export default function FiltrosDashboard({
   esRestringido,
   empresaEfectiva,
   filtrosActuales,
-  basePath = '/dashboard',
 }: FiltrosDashboardProps) {
   const router = useRouter()
 
@@ -44,7 +42,7 @@ export default function FiltrosDashboard({
     if (mesDesde) params.append('mes_desde', mesDesde)
     if (mesHasta) params.append('mes_hasta', mesHasta)
 
-    router.push(`${basePath}?${params.toString()}`)
+    router.push(`/dashboard?${params.toString()}`)
   }
 
   const handleLimpiar = () => {
@@ -53,7 +51,7 @@ export default function FiltrosDashboard({
     setMes('')
     setMesDesde('')
     setMesHasta('')
-    router.push(basePath)
+    router.push('/dashboard')
   }
 
   return (

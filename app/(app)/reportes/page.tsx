@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import { FileText, BarChart3, ChevronRight } from 'lucide-react'
 
-type TipoReporte = 'prt' | 'hsso' | 'maqr' | 'pppi' | 'condiciones'
+type TipoReporte = 'prt' | 'hsso' | 'maqr' | 'pppi' | 'residuos'
 
 const TIPOS_REPORTES = [
   {
@@ -38,10 +38,10 @@ const TIPOS_REPORTES = [
     disponible: true,
   },
   {
-    id: 'condiciones' as TipoReporte,
-    nombre: 'Condiciones detalladas - Detalle por condición',
-    descripcion: 'HSSO, GARO, PGR, MCEAR, PPPI, MAQR y Reubicación Temporal',
-    icon: '📑',
+    id: 'residuos' as TipoReporte,
+    nombre: 'Residuos - Plan de Gestión de Residuos',
+    descripcion: 'Categorías, tipos, materiales, acopio y recepción temporal por etapa',
+    icon: '♻️',
     color: 'from-teal-500 to-teal-600',
     disponible: true,
   },
@@ -59,8 +59,8 @@ export default function ReportesPage() {
       router.push('/reportes/maqr')
     } else if (tipo === 'pppi') {
       router.push('/reportes/pppi')
-    } else if (tipo === 'condiciones') {
-      router.push('/reportes/condiciones')
+    } else if (tipo === 'residuos') {
+      router.push('/reportes/residuos')
     }
   }
 
@@ -140,8 +140,8 @@ export default function ReportesPage() {
               <FileText size={24} className="text-blue-600" />
               <p className="text-sm text-slate-600 dark:text-slate-400">Reportes Disponibles</p>
             </div>
-            <p className="text-3xl font-bold">5</p>
-            <p className="text-xs text-slate-500 mt-1">PRT, HSSO, MAQR, PPPI y Condiciones detalladas disponibles</p>
+            <p className="text-3xl font-bold">4</p>
+            <p className="text-xs text-slate-500 mt-1">PRT, HSSO, MAQR y PPPI disponibles</p>
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
