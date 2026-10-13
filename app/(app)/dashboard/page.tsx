@@ -298,15 +298,23 @@ export default async function DashboardPage({
 
   // ── GARO: unidades sanitarias ─────────────────────────────────
   interface UnidadSanitaria { tipo: string; hombres: number; mujeres: number; total: number }
-  let garoData: { unidades_sanitarias: UnidadSanitaria[] }[] = []
+  interface UsoAgua { procedencia: string; procedencia_otro: string; volumen_litros: number }
+  let garoData: { unidades_sanitarias: UnidadSanitaria[]; usos_agua: UsoAgua[] }[] = []
   if (informeIds.length > 0) {
     const { data: rawGaro } = await admin
       .from('informe_garo')
-      .select('unidades_sanitarias')
+      .select('unidades_sanitarias, usos_agua')
       .in('informe_id', informeIds)
     garoData = (rawGaro ?? []) as any[]
   }
   const todasUnidades: UnidadSanitaria[] = garoData.flatMap(g => g.unidades_sanitarias ?? [])
+  const todosUsosAgua: UsoAgua[] = garoData.flatMap(g => g.usos_agua ?? [])
+  const totalVolumenAgua = todosUsosAgua.reduce((s, u) => s + (Number(u.volumen_litros) || 0), 0)
+  const volumenPorProcedencia: Record<string, number> = {}
+  for (const u of todosUsosAgua) {
+    const p = (u.procedencia === 'Otros' ? u.procedencia_otro : u.procedencia) || 'Sin especificar'
+    volumenPorProcedencia[p] = (volumenPorProcedencia[p] ?? 0) + (Number(u.volumen_litros) || 0)
+  }
   const totalUnidades  = todasUnidades.reduce((s, u) => s + (parseInt(String(u.total)) || 0), 0)
   const totalUnidadesH = todasUnidades.reduce((s, u) => s + (parseInt(String(u.hombres)) || 0), 0)
   const totalUnidadesM = todasUnidades.reduce((s, u) => s + (parseInt(String(u.mujeres)) || 0), 0)
@@ -1310,6 +1318,34 @@ export default async function DashboardPage({
             </div>
 
           </div>
+
+          {todosUsosAgua.length > 0 && (
+            <>
+              <p className="text-sm font-semibold mt-6 mb-3" style={{ color: 'var(--foreground)' }}>Manejo de aguas residuales en las actividades del proyecto</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                <div className="rounded-2xl p-5 flex flex-col gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+                  <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>Registros de uso de agua</p>
+                  <p className="text-5xl font-black" style={{ color: 'var(--foreground)' }}>{todosUsosAgua.length}</p>
+                  <div className="mt-auto rounded-xl px-3 py-2" style={{ background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.2)' }}>
+                    <p className="text-xs text-sky-400 font-medium">Volumen total</p>
+                    <p className="text-lg font-bold text-sky-500">{totalVolumenAgua.toLocaleString('es-SV')} L</p>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl p-5 flex flex-col gap-2 md:col-span-2" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--muted)' }}>Volumen por procedencia</p>
+                  {Object.entries(volumenPorProcedencia).map(([proc, litros]) => (
+                    <div key={proc} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.2)' }}>
+                      <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>{proc}</span>
+                      <span className="text-xs font-bold" style={{ color: 'var(--foreground)' }}>{litros.toLocaleString('es-SV')} L</span>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+            </>
+          )}
         </div>
       )}
 
