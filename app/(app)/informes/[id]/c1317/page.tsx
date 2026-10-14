@@ -105,7 +105,7 @@ function EditBlock({
       {editando && (
         <div className="flex justify-end px-4 py-1.5 bg-white border-t border-slate-100">
           <span className={`text-xs ${restantes < 500 ? 'text-amber-500 font-medium' : 'text-slate-400'}`}>
-            {restantes.toLocaleString()} caracteres restantes
+            {restantes.toLocaleString('en-US')} caracteres restantes
           </span>
         </div>
       )}

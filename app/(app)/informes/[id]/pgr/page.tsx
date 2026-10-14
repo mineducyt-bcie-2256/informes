@@ -155,13 +155,13 @@ function SeccionResiduos({ titulo, catalogo, lista, onChange }: SeccionProps) {
                 <span className="opacity-50">·</span>
                 <span>{totalMat} material{totalMat !== 1 ? 'es' : ''}</span>
                 <span className="opacity-50">·</span>
-                <span>{peso.toLocaleString()} kg</span>
+                <span>{peso.toLocaleString('en-US')} kg</span>
               </div>
             )
           })}
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-blue-50 border border-blue-200 text-blue-800 ml-auto">
             <span className="font-semibold">Total:</span>
-            <span>{totalPeso.toLocaleString()} kg</span>
+            <span>{totalPeso.toLocaleString('en-US')} kg</span>
           </div>
         </div>
       )}
@@ -198,7 +198,7 @@ function SeccionResiduos({ titulo, catalogo, lista, onChange }: SeccionProps) {
                           {m.nombre === 'Otro' && m.detalle ? `Otro: ${m.detalle}` : m.nombre}
                         </span>
                         {m.peso_kg > 0 && (
-                          <span className="text-xs bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full">{m.peso_kg.toLocaleString()} {m.unidad ?? 'kg'}</span>
+                          <span className="text-xs bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded-full">{m.peso_kg.toLocaleString('en-US')} {m.unidad ?? 'kg'}</span>
                         )}
                         {m.manejo && <span className="text-xs text-slate-400 italic">Manejo: {m.manejo}</span>}
                       </div>

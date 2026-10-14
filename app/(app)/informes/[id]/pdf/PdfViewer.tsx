@@ -1385,7 +1385,7 @@ function ResumenPGR({ demolicion, construccion }: { demolicion: any[]; construcc
       {/* ── KPIs ── */}
       <View style={s.kpiRow}>
         <View style={s.kpiBox}>
-          <Text style={s.kpiNum}>{sAll.totalKg.toLocaleString()}</Text>
+          <Text style={s.kpiNum}>{sAll.totalKg.toLocaleString('en-US')}</Text>
           <Text style={s.kpiLabel}>{'kg totales\nen residuos'}</Text>
         </View>
         <View style={s.kpiBox}>
@@ -1398,7 +1398,7 @@ function ResumenPGR({ demolicion, construccion }: { demolicion: any[]; construcc
         </View>
         {sAll.m2 > 0 && (
           <View style={[s.kpiBox, { borderColor: AMBER, backgroundColor: '#fffbeb' }]}>
-            <Text style={[s.kpiNum, { color: AMBER }]}>{sAll.m2.toLocaleString()}</Text>
+            <Text style={[s.kpiNum, { color: AMBER }]}>{sAll.m2.toLocaleString('en-US')}</Text>
             <Text style={[s.kpiLabel, { color: AMBER }]}>{'m² asbesto\nidentificados'}</Text>
           </View>
         )}
@@ -1422,7 +1422,7 @@ function ResumenPGR({ demolicion, construccion }: { demolicion: any[]; construcc
                   <View style={{ width: `${pct}%`, height: 12, backgroundColor: CAT_COLOR[cat], borderRadius: 3 }} />
                 </View>
                 <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', width: 90, textAlign: 'right', color: DARK }}>
-                  {kg.toLocaleString()} kg · {pct}%
+                  {kg.toLocaleString('en-US')} kg · {pct}%
                 </Text>
               </View>
             )
@@ -1435,7 +1435,7 @@ function ResumenPGR({ demolicion, construccion }: { demolicion: any[]; construcc
                 <Text style={{ fontSize: 7, color: AMBER, paddingLeft: 4, paddingTop: 2 }}>medido en m²</Text>
               </View>
               <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', width: 90, textAlign: 'right', color: AMBER }}>
-                {sAll.m2.toLocaleString()} m²
+                {sAll.m2.toLocaleString('en-US')} m²
               </Text>
             </View>
           )}
@@ -1466,7 +1466,7 @@ function ResumenPGR({ demolicion, construccion }: { demolicion: any[]; construcc
                           <View style={{ width: 6, height: 6, borderRadius: 1, backgroundColor: CAT_COLOR[cat], marginRight: 4 }} />
                           <Text style={{ fontSize: 7, color: MUTED }}>{cat}</Text>
                         </View>
-                        <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold' }}>{kg.toLocaleString()} kg</Text>
+                        <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold' }}>{kg.toLocaleString('en-US')} kg</Text>
                       </View>
                       <View style={{ height: 7, backgroundColor: '#f1f5f9', borderRadius: 3 }}>
                         <View style={{ width: `${pct}%`, height: 7, backgroundColor: CAT_COLOR[cat], borderRadius: 3 }} />
@@ -1477,7 +1477,7 @@ function ResumenPGR({ demolicion, construccion }: { demolicion: any[]; construcc
                 <View style={{ borderTopWidth: 1, borderTopColor: BORDER, marginTop: 4, paddingTop: 5 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Text style={{ fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: NAVY }}>
-                      {st.totalKg.toLocaleString()} kg{st.m2 > 0 ? ` · ${st.m2} m²` : ''}
+                      {st.totalKg.toLocaleString('en-US')} kg{st.m2 > 0 ? ` · ${st.m2} m²` : ''}
                     </Text>
                     <Text style={{ fontSize: 7, color: MUTED }}>{st.totalMat} materiales</Text>
                   </View>

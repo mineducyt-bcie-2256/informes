@@ -388,14 +388,14 @@ export default async function DashboardPage({
   function renderEtapaResiduos(titulo: string, res: ReturnType<typeof resumenResiduos>) {
     const cardStyle = { background: 'var(--card-bg)', border: '1px solid var(--card-border)' }
     const sectionTitle = 'text-xs font-semibold uppercase tracking-wide mb-2'
-    const otrasUnidadesTxt = Object.entries(res.otrasUnidades).map(([u, v]) => `${v.toLocaleString()} ${u}`)
+    const otrasUnidadesTxt = Object.entries(res.otrasUnidades).map(([u, v]) => `${v.toLocaleString('en-US')} ${u}`)
 
     return (
       <div key={titulo} className="rounded-2xl p-5 flex flex-col gap-5" style={cardStyle}>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{titulo}</p>
           <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: 'rgba(100,116,139,0.12)', color: 'var(--muted)' }}>
-            {res.totalKg.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg
+            {res.totalKg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg
           </span>
         </div>
 
@@ -413,7 +413,7 @@ export default async function DashboardPage({
                     <div className="h-full rounded-full" style={{ width: `${pct}%`, background: c.bar }} />
                   </div>
                   <span className="text-xs font-bold w-44 text-right" style={{ color: 'var(--foreground)' }}>
-                    {kg.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg · {nMat} material{nMat !== 1 ? 'es' : ''}
+                    {kg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg · {nMat} material{nMat !== 1 ? 'es' : ''}
                   </span>
                 </div>
               )
@@ -1387,7 +1387,7 @@ export default async function DashboardPage({
                   <p className="text-5xl font-black" style={{ color: 'var(--foreground)' }}>{todosUsosAgua.length}</p>
                   <div className="mt-auto rounded-xl px-3 py-2" style={{ background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.2)' }}>
                     <p className="text-xs text-sky-400 font-medium">Volumen total</p>
-                    <p className="text-lg font-bold text-sky-500">{totalVolumenAgua.toLocaleString('es-SV')} L</p>
+                    <p className="text-lg font-bold text-sky-500">{totalVolumenAgua.toLocaleString('en-US')} L</p>
                   </div>
                 </div>
 
@@ -1396,7 +1396,7 @@ export default async function DashboardPage({
                   {Object.entries(volumenPorProcedencia).map(([proc, litros]) => (
                     <div key={proc} className="flex items-center justify-between px-3 py-2 rounded-xl" style={{ background: 'rgba(14,165,233,0.08)', border: '1px solid rgba(14,165,233,0.2)' }}>
                       <span className="text-xs font-medium" style={{ color: 'var(--foreground)' }}>{proc}</span>
-                      <span className="text-xs font-bold" style={{ color: 'var(--foreground)' }}>{litros.toLocaleString('es-SV')} L</span>
+                      <span className="text-xs font-bold" style={{ color: 'var(--foreground)' }}>{litros.toLocaleString('en-US')} L</span>
                     </div>
                   ))}
                 </div>
@@ -2070,7 +2070,7 @@ function StatCard({ icon: Icon, color, value, label }: {
         <Icon size={20} className="text-white" />
       </div>
       <div>
-        <p className="text-xl font-bold leading-none" style={{ color: 'var(--foreground)' }}>{value.toLocaleString()}</p>
+        <p className="text-xl font-bold leading-none" style={{ color: 'var(--foreground)' }}>{value.toLocaleString('en-US')}</p>
         <p className="text-xs mt-0.5 leading-tight" style={{ color: 'var(--muted)' }}>{label}</p>
       </div>
     </div>
@@ -2081,7 +2081,7 @@ function MiniStat({ label, value, color }: { label: string; value: number; color
   const c = COLOR_MAP[color] ?? COLOR_MAP.slate
   return (
     <div className="rounded-xl px-3 py-2 text-center" style={{ background: c.gradient }}>
-      <p className="text-lg font-bold text-white leading-none">{value.toLocaleString()}</p>
+      <p className="text-lg font-bold text-white leading-none">{value.toLocaleString('en-US')}</p>
       <p className="text-xs text-white/80 mt-0.5 leading-tight">{label}</p>
     </div>
   )
@@ -2110,7 +2110,7 @@ function DetalleCard({ href, icon: Icon, color, value, label, active }: {
         <Icon size={18} className="text-white" />
       </div>
       <div>
-        <p className="text-3xl font-extrabold text-white leading-none">{value.toLocaleString()}</p>
+        <p className="text-3xl font-extrabold text-white leading-none">{value.toLocaleString('en-US')}</p>
         <p className="text-xs text-white/80 mt-1.5 leading-tight font-medium">{label}</p>
       </div>
       {active && (

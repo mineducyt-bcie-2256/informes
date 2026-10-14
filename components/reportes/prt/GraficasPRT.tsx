@@ -92,13 +92,13 @@ export default function GraficasPRT({ datos }: GraficasPRTProps) {
         <div className="bg-white dark:bg-slate-900 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Total Estudiantes (Presencial)</p>
           <p className="text-3xl font-bold text-green-600">
-            {datos.reduce((sum, d) => sum + (d.total_estudiantes || 0), 0).toLocaleString()}
+            {datos.reduce((sum, d) => sum + (d.total_estudiantes || 0), 0).toLocaleString('en-US')}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-900 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Total Docentes (Presencial)</p>
           <p className="text-3xl font-bold text-purple-600">
-            {datos.reduce((sum, d) => sum + (d.total_docentes || 0), 0).toLocaleString()}
+            {datos.reduce((sum, d) => sum + (d.total_docentes || 0), 0).toLocaleString('en-US')}
           </p>
         </div>
         <div className="bg-white dark:bg-slate-900 rounded-lg p-6 border border-slate-200 dark:border-slate-700">
