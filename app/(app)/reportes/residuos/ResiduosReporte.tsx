@@ -58,6 +58,19 @@ export default function ResiduosReporte() {
   const [escuelas, setEscuelas] = useState<{ id: string; nombre: string; empresa_supervision: string | null }[]>([])
   const [filas, setFilas] = useState<{ etapa: 'Demolición y desmontaje' | 'Construcción'; fila: FilaResiduo }[]>([])
   const [cargando, setCargando] = useState(false)
+  const [catSel, setCatSel] = useState('')
+  const [tipoSel, setTipoSel] = useState('')
+  const [matSel, setMatSel] = useState('')
+  const tiposOpc = useMemo(
+    () => [...new Set(filas.filter(x => !catSel || x.fila.categoria === catSel).map(x => x.fila.tipo))].sort(),
+    [filas, catSel]
+  )
+  const materialesOpc = useMemo(
+    () => [...new Set(filas.filter(x => (!catSel || x.fila.categoria === catSel) && (!tipoSel || x.fila.tipo === tipoSel)).map(x => x.fila.material))].sort(),
+    [filas, catSel, tipoSel]
+  )
+  const pasaFiltro = (x: FilaResiduo) =>
+    (!catSel || x.categoria === catSel) && (!tipoSel || x.tipo === tipoSel) && (!matSel || x.material === matSel)
 
   useEffect(() => {
     supabase
@@ -169,7 +182,7 @@ export default function ResiduosReporte() {
   }
 
   const resumen = (etapa: 'Demolición y desmontaje' | 'Construcción') => {
-    const f = filas.filter(x => x.etapa === etapa).map(x => x.fila)
+    const f = filas.filter(x => x.etapa === etapa && pasaFiltro(x.fila)).map(x => x.fila)
     const porCat: Record<string, { n: number; unidades: Record<string, number> }> = {}
     for (const c of CATEGORIAS) porCat[c] = { n: 0, unidades: {} }
     const porTipo: Record<string, { categoria: string; tipo: string; n: number; unidades: Record<string, number> }> = {}
@@ -231,6 +244,30 @@ export default function ResiduosReporte() {
           <select className={selectCls} value={escuelaId} onChange={e => setEscuelaId(e.target.value)}>
             <option value="">Todos</option>
             {escuelasFiltro.map(e => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+          </select>
+        </label>
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200 p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+          Categoría
+          <select className={selectCls} value={catSel} onChange={e => { setCatSel(e.target.value); setTipoSel(''); setMatSel('') }}>
+            <option value="">Todas</option>
+            {CATEGORIAS.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+          Tipo de residuo
+          <select className={selectCls} value={tipoSel} onChange={e => { setTipoSel(e.target.value); setMatSel('') }}>
+            <option value="">Todos</option>
+            {tiposOpc.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+          Material
+          <select className={selectCls} value={matSel} onChange={e => setMatSel(e.target.value)}>
+            <option value="">Todos</option>
+            {materialesOpc.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
         </label>
       </div>
