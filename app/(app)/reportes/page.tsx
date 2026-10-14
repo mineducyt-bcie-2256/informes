@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import { FileText, BarChart3, ChevronRight } from 'lucide-react'
 
-type TipoReporte = 'prt' | 'hsso' | 'maqr' | 'pppi' | 'residuos'
+type TipoReporte = 'prt' | 'hsso' | 'maqr' | 'pppi' | 'residuos' | 'monitoreo-aire'
 
 const TIPOS_REPORTES = [
   {
@@ -45,6 +45,14 @@ const TIPOS_REPORTES = [
     color: 'from-teal-500 to-teal-600',
     disponible: true,
   },
+  {
+    id: 'monitoreo-aire' as TipoReporte,
+    nombre: 'Monitoreo - Calidad del Aire y Emisiones',
+    descripcion: 'Material particulado, emisiones, COV y contaminación acústica por centro',
+    icon: '🌫️',
+    color: 'from-sky-500 to-sky-600',
+    disponible: true,
+  },
 ]
 
 export default function ReportesPage() {
@@ -61,6 +69,8 @@ export default function ReportesPage() {
       router.push('/reportes/pppi')
     } else if (tipo === 'residuos') {
       router.push('/reportes/residuos')
+    } else if (tipo === 'monitoreo-aire') {
+      router.push('/reportes/monitoreo-aire')
     }
   }
 
