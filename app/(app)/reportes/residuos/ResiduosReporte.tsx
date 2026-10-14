@@ -162,25 +162,38 @@ export default function ResiduosReporte() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anio, mesDesde, mesHasta, supervision, escuelaId])
 
+  const fmtCant = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const textoUnidades = (unidades: Record<string, number>) => {
+    const us = Object.keys(unidades).sort((a, b) => (a === 'kg' ? -1 : b === 'kg' ? 1 : a.localeCompare(b)))
+    return us.length > 0 ? us.map(u => `${fmtCant(unidades[u])} ${u}`).join(' · ') : '0.00 kg'
+  }
+
   const resumen = (etapa: 'Demolición y desmontaje' | 'Construcción') => {
     const f = filas.filter(x => x.etapa === etapa).map(x => x.fila)
-    const porCat = Object.fromEntries(CATEGORIAS.map(c => [c, { kg: 0, n: 0 }])) as Record<string, { kg: number; n: number }>
-    const porTipo: Record<string, { categoria: string; kg: number; n: number }> = {}
+    const porCat: Record<string, { n: number; unidades: Record<string, number> }> = {}
+    for (const c of CATEGORIAS) porCat[c] = { n: 0, unidades: {} }
+    const porTipo: Record<string, { categoria: string; tipo: string; n: number; unidades: Record<string, number> }> = {}
+    const totalesUnidad: Record<string, number> = {}
     const acopio = new Set<string>()
     const recepcion = new Set<string>()
     for (const r of f) {
-      if (!porCat[r.categoria]) porCat[r.categoria] = { kg: 0, n: 0 }
+      if (!porCat[r.categoria]) porCat[r.categoria] = { n: 0, unidades: {} }
       porCat[r.categoria].n++
-      if (r.unidad === 'kg') porCat[r.categoria].kg += r.cantidad
+      porCat[r.categoria].unidades[r.unidad] = (porCat[r.categoria].unidades[r.unidad] ?? 0) + r.cantidad
       const k = `${r.categoria}|${r.tipo}`
-      if (!porTipo[k]) porTipo[k] = { categoria: r.categoria, kg: 0, n: 0 }
+      if (!porTipo[k]) porTipo[k] = { categoria: r.categoria, tipo: r.tipo, n: 0, unidades: {} }
       porTipo[k].n++
-      if (r.unidad === 'kg') porTipo[k].kg += r.cantidad
+      porTipo[k].unidades[r.unidad] = (porTipo[k].unidades[r.unidad] ?? 0) + r.cantidad
+      totalesUnidad[r.unidad] = (totalesUnidad[r.unidad] ?? 0) + r.cantidad
       if (r.acopio) acopio.add(r.acopio)
       if (r.recepcion) recepcion.add(r.recepcion)
     }
-    const totalKg = Object.values(porCat).reduce((s, v) => s + v.kg, 0)
-    return { f, porCat, porTipo: Object.entries(porTipo).map(([k, v]) => ({ tipo: k.split('|')[1], ...v })), acopio: [...acopio], recepcion: [...recepcion], totalKg }
+    const totalesTxt = Object.keys(totalesUnidad).sort((a, b) => (a === 'kg' ? -1 : b === 'kg' ? 1 : a.localeCompare(b)))
+      .map(u => `${fmtCant(totalesUnidad[u])} ${u}`)
+    return {
+      f, porCat, totalesTxt, acopio: [...acopio], recepcion: [...recepcion],
+      porTipo: Object.values(porTipo).map(v => ({ ...v, texto: textoUnidades(v.unidades) })),
+    }
   }
 
   const etapas = ['Demolición y desmontaje', 'Construcción'] as const
@@ -239,7 +252,7 @@ export default function ResiduosReporte() {
           <section key={etapa} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Residuos generados en la etapa de {etapa.toLowerCase()}</h2>
-              <span className="text-sm font-bold px-3 py-1 rounded-lg bg-slate-100 text-slate-700">{r.totalKg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg</span>
+              <div className="flex flex-wrap gap-2">{r.totalesTxt.length > 0 ? r.totalesTxt.map(t => <span key={t} className="text-sm font-bold px-3 py-1 rounded-lg bg-slate-100 text-slate-700">{t}</span>) : <span className="text-sm font-bold px-3 py-1 rounded-lg bg-slate-100 text-slate-700">0.00 kg</span>}</div>
             </div>
 
             <div>
@@ -248,7 +261,7 @@ export default function ResiduosReporte() {
                 {Object.entries(r.porCat).map(([cat, v]) => (
                   <div key={cat} className={`rounded-lg border px-4 py-3 ${COLOR_CAT[cat] ?? 'bg-slate-50 border-slate-200'}`}>
                     <p className="text-xs font-semibold">{cat}</p>
-                    <p className="text-lg font-bold">{v.kg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg</p>
+                    <p className="text-lg font-bold">{textoUnidades(v.unidades)}</p>
                     <p className="text-xs opacity-80">{v.n} material{v.n !== 1 ? 'es' : ''}</p>
                   </div>
                 ))}
@@ -260,14 +273,14 @@ export default function ResiduosReporte() {
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Tipo de residuo</h3>
                 <table className="w-full text-sm">
                   <thead className="text-left text-slate-500 text-xs">
-                    <tr><th className="py-2">Categoría</th><th>Tipo</th><th className="text-right">Kg</th><th className="text-right">Materiales</th></tr>
+                    <tr><th className="py-2">Categoría</th><th>Tipo</th><th className="text-right">Cantidades</th><th className="text-right">Materiales</th></tr>
                   </thead>
                   <tbody>
                     {r.porTipo.map((t, i) => (
                       <tr key={i} className="border-t border-slate-100">
                         <td className="py-2">{t.categoria}</td>
                         <td>{t.tipo}</td>
-                        <td className="text-right font-medium">{t.kg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right font-medium">{t.texto}</td>
                         <td className="text-right">{t.n}</td>
                       </tr>
                     ))}

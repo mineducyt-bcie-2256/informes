@@ -350,24 +350,24 @@ export default async function DashboardPage({
   const CATEGORIAS_PGR = ['Inertes', 'No Peligrosos', 'Peligrosos'] as const
 
   function resumenResiduos(regs: ResiduoReg[]) {
-    const porCategoria: Record<string, { kg: number; nMat: number }> = {}
-    for (const c of CATEGORIAS_PGR) porCategoria[c] = { kg: 0, nMat: 0 }
-    const otrasUnidades: Record<string, number> = {}
+    const porCategoria: Record<string, { nMat: number; unidades: Record<string, number> }> = {}
+    for (const c of CATEGORIAS_PGR) porCategoria[c] = { nMat: 0, unidades: {} }
+    const totalesUnidad: Record<string, number> = {}
 
     for (const r of regs) {
       const cat = r.categoria || 'Sin categoría'
-      if (!porCategoria[cat]) porCategoria[cat] = { kg: 0, nMat: 0 }
+      if (!porCategoria[cat]) porCategoria[cat] = { nMat: 0, unidades: {} }
       for (const m of r.materiales ?? []) {
         const peso = parseFloat(String(m.peso_kg)) || 0
         const unidad = m.unidad || 'kg'
         porCategoria[cat].nMat++
-        if (unidad === 'kg') porCategoria[cat].kg += peso
-        else otrasUnidades[unidad] = (otrasUnidades[unidad] ?? 0) + peso
+        porCategoria[cat].unidades[unidad] = (porCategoria[cat].unidades[unidad] ?? 0) + peso
+        totalesUnidad[unidad] = (totalesUnidad[unidad] ?? 0) + peso
       }
     }
 
-    const totalKg = Object.values(porCategoria).reduce((s, v) => s + v.kg, 0)
-    return { porCategoria, otrasUnidades, totalKg }
+    const totalKg = totalesUnidad['kg'] ?? 0
+    return { porCategoria, totalesUnidad, totalKg }
   }
 
   const regsDemolicion   = pgrData.flatMap(p => p.residuos_demolicion ?? [])
@@ -388,42 +388,45 @@ export default async function DashboardPage({
   function renderEtapaResiduos(titulo: string, res: ReturnType<typeof resumenResiduos>) {
     const cardStyle = { background: 'var(--card-bg)', border: '1px solid var(--card-border)' }
     const sectionTitle = 'text-xs font-semibold uppercase tracking-wide mb-2'
-    const otrasUnidadesTxt = Object.entries(res.otrasUnidades).map(([u, v]) => `${v.toLocaleString('en-US')} ${u}`)
+    const fmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    const ordenUnidades = (us: string[]) => [...us].sort((a, b) => (a === 'kg' ? -1 : b === 'kg' ? 1 : a.localeCompare(b)))
+    const totalesTxt = ordenUnidades(Object.keys(res.totalesUnidad)).map(u => `${fmt(res.totalesUnidad[u])} ${u}`)
 
     return (
       <div key={titulo} className="rounded-2xl p-5 flex flex-col gap-5" style={cardStyle}>
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{titulo}</p>
-          <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: 'rgba(100,116,139,0.12)', color: 'var(--muted)' }}>
-            {res.totalKg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg
-          </span>
+          <div className="flex flex-wrap gap-2">
+            {(totalesTxt.length > 0 ? totalesTxt : ['0.00 kg']).map(t => (
+              <span key={t} className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: 'rgba(100,116,139,0.12)', color: 'var(--muted)' }}>{t}</span>
+            ))}
+          </div>
         </div>
 
         <div>
           <p className={sectionTitle} style={{ color: 'var(--muted)' }}>Categorías</p>
           <div className="space-y-2">
             {CATEGORIAS_PGR.map(cat => {
-              const { kg, nMat } = res.porCategoria[cat] ?? { kg: 0, nMat: 0 }
+              const { nMat, unidades } = res.porCategoria[cat] ?? { nMat: 0, unidades: {} }
+              const kg = unidades['kg'] ?? 0
               const pct = res.totalKg > 0 ? Math.round((kg / res.totalKg) * 100) : 0
               const c = colorCat(cat)
+              const detalle = ordenUnidades(Object.keys(unidades)).map(u => `${fmt(unidades[u])} ${u}`)
               return (
                 <div key={cat} className="flex items-center gap-3">
                   <span className="text-xs font-semibold w-28 shrink-0" style={{ color: c.text }}>{cat}</span>
                   <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: c.bg }}>
                     <div className="h-full rounded-full" style={{ width: `${pct}%`, background: c.bar }} />
                   </div>
-                  <span className="text-xs font-bold w-44 text-right" style={{ color: 'var(--foreground)' }}>
-                    {kg.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg · {nMat} material{nMat !== 1 ? 'es' : ''}
+                  <span className="text-xs font-bold text-right" style={{ color: 'var(--foreground)' }}>
+                    {(detalle.length > 0 ? detalle : ['0.00 kg']).join(' · ')} · {nMat} material{nMat !== 1 ? 'es' : ''}
                   </span>
                 </div>
               )
             })}
-            {otrasUnidadesTxt.length > 0 && (
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>Otras unidades: {otrasUnidadesTxt.join(' · ')}</p>
-            )}
           </div>
         </div>
-          </div>
+      </div>
     )
   }
 
