@@ -91,6 +91,58 @@ export default function PartesInteresadasReporte() {
     [escuelas, supervision]
   )
 
+  const [socs, setSocs] = useState<{ escuela: string; numero: string; fecha: string; comentarios: string }[]>([])
+
+  useEffect(() => {
+    let activo = true
+    const cargarSocializaciones = async () => {
+      let q = supabase
+        .from('informes')
+        .select('id, escuelas(codigo, nombre, empresa_supervision)')
+        .eq('estado', 'aprobado')
+      if (escuelaId) q = q.eq('escuela_id', escuelaId)
+      const { data: informes } = await q
+      const lista = ((informes ?? []) as unknown as { id: string; escuelas: EscuelaRef | EscuelaRef[] | null }[]).filter(i => {
+        if (!supervision) return true
+        const esc = Array.isArray(i.escuelas) ? i.escuelas[0] : i.escuelas
+        return esc?.empresa_supervision === supervision
+      })
+      if (lista.length === 0) { if (activo) setSocs([]); return }
+
+      const { data: pppi } = await supabase
+        .from('informe_pppi')
+        .select('informe_id, socializacion1_fecha, socializacion2_fecha, socializacion3_fecha, comentarios_socializacion')
+        .in('informe_id', lista.map(i => i.id))
+
+      const inicio = `${anio}-${String(mesDesde).padStart(2, '0')}-01`
+      const ultimoDia = new Date(anio, mesHasta, 0).getDate()
+      const fin = `${anio}-${String(mesHasta).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`
+      const porInforme = new Map(lista.map(i => [i.id, i]))
+      const out: { escuela: string; numero: string; fecha: string; comentarios: string }[] = []
+      const campos: [string, string][] = [
+        ['socializacion1_fecha', 'Primera'], ['socializacion2_fecha', 'Segunda'], ['socializacion3_fecha', 'Tercera'],
+      ]
+
+      for (const p of (pppi ?? []) as unknown as Record<string, string | null>[]) {
+        const inf = porInforme.get(String(p.informe_id))
+        if (!inf) continue
+        const esc = Array.isArray(inf.escuelas) ? inf.escuelas[0] : inf.escuelas
+        const escuela = esc ? `${esc.nombre} (${esc.codigo})` : '—'
+        for (const [campo, numero] of campos) {
+          const fecha = p[campo]?.split('T')[0] ?? ''
+          if (fecha && fecha >= inicio && fecha <= fin) {
+            out.push({ escuela, numero, fecha, comentarios: p.comentarios_socializacion ?? '' })
+          }
+        }
+      }
+      out.sort((a, b) => a.fecha.localeCompare(b.fecha))
+      if (activo) setSocs(out)
+    }
+    cargarSocializaciones()
+    return () => { activo = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anio, mesDesde, mesHasta, supervision, escuelaId])
+
   useEffect(() => {
     let activo = true
     const cargar = async () => {
@@ -170,7 +222,7 @@ export default function PartesInteresadasReporte() {
   }, [anio, mesDesde, mesHasta, supervision, escuelaId])
 
   const totales = useMemo(() => {
-    const t = { matricula: 0, asistencia: 0, inasistencias: 0, deserciones: 0, empDirH: 0, empDirM: 0, empIndH: 0, empIndM: 0, socs: 0 }
+    const t = { matricula: 0, asistencia: 0, inasistencias: 0, deserciones: 0, empDirH: 0, empDirM: 0, empIndH: 0, empIndM: 0 }
     for (const f of filas) {
       t.matricula += f.matricula
       t.asistencia += f.asistencia
@@ -178,7 +230,6 @@ export default function PartesInteresadasReporte() {
       t.deserciones += f.deserciones
       t.empDirH += f.empDirH; t.empDirM += f.empDirM
       t.empIndH += f.empIndH; t.empIndM += f.empIndM
-      t.socs += [f.soc1, f.soc2, f.soc3].filter(s => s !== '—').length
     }
     return t
   }, [filas])
@@ -186,10 +237,9 @@ export default function PartesInteresadasReporte() {
   const exportarExcel = () => {
     const libro = XLSX.utils.book_new()
     const hojaPartes = partes.map(p => ({ 'Parte interesada': p.label, 'Hombres': p.hombres, 'Mujeres': p.mujeres, 'Total': p.hombres + p.mujeres }))
-    const hojaSoc = filas.map(f => ({
-      'Centro escolar': f.escuela, 'Periodo': f.periodo,
-      'Socialización 1': f.soc1, 'Socialización 2': f.soc2, 'Socialización 3': f.soc3,
-      'Comentarios': f.comentarios,
+    const hojaSoc = socs.map(s => ({
+      'Centro escolar': s.escuela, 'Socialización': s.numero, 'Fecha': s.fecha,
+      'Comentarios': s.comentarios,
     }))
     const hojaInd = filas.map(f => ({
       'Centro escolar': f.escuela, 'Periodo': f.periodo,
@@ -315,31 +365,27 @@ export default function PartesInteresadasReporte() {
           <section className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
             <h2 className="text-lg font-bold text-slate-900">Socializaciones</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Kpi titulo="Socializaciones realizadas" valor={fmtN(totales.socs)} color="bg-indigo-50 border-indigo-200 text-indigo-800" />
-              <Kpi titulo="Centros con socialización 1" valor={fmtN(filas.filter(f => f.soc1 !== '—').length)} color="bg-slate-50 border-slate-200 text-slate-700" />
-              <Kpi titulo="Centros con socialización 2 o 3" valor={fmtN(filas.filter(f => f.soc2 !== '—' || f.soc3 !== '—').length)} color="bg-slate-50 border-slate-200 text-slate-700" />
+              <Kpi titulo="Socializaciones en el periodo" valor={fmtN(socs.length)} color="bg-indigo-50 border-indigo-200 text-indigo-800" />
+              <Kpi titulo="Centros con socialización" valor={fmtN(new Set(socs.map(s => s.escuela)).size)} color="bg-slate-50 border-slate-200 text-slate-700" />
+              <Kpi titulo="Fechas con registro" valor={fmtN(new Set(socs.map(s => s.fecha)).size)} color="bg-slate-50 border-slate-200 text-slate-700" />
             </div>
             <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-left text-slate-500 text-xs">
                   <tr>
                     <th className="px-3 py-2">Centro escolar</th>
-                    <th className="px-3 py-2">Periodo</th>
-                    <th className="px-3 py-2">Socialización 1</th>
-                    <th className="px-3 py-2">Socialización 2</th>
-                    <th className="px-3 py-2">Socialización 3</th>
+                    <th className="px-3 py-2">Socialización</th>
+                    <th className="px-3 py-2">Fecha</th>
                     <th className="px-3 py-2">Comentarios</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filas.map((f, i) => (
+                  {socs.map((s, i) => (
                     <tr key={i} className="border-t border-slate-100 align-top">
-                      <td className="px-3 py-2">{f.escuela}</td>
-                      <td className="px-3 py-2">{f.periodo}</td>
-                      <td className="px-3 py-2">{f.soc1}</td>
-                      <td className="px-3 py-2">{f.soc2}</td>
-                      <td className="px-3 py-2">{f.soc3}</td>
-                      <td className="px-3 py-2 text-slate-600">{f.comentarios || '—'}</td>
+                      <td className="px-3 py-2">{s.escuela}</td>
+                      <td className="px-3 py-2">{s.numero}</td>
+                      <td className="px-3 py-2">{s.fecha}</td>
+                      <td className="px-3 py-2 text-slate-600">{s.comentarios || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
