@@ -2,7 +2,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MESES } from '@/types'
-import { Loader2 } from 'lucide-react'
+import { Loader2, FileSpreadsheet } from 'lucide-react'
+import * as XLSX from 'xlsx'
 
 interface Material { nombre: string; peso_kg: number; unidad?: string; manejo?: string }
 interface ResiduoReg {
@@ -209,6 +210,28 @@ export default function ResiduosReporte() {
     }
   }
 
+  const exportarExcel = () => {
+    const libro = XLSX.utils.book_new()
+    for (const etapa of ['Demolición y desmontaje', 'Construcción'] as const) {
+      const filasEtapa = filas.filter(x => x.etapa === etapa).map(x => ({
+        'Centro escolar': x.fila.escuela,
+        'Periodo': x.fila.periodo,
+        'Categoría': x.fila.categoria,
+        'Tipo de residuo': x.fila.tipo,
+        'Material': x.fila.material,
+        'Cantidad': x.fila.cantidad,
+        'Unidad': x.fila.unidad,
+        'Manejo': x.fila.manejo,
+        'Lugar de acopio': x.fila.acopio,
+        'Sitio de recepción temporal': x.fila.recepcion,
+      }))
+      const hoja = XLSX.utils.json_to_sheet(filasEtapa.length > 0 ? filasEtapa : [{ 'Sin registros': '' }])
+      XLSX.utils.book_append_sheet(libro, hoja, etapa)
+    }
+    const periodo = mesDesde === mesHasta ? `${MESES[mesDesde - 1]}_${anio}` : `${MESES[mesDesde - 1]}-${MESES[mesHasta - 1]}_${anio}`
+    XLSX.writeFile(libro, `Residuos_${periodo}.xlsx`)
+  }
+
   const etapas = ['Demolición y desmontaje', 'Construcción'] as const
 
   return (
@@ -270,6 +293,18 @@ export default function ResiduosReporte() {
             {materialesOpc.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
         </label>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={exportarExcel}
+          disabled={cargando || filas.length === 0}
+          className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition disabled:opacity-50"
+        >
+          <FileSpreadsheet size={16} />
+          Descargar Excel
+        </button>
       </div>
 
       {cargando && (
