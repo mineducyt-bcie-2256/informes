@@ -239,7 +239,7 @@ export default function ResiduosReporte() {
           <section key={etapa} className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold text-slate-900">Residuos generados en la etapa de {etapa.toLowerCase()}</h2>
-              <span className="text-sm font-bold px-3 py-1 rounded-lg bg-slate-100 text-slate-700">{r.totalKg.toLocaleString()} kg</span>
+              <span className="text-sm font-bold px-3 py-1 rounded-lg bg-slate-100 text-slate-700">{r.totalKg.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg</span>
             </div>
 
             <div>
@@ -248,7 +248,7 @@ export default function ResiduosReporte() {
                 {Object.entries(r.porCat).map(([cat, v]) => (
                   <div key={cat} className={`rounded-lg border px-4 py-3 ${COLOR_CAT[cat] ?? 'bg-slate-50 border-slate-200'}`}>
                     <p className="text-xs font-semibold">{cat}</p>
-                    <p className="text-lg font-bold">{v.kg.toLocaleString()} kg</p>
+                    <p className="text-lg font-bold">{v.kg.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg</p>
                     <p className="text-xs opacity-80">{v.n} material{v.n !== 1 ? 'es' : ''}</p>
                   </div>
                 ))}
@@ -267,7 +267,7 @@ export default function ResiduosReporte() {
                       <tr key={i} className="border-t border-slate-100">
                         <td className="py-2">{t.categoria}</td>
                         <td>{t.tipo}</td>
-                        <td className="text-right font-medium">{t.kg.toLocaleString()}</td>
+                        <td className="text-right font-medium">{t.kg.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td className="text-right">{t.n}</td>
                       </tr>
                     ))}
@@ -299,7 +299,7 @@ export default function ResiduosReporte() {
                         <td className="px-3 py-2">{x.categoria}</td>
                         <td className="px-3 py-2">{x.tipo}</td>
                         <td className="px-3 py-2 font-medium">{x.material}</td>
-                        <td className="px-3 py-2 text-right">{x.cantidad.toLocaleString()} {x.unidad}</td>
+                        <td className="px-3 py-2 text-right">{x.cantidad.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {x.unidad}</td>
                         <td className="px-3 py-2">{x.manejo || '—'}</td>
                       </tr>
                     ))}

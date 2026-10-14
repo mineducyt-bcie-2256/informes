@@ -395,7 +395,7 @@ export default async function DashboardPage({
         <div className="flex items-center justify-between flex-wrap gap-2">
           <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--muted)' }}>{titulo}</p>
           <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ background: 'rgba(100,116,139,0.12)', color: 'var(--muted)' }}>
-            {res.totalKg.toLocaleString()} kg
+            {res.totalKg.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg
           </span>
         </div>
 
@@ -413,7 +413,7 @@ export default async function DashboardPage({
                     <div className="h-full rounded-full" style={{ width: `${pct}%`, background: c.bar }} />
                   </div>
                   <span className="text-xs font-bold w-44 text-right" style={{ color: 'var(--foreground)' }}>
-                    {kg.toLocaleString()} kg · {nMat} material{nMat !== 1 ? 'es' : ''}
+                    {kg.toLocaleString('es-SV', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg · {nMat} material{nMat !== 1 ? 'es' : ''}
                   </span>
                 </div>
               )
