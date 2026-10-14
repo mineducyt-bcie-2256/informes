@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import { FileText, BarChart3, ChevronRight } from 'lucide-react'
 
-type TipoReporte = 'prt' | 'hsso' | 'maqr' | 'pppi' | 'residuos' | 'monitoreo-aire'
+type TipoReporte = 'prt' | 'hsso' | 'maqr' | 'pppi' | 'residuos' | 'monitoreo-aire' | 'partes-interesadas'
 
 const TIPOS_REPORTES = [
   {
@@ -53,6 +53,14 @@ const TIPOS_REPORTES = [
     color: 'from-sky-500 to-sky-600',
     disponible: true,
   },
+  {
+    id: 'partes-interesadas' as TipoReporte,
+    nombre: 'Condición 5 - Partes Interesadas',
+    descripcion: 'Partes interesadas, socializaciones e indicadores de impacto por centro',
+    icon: '🤝',
+    color: 'from-violet-500 to-violet-600',
+    disponible: true,
+  },
 ]
 
 export default function ReportesPage() {
@@ -71,6 +79,8 @@ export default function ReportesPage() {
       router.push('/reportes/residuos')
     } else if (tipo === 'monitoreo-aire') {
       router.push('/reportes/monitoreo-aire')
+    } else if (tipo === 'partes-interesadas') {
+      router.push('/reportes/partes-interesadas')
     }
   }
 
