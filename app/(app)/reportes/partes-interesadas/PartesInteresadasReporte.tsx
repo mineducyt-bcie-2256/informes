@@ -36,6 +36,8 @@ interface PppiRow {
   indicadores_impacto: Indicadores | null
 }
 
+type PartePorMes = { label: string; hombres: number; mujeres: number; porMes: Record<number, { hombres: number; mujeres: number }> }
+
 const PARTES_LABELS: Record<string, string> = {
   alumnos: 'Alumnos', profesores: 'Profesores', director: 'Director',
   cde: 'CDE', personal: 'Personal del proyecto / trabajadores',
@@ -68,7 +70,7 @@ export default function PartesInteresadasReporte() {
   const [escuelaId, setEscuelaId] = useState('')
   const [supervisiones, setSupervisiones] = useState<string[]>([])
   const [escuelas, setEscuelas] = useState<{ id: string; nombre: string; empresa_supervision: string | null }[]>([])
-  const [partes, setPartes] = useState<{ label: string; hombres: number; mujeres: number }[]>([])
+  const [partes, setPartes] = useState<PartePorMes[]>([])
   const [filas, setFilas] = useState<FilaEscuela[]>([])
   const [cargando, setCargando] = useState(false)
 
@@ -173,7 +175,7 @@ export default function PartesInteresadasReporte() {
         .in('informe_id', lista.map(i => i.id))
 
       const porInforme = new Map(lista.map(i => [i.id, i]))
-      const sumaPartes: Record<string, { label: string; hombres: number; mujeres: number }> = {}
+      const sumaPartes: Record<string, PartePorMes> = {}
       const out: FilaEscuela[] = []
 
       for (const p of (pppi ?? []) as PppiRow[]) {
@@ -184,7 +186,11 @@ export default function PartesInteresadasReporte() {
         for (const [key, val] of Object.entries(p.partes_interesadas ?? {})) {
           if (!val?.activa) continue
           const label = val.label?.trim() || PARTES_LABELS[key] || key
-          if (!sumaPartes[label]) sumaPartes[label] = { label, hombres: 0, mujeres: 0 }
+          if (!sumaPartes[label]) sumaPartes[label] = { label, hombres: 0, mujeres: 0, porMes: {} }
+          const mesPart = inf.periodo_mes
+          if (!sumaPartes[label].porMes[mesPart]) sumaPartes[label].porMes[mesPart] = { hombres: 0, mujeres: 0 }
+          sumaPartes[label].porMes[mesPart].hombres += toNum(val.hombres)
+          sumaPartes[label].porMes[mesPart].mujeres += toNum(val.mujeres)
           sumaPartes[label].hombres += toNum(val.hombres)
           sumaPartes[label].mujeres += toNum(val.mujeres)
         }
@@ -236,7 +242,13 @@ export default function PartesInteresadasReporte() {
 
   const exportarExcel = () => {
     const libro = XLSX.utils.book_new()
-    const hojaPartes = partes.map(p => ({ 'Parte interesada': p.label, 'Hombres': p.hombres, 'Mujeres': p.mujeres, 'Total': p.hombres + p.mujeres }))
+    const hojaPartes = partes.map(p => {
+      const fila: Record<string, string | number> = { 'Parte interesada': p.label }
+      for (const m of mesesRango) fila[`${MESES[m - 1]} H`] = p.porMes[m]?.hombres ?? 0
+      for (const m of mesesRango) fila[`${MESES[m - 1]} M`] = p.porMes[m]?.mujeres ?? 0
+      fila['Total'] = p.hombres + p.mujeres
+      return fila
+    })
     const hojaSoc = socs.map(s => ({
       'Centro escolar': s.escuela, 'Socialización': s.numero, 'Fecha': s.fecha,
       'Comentarios': s.comentarios,
@@ -267,6 +279,7 @@ export default function PartesInteresadasReporte() {
   )
 
   const totalPartes = partes.reduce((s, p) => s + p.hombres + p.mujeres, 0)
+  const mesesRango = Array.from({ length: Math.max(0, mesHasta - mesDesde + 1) }, (_, i) => mesDesde + i)
 
   return (
     <div className="space-y-8">
@@ -340,8 +353,9 @@ export default function PartesInteresadasReporte() {
                   <thead className="bg-slate-50 text-left text-slate-500 text-xs">
                     <tr>
                       <th className="px-3 py-2">Parte interesada</th>
-                      <th className="px-3 py-2 text-right">Hombres</th>
-                      <th className="px-3 py-2 text-right">Mujeres</th>
+                      {mesesRango.map(m => (
+                        <th key={m} className="px-3 py-2 text-right">{MESES[m - 1]}<span className="block font-normal text-slate-400">H / M</span></th>
+                      ))}
                       <th className="px-3 py-2 text-right">Total</th>
                     </tr>
                   </thead>
@@ -349,8 +363,12 @@ export default function PartesInteresadasReporte() {
                     {partes.map(p => (
                       <tr key={p.label} className="border-t border-slate-100">
                         <td className="px-3 py-2 font-medium">{p.label}</td>
-                        <td className="px-3 py-2 text-right">{fmtN(p.hombres)}</td>
-                        <td className="px-3 py-2 text-right">{fmtN(p.mujeres)}</td>
+                        {mesesRango.map(m => {
+                          const v = p.porMes[m]
+                          return (
+                            <td key={m} className="px-3 py-2 text-right">{v ? `${fmtN(v.hombres)} / ${fmtN(v.mujeres)}` : '—'}</td>
+                          )
+                        })}
                         <td className="px-3 py-2 text-right font-bold">{fmtN(p.hombres + p.mujeres)}</td>
                       </tr>
                     ))}
