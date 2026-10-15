@@ -9,6 +9,7 @@ interface Queja {
   medio: string
   fecha_recepcion: string
   fecha_resolucion: string
+  recibida_en_periodo: boolean
   dias_proceso: number
   tipo_queja: string
   origen: string
@@ -125,6 +126,11 @@ export default function QuejasMaqr({
           numero_queja: queja.numero_queja,
           medio: queja.medio || '-',
           fecha_recepcion: queja.fecha_recepcion || '-',
+          recibida_en_periodo: (() => {
+            if (!queja.fecha_recepcion || !inf) return false
+            const [anioR, mesR] = String(queja.fecha_recepcion).split('-').map(Number)
+            return anioR === inf.periodo_anio && mesR >= mesDesdeNum && mesR <= mesHastaNum
+          })(),
           fecha_resolucion: queja.fecha_resolucion || '-',
           dias_proceso: calcularDias(),
           tipo_queja: queja.tipo_queja || '-',
@@ -312,11 +318,18 @@ export default function QuejasMaqr({
       {cargando ? null : quejas.length > 0 ? (
         <>
           {/* Tarjetas de estadísticas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
             {/* Total */}
             <div className="bg-white rounded-lg border border-slate-200 p-3">
               <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1">Total Quejas</p>
               <p className="text-2xl font-bold text-slate-900">{totalQuejas}</p>
+            </div>
+
+            {/* Recibidas en el periodo */}
+            <div className="bg-white rounded-lg border border-slate-200 p-3">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1">Recibidas en el periodo</p>
+              <p className="text-2xl font-bold text-slate-900">{quejas.filter(q => q.recibida_en_periodo).length}</p>
+              <p className="text-[11px] text-slate-500 mt-1">Fecha de recepción dentro del periodo seleccionado</p>
             </div>
 
             {/* Por Estado */}
