@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { MESES } from '@/types'
 import { Loader2, FileSpreadsheet } from 'lucide-react'
 import * as XLSX from 'xlsx'
-import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts'
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from 'recharts'
 
 interface ParteVal { activa: boolean; hombres: number | string; mujeres: number | string; label?: string }
 interface MatriculaAnio { anio: number; ninos: number; ninas: number }
@@ -469,51 +469,67 @@ export default function PartesInteresadasReporte() {
                 {verPromedio ? 'Ocultar promedio del periodo' : 'Calcular promedio del periodo'}
               </button>
             </div>
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-left text-slate-500 text-xs">
-                  <tr>
-                    <th className="px-3 py-2">Indicador</th>
-                    {mesesConDatos.map(m => <th key={m} className="px-3 py-2 text-right">{MESES[m - 1]}</th>)}
-                    {verPromedio && <th className="px-3 py-2 text-right">Promedio del periodo</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {([
-                    ['Matrícula', 'matricula', 'n'],
-                    ['Asistencia', 'asistencia', 'n'],
-                    ['Inasistencias', 'inasistencias', 'n'],
-                    ['Deserciones', 'deserciones', 'n'],
-                    ['Empleos directos — hombres', 'empDirH', 'n'],
-                    ['Empleos directos — mujeres', 'empDirM', 'n'],
-                    ['Empleos indirectos — hombres', 'empIndH', 'n'],
-                    ['Empleos indirectos — mujeres', 'empIndM', 'n'],
-                  ] as const).map(([label, campo]) => (
-                    <tr key={campo} className="border-t border-slate-100">
-                      <td className="px-3 py-2 font-medium">{label}</td>
-                      {mesesConDatos.map(m => <td key={m} className="px-3 py-2 text-right">{fmtN(porMes[m][campo])}</td>)}
-                      {verPromedio && <td className="px-3 py-2 text-right font-bold">{fmtN(Math.round(promedioPeriodo(campo) * 100) / 100)}</td>}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            {mesesConDatos.length > 0 && (
-              <div>
-                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Matrícula por mes</h3>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={mesesConDatos.map(m => ({ mes: MESES[m - 1], matricula: porMes[m].matricula }))}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                      <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => fmtN(v)} />
-                      <Tooltip formatter={(v: number) => fmtN(v)} />
-                      <Line type="monotone" dataKey="matricula" name="Matrícula" stroke="#0284c7" strokeWidth={2} />
-                    </LineChart>
-                  </ResponsiveContainer>
+            {([
+              { key: 'matricula', titulo: 'Matrícula', tipo: 'linea', series: [{ campo: 'matricula', nombre: 'Matrícula', color: '#0284c7' }] },
+              { key: 'asistencia', titulo: 'Asistencia (niños y niñas)', tipo: 'barra', series: [{ campo: 'asistencia', nombre: 'Asistencia', color: '#0ea5e9' }] },
+              { key: 'inasistencias', titulo: 'Inasistencias', tipo: 'barra', series: [{ campo: 'inasistencias', nombre: 'Inasistencias', color: '#f59e0b' }] },
+              { key: 'deserciones', titulo: 'Deserciones', tipo: 'barra', series: [{ campo: 'deserciones', nombre: 'Deserciones', color: '#ef4444' }] },
+              { key: 'empleos_directos', titulo: 'Empleos directos', tipo: 'barra', series: [{ campo: 'empDirH', nombre: 'Hombres', color: '#3b82f6' }, { campo: 'empDirM', nombre: 'Mujeres', color: '#a855f7' }] },
+              { key: 'empleos_indirectos', titulo: 'Empleos indirectos', tipo: 'barra', series: [{ campo: 'empIndH', nombre: 'Hombres', color: '#10b981' }, { campo: 'empIndM', nombre: 'Mujeres', color: '#f43f5e' }] },
+            ] as const).map(ind => (
+              <div key={ind.key} className="space-y-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{ind.titulo}</h3>
+                <div className="overflow-x-auto rounded-lg border border-slate-200">
+                  <table className="w-full text-sm">
+                    <thead className="bg-slate-50 text-left text-slate-500 text-xs">
+                      <tr>
+                        <th className="px-3 py-2">Serie</th>
+                        {mesesConDatos.map(m => <th key={m} className="px-3 py-2 text-right">{MESES[m - 1]}</th>)}
+                        {verPromedio && <th className="px-3 py-2 text-right">Promedio del periodo</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ind.series.map(s => (
+                        <tr key={s.campo} className="border-t border-slate-100">
+                          <td className="px-3 py-2 font-medium">{s.nombre}</td>
+                          {mesesConDatos.map(m => <td key={m} className="px-3 py-2 text-right">{fmtN(porMes[m][s.campo])}</td>)}
+                          {verPromedio && <td className="px-3 py-2 text-right font-bold">{fmtN(Math.round(promedioPeriodo(s.campo) * 100) / 100)}</td>}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+                {mesesConDatos.length > 0 && (
+                  <div className="h-56">
+                    <ResponsiveContainer width="100%" height="100%">
+                      {ind.tipo === 'linea' ? (
+                        <LineChart data={mesesConDatos.map(m => ({ mes: MESES[m - 1], ...Object.fromEntries(ind.series.map(s => [s.campo, porMes[m][s.campo]])) }))}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => fmtN(v)} />
+                          <Tooltip formatter={(v: number) => fmtN(v)} />
+                          <Legend />
+                          {ind.series.map(s => (
+                            <Line key={s.campo} type="monotone" dataKey={s.campo} name={s.nombre} stroke={s.color} strokeWidth={2} />
+                          ))}
+                        </LineChart>
+                      ) : (
+                        <BarChart data={mesesConDatos.map(m => ({ mes: MESES[m - 1], ...Object.fromEntries(ind.series.map(s => [s.campo, porMes[m][s.campo]])) }))}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                          <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
+                          <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => fmtN(v)} />
+                          <Tooltip formatter={(v: number) => fmtN(v)} />
+                          <Legend />
+                          {ind.series.map(s => (
+                            <Bar key={s.campo} dataKey={s.campo} name={s.nombre} fill={s.color} />
+                          ))}
+                        </BarChart>
+                      )}
+                    </ResponsiveContainer>
+                  </div>
+                )}
               </div>
-            )}
+            ))}
             <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-left text-slate-500 text-xs">
