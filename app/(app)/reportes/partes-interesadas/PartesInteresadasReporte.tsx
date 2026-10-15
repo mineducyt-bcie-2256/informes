@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { MESES } from '@/types'
 import { Loader2, FileSpreadsheet } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts'
 
 interface ParteVal { activa: boolean; hombres: number | string; mujeres: number | string; label?: string }
 interface MatriculaAnio { anio: number; ninos: number; ninas: number }
@@ -54,6 +55,7 @@ const sumar = (arr: object[] | undefined, campo: string) =>
 interface FilaEscuela {
   escuela: string
   periodo: string
+  mes: number
   soc1: string; soc2: string; soc3: string
   comentarios: string
   matricula: number; asistencia: number; inasistencias: number; deserciones: number
@@ -196,23 +198,28 @@ export default function PartesInteresadasReporte() {
         }
 
         const ind = p.indicadores_impacto ?? {}
-        const ultimaMatricula = [...(ind.matricula ?? [])].sort((a, b) => b.anio - a.anio)[0]
+        const mesInf = inf.periodo_mes
+        const anioInf = inf.periodo_anio
+        const delMes = <T extends { mes?: number; anio?: number }>(arr: T[] | undefined) =>
+          (arr ?? []).filter(x => x.mes === mesInf && (x.anio === undefined || x.anio === anioInf))
+        const matriculaAnio = (ind.matricula ?? []).find(m => m.anio === anioInf)
         out.push({
           escuela: esc ? `${esc.nombre} (${esc.codigo})` : '—',
-          periodo: `${MESES[inf.periodo_mes - 1]} ${inf.periodo_anio}`,
+          periodo: `${MESES[mesInf - 1]} ${anioInf}`,
+          mes: mesInf,
           soc1: fechaCorta(p.socializacion1_fecha),
           soc2: fechaCorta(p.socializacion2_fecha),
           soc3: fechaCorta(p.socializacion3_fecha),
           comentarios: p.comentarios_socializacion ?? '',
-          matricula: ultimaMatricula ? toNum(ultimaMatricula.ninos) + toNum(ultimaMatricula.ninas) : 0,
-          asistencia: (ind.asistencia ?? []).reduce((s, a) => s + toNum(a.ninos) + toNum(a.ninas), 0),
-          inasistencias: sumar(ind.inasistencias, 'cantidad'),
-          deserciones: sumar(ind.deserciones, 'cantidad'),
-          empDirH: sumar(ind.empleos_directos, 'hombres'),
-          empDirM: sumar(ind.empleos_directos, 'mujeres'),
-          empIndH: sumar(ind.empleos_indirectos, 'hombres'),
-          empIndM: sumar(ind.empleos_indirectos, 'mujeres'),
-          diasEscolares: (ind.dias_escolares ?? []).reduce((s, d) => s + toNum(d.dias), 0),
+          matricula: matriculaAnio ? toNum(matriculaAnio.ninos) + toNum(matriculaAnio.ninas) : 0,
+          asistencia: delMes(ind.asistencia).reduce((s, a) => s + toNum(a.ninos) + toNum(a.ninas), 0),
+          inasistencias: sumar(delMes(ind.inasistencias), 'cantidad'),
+          deserciones: sumar(delMes(ind.deserciones), 'cantidad'),
+          empDirH: sumar(delMes(ind.empleos_directos), 'hombres'),
+          empDirM: sumar(delMes(ind.empleos_directos), 'mujeres'),
+          empIndH: sumar(delMes(ind.empleos_indirectos), 'hombres'),
+          empIndM: sumar(delMes(ind.empleos_indirectos), 'mujeres'),
+          diasEscolares: sumar((ind.dias_escolares ?? []).filter(d => d.anio === anioInf), 'dias'),
         })
       }
 
@@ -227,9 +234,16 @@ export default function PartesInteresadasReporte() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [anio, mesDesde, mesHasta, supervision, escuelaId])
 
-  const totales = useMemo(() => {
-    const t = { matricula: 0, asistencia: 0, inasistencias: 0, deserciones: 0, empDirH: 0, empDirM: 0, empIndH: 0, empIndM: 0 }
+  const mesesRango = Array.from({ length: Math.max(0, mesHasta - mesDesde + 1) }, (_, i) => mesDesde + i)
+  type Indicador = { matricula: number; asistencia: number; inasistencias: number; deserciones: number; empDirH: number; empDirM: number; empIndH: number; empIndM: number }
+  const porMes = useMemo(() => {
+    const out: Record<number, Indicador> = {}
+    for (const m of mesesRango) {
+      out[m] = { matricula: 0, asistencia: 0, inasistencias: 0, deserciones: 0, empDirH: 0, empDirM: 0, empIndH: 0, empIndM: 0 }
+    }
     for (const f of filas) {
+      const t = out[f.mes]
+      if (!t) continue
       t.matricula += f.matricula
       t.asistencia += f.asistencia
       t.inasistencias += f.inasistencias
@@ -237,8 +251,12 @@ export default function PartesInteresadasReporte() {
       t.empDirH += f.empDirH; t.empDirM += f.empDirM
       t.empIndH += f.empIndH; t.empIndM += f.empIndM
     }
-    return t
-  }, [filas])
+    return out
+  }, [filas, mesDesde, mesHasta])
+  const mesesConDatos = mesesRango.filter(m => filas.some(f => f.mes === m))
+  const promedioPeriodo = (campo: keyof Indicador) =>
+    mesesConDatos.length ? mesesConDatos.reduce((s, m) => s + porMes[m][campo], 0) / mesesConDatos.length : 0
+  const [verPromedio, setVerPromedio] = useState(false)
 
   const exportarExcel = () => {
     const libro = XLSX.utils.book_new()
@@ -279,7 +297,6 @@ export default function PartesInteresadasReporte() {
   )
 
   const totalPartes = partes.reduce((s, p) => s + p.hombres + p.mujeres, 0)
-  const mesesRango = Array.from({ length: Math.max(0, mesHasta - mesDesde + 1) }, (_, i) => mesDesde + i)
 
   return (
     <div className="space-y-8">
@@ -413,14 +430,62 @@ export default function PartesInteresadasReporte() {
 
           <section className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
             <h2 className="text-lg font-bold text-slate-900">Indicadores de impacto</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Kpi titulo="Matrícula (último año)" valor={fmtN(totales.matricula)} color="bg-sky-50 border-sky-200 text-sky-800" />
-              <Kpi titulo="Asistencia registrada" valor={fmtN(totales.asistencia)} color="bg-sky-50 border-sky-200 text-sky-800" />
-              <Kpi titulo="Inasistencias" valor={fmtN(totales.inasistencias)} color="bg-amber-50 border-amber-200 text-amber-800" />
-              <Kpi titulo="Deserciones" valor={fmtN(totales.deserciones)} color="bg-red-50 border-red-200 text-red-800" />
-              <Kpi titulo="Empleos directos (H / M)" valor={`${fmtN(totales.empDirH)} / ${fmtN(totales.empDirM)}`} color="bg-emerald-50 border-emerald-200 text-emerald-800" />
-              <Kpi titulo="Empleos indirectos (H / M)" valor={`${fmtN(totales.empIndH)} / ${fmtN(totales.empIndM)}`} color="bg-emerald-50 border-emerald-200 text-emerald-800" />
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <p className="text-sm text-slate-600">Valores de cada mes según lo registrado en su informe. No se acumulan entre meses.</p>
+              <button
+                type="button"
+                onClick={() => setVerPromedio(v => !v)}
+                disabled={mesesConDatos.length === 0}
+                className="border border-slate-300 px-3 py-1.5 rounded-lg text-sm hover:bg-slate-50 disabled:opacity-50"
+              >
+                {verPromedio ? 'Ocultar promedio del periodo' : 'Calcular promedio del periodo'}
+              </button>
             </div>
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 text-left text-slate-500 text-xs">
+                  <tr>
+                    <th className="px-3 py-2">Indicador</th>
+                    {mesesConDatos.map(m => <th key={m} className="px-3 py-2 text-right">{MESES[m - 1]}</th>)}
+                    {verPromedio && <th className="px-3 py-2 text-right">Promedio del periodo</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {([
+                    ['Matrícula', 'matricula', 'n'],
+                    ['Asistencia', 'asistencia', 'n'],
+                    ['Inasistencias', 'inasistencias', 'n'],
+                    ['Deserciones', 'deserciones', 'n'],
+                    ['Empleos directos — hombres', 'empDirH', 'n'],
+                    ['Empleos directos — mujeres', 'empDirM', 'n'],
+                    ['Empleos indirectos — hombres', 'empIndH', 'n'],
+                    ['Empleos indirectos — mujeres', 'empIndM', 'n'],
+                  ] as const).map(([label, campo]) => (
+                    <tr key={campo} className="border-t border-slate-100">
+                      <td className="px-3 py-2 font-medium">{label}</td>
+                      {mesesConDatos.map(m => <td key={m} className="px-3 py-2 text-right">{fmtN(porMes[m][campo])}</td>)}
+                      {verPromedio && <td className="px-3 py-2 text-right font-bold">{fmtN(Math.round(promedioPeriodo(campo) * 100) / 100)}</td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {mesesConDatos.length > 0 && (
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">Matrícula por mes</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={mesesConDatos.map(m => ({ mes: MESES[m - 1], matricula: porMes[m].matricula }))}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
+                      <YAxis tick={{ fontSize: 12 }} tickFormatter={(v: number) => fmtN(v)} />
+                      <Tooltip formatter={(v: number) => fmtN(v)} />
+                      <Line type="monotone" dataKey="matricula" name="Matrícula" stroke="#0284c7" strokeWidth={2} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
             <div className="overflow-x-auto rounded-lg border border-slate-200">
               <table className="w-full text-sm">
                 <thead className="bg-slate-50 text-left text-slate-500 text-xs">
