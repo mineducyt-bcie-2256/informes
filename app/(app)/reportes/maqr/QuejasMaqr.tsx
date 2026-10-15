@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Download, Loader2, ChevronUp, ChevronDown, X, AlertCircle } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts'
 
 interface Queja {
   id: string
@@ -282,6 +283,24 @@ export default function QuejasMaqr({
     porTipo[q.tipo_queja] = (porTipo[q.tipo_queja] || 0) + 1
   })
 
+  const quejasActivasLista = quejas.filter(q => q.estado !== 'Resuelto' && q.estado !== 'Cerrado')
+  const porEstadoActivas: Record<string, number> = {}
+  quejasActivasLista.forEach(q => {
+    porEstadoActivas[q.estado] = (porEstadoActivas[q.estado] || 0) + 1
+  })
+
+  const porEmpresa: { nombre: string; total: number }[] = []
+  const acumEmpresa: Record<string, number> = {}
+  quejas.forEach(q => { acumEmpresa[q.empresa_obras] = (acumEmpresa[q.empresa_obras] || 0) + 1 })
+  Object.entries(acumEmpresa).forEach(([nombre, total]) => porEmpresa.push({ nombre, total }))
+  porEmpresa.sort((a, b) => b.total - a.total)
+
+  const porEscuela: { nombre: string; total: number }[] = []
+  const acumEscuela: Record<string, number> = {}
+  quejas.forEach(q => { acumEscuela[q.escuela_nombre] = (acumEscuela[q.escuela_nombre] || 0) + 1 })
+  Object.entries(acumEscuela).forEach(([nombre, total]) => porEscuela.push({ nombre, total }))
+  porEscuela.sort((a, b) => b.total - a.total)
+
   // Agrupar por origen
   const porOrigen: Record<string, number> = {}
   quejas.forEach(q => {
@@ -325,10 +344,18 @@ export default function QuejasMaqr({
         <>
           {/* Tarjetas de estadísticas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-            {/* Total */}
+            {/* Total activas */}
             <div className="bg-white rounded-lg border border-slate-200 p-3">
-              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1">Total Quejas</p>
-              <p className="text-2xl font-bold text-slate-900">{totalQuejas}</p>
+              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1">Total quejas activas</p>
+              <p className="text-2xl font-bold text-slate-900">{quejasActivasLista.length}</p>
+              <div className="space-y-0.5 text-[11px] mt-1.5">
+                {Object.entries(porEstadoActivas).sort((a, b) => b[1] - a[1]).map(([estado, count]) => (
+                  <div key={estado} className="flex justify-between">
+                    <span className="text-slate-600">{estado}</span>
+                    <span className="font-bold text-slate-900">{count}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Recibidas en el periodo */}
@@ -341,15 +368,8 @@ export default function QuejasMaqr({
             {/* Periodos anteriores */}
             <div className="bg-white rounded-lg border border-slate-200 p-3">
               <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1">De periodos anteriores</p>
-              <p className="text-2xl font-bold text-slate-900">{quejas.filter(q => q.de_periodo_anterior).length}</p>
-              <p className="text-[11px] text-slate-500 mt-1">Fecha de recepción anterior al periodo seleccionado</p>
-            </div>
-
-            {/* Activas */}
-            <div className="bg-white rounded-lg border border-slate-200 p-3">
-              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1">Quejas activas</p>
-              <p className="text-2xl font-bold text-slate-900">{quejas.filter(q => q.estado !== 'Resuelto' && q.estado !== 'Cerrado').length}</p>
-              <p className="text-[11px] text-slate-500 mt-1">Sin resolver ni cerrar</p>
+              <p className="text-2xl font-bold text-slate-900">{quejasActivasLista.filter(q => q.de_periodo_anterior).length}</p>
+              <p className="text-[11px] text-slate-500 mt-1">Recibidas antes del periodo y aún en proceso</p>
             </div>
 
             {/* Por Estado */}
@@ -397,6 +417,21 @@ export default function QuejasMaqr({
               </div>
             </div>
 
+            {/* Origen */}
+            <div className="bg-white rounded-lg border border-slate-200 p-3">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1.5">Origen</p>
+              <div className="space-y-0.5 text-[11px]">
+                {Object.entries(porOrigen)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([origen, count]) => (
+                    <div key={origen} className="flex justify-between items-start">
+                      <span className="text-slate-600 flex-1 truncate pr-1">{origen}</span>
+                      <span className="font-bold text-slate-900 shrink-0">{count}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+
             {/* Nivel Gravedad */}
             <div className="bg-white rounded-lg border border-slate-200 p-3">
               <p className="text-[10px] text-slate-500 font-semibold uppercase mb-1.5">Nivel Gravedad</p>
@@ -414,6 +449,36 @@ export default function QuejasMaqr({
                       <span className="font-bold text-slate-900 shrink-0">{count}</span>
                     </div>
                   ))}
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-2">Distribución de quejas por empresa contratista</p>
+              <div style={{ height: Math.max(180, porEmpresa.length * 36) }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={porEmpresa} layout="vertical" margin={{ left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="nombre" width={200} tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Bar dataKey="total" name="Quejas" fill="#0284c7" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg border border-slate-200 p-4">
+              <p className="text-[10px] text-slate-500 font-semibold uppercase mb-2">Distribución de quejas por centro educativo</p>
+              <div style={{ height: Math.max(180, porEscuela.length * 36) }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={porEscuela} layout="vertical" margin={{ left: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                    <YAxis type="category" dataKey="nombre" width={200} tick={{ fontSize: 11 }} />
+                    <Tooltip />
+                    <Bar dataKey="total" name="Quejas" fill="#7c3aed" />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>
