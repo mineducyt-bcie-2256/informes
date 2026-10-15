@@ -25,6 +25,7 @@ interface InformeRef {
   id: string
   periodo_mes: number
   periodo_anio: number
+  escuela_id: string
   escuelas: EscuelaRef | EscuelaRef[] | null
 }
 interface PppiRow {
@@ -153,7 +154,7 @@ export default function PartesInteresadasReporte() {
       setCargando(true)
       let q = supabase
         .from('informes')
-        .select('id, periodo_mes, periodo_anio, escuelas(codigo, nombre, empresa_supervision)')
+        .select('id, periodo_mes, periodo_anio, escuela_id, escuelas(codigo, nombre, empresa_supervision)')
         .eq('estado', 'aprobado')
         .eq('periodo_anio', anio)
         .gte('periodo_mes', mesDesde)
@@ -177,6 +178,34 @@ export default function PartesInteresadasReporte() {
         .in('informe_id', lista.map(i => i.id))
 
       const porInforme = new Map(lista.map(i => [i.id, i]))
+      const escIds = [...new Set(lista.map(i => i.escuela_id))]
+      const { data: historico } = await supabase
+        .from('informes')
+        .select('id, periodo_mes, periodo_anio, escuela_id')
+        .eq('estado', 'aprobado')
+        .in('escuela_id', escIds)
+      const hist = (historico ?? []) as { id: string; periodo_mes: number; periodo_anio: number; escuela_id: string }[]
+      const { data: pppiHist } = await supabase
+        .from('informe_pppi')
+        .select('informe_id, indicadores_impacto')
+        .in('informe_id', hist.map(h => h.id))
+      const indPorInforme = new Map(
+        ((pppiHist ?? []) as { informe_id: string; indicadores_impacto: Indicadores | null }[]).map(r => [r.informe_id, r.indicadores_impacto])
+      )
+      const primeraMatricula: Record<string, { anio: number; mes: number; valor: number }> = {}
+      for (const h of hist) {
+        const mat = (indPorInforme.get(h.id)?.matricula ?? []).find(m => m.anio === h.periodo_anio)
+        if (!mat) continue
+        const prev = primeraMatricula[h.escuela_id]
+        if (!prev || h.periodo_anio * 12 + h.periodo_mes < prev.anio * 12 + prev.mes) {
+          primeraMatricula[h.escuela_id] = { anio: h.periodo_anio, mes: h.periodo_mes, valor: toNum(mat.ninos) + toNum(mat.ninas) }
+        }
+      }
+      const valorMatriculaVigente = (inf: InformeRef) => {
+        const p = primeraMatricula[inf.escuela_id]
+        if (!p) return 0
+        return inf.periodo_anio * 12 + inf.periodo_mes >= p.anio * 12 + p.mes ? p.valor : 0
+      }
       const sumaPartes: Record<string, PartePorMes> = {}
       const out: FilaEscuela[] = []
 
@@ -202,7 +231,6 @@ export default function PartesInteresadasReporte() {
         const anioInf = inf.periodo_anio
         const delMes = <T extends { mes?: number; anio?: number }>(arr: T[] | undefined) =>
           (arr ?? []).filter(x => x.mes === mesInf && (x.anio === undefined || x.anio === anioInf))
-        const matriculaAnio = (ind.matricula ?? []).find(m => m.anio === anioInf)
         out.push({
           escuela: esc ? `${esc.nombre} (${esc.codigo})` : '—',
           periodo: `${MESES[mesInf - 1]} ${anioInf}`,
@@ -211,7 +239,7 @@ export default function PartesInteresadasReporte() {
           soc2: fechaCorta(p.socializacion2_fecha),
           soc3: fechaCorta(p.socializacion3_fecha),
           comentarios: p.comentarios_socializacion ?? '',
-          matricula: matriculaAnio ? toNum(matriculaAnio.ninos) + toNum(matriculaAnio.ninas) : 0,
+          matricula: valorMatriculaVigente(inf),
           asistencia: delMes(ind.asistencia).reduce((s, a) => s + toNum(a.ninos) + toNum(a.ninas), 0),
           inasistencias: sumar(delMes(ind.inasistencias), 'cantidad'),
           deserciones: sumar(delMes(ind.deserciones), 'cantidad'),
