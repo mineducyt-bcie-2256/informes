@@ -18,11 +18,30 @@ export default function DescargarInformeBtn({ informeId, estado }: DescargarInfo
       if (!response.ok) throw new Error('Error al obtener datos del informe')
       const data = await response.json()
 
+      let mapImageUrl: string | null = data.mapImageUrl ?? null
+      if (mapImageUrl) {
+        try {
+          const r = await fetch(`/api/proxy-image?url=${encodeURIComponent(mapImageUrl)}`)
+          const mapBlob = r.ok ? await r.blob() : null
+          mapImageUrl = mapBlob
+            ? await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onloadend = () => resolve(reader.result as string)
+                reader.onerror = reject
+                reader.readAsDataURL(mapBlob)
+              })
+            : null
+        } catch {
+          mapImageUrl = null
+        }
+      }
+      const dataPdf = { ...data, mapImageUrl }
+
       const [{ pdf }, { InformePDF }] = await Promise.all([
         import('@react-pdf/renderer'),
         import('@/app/(app)/informes/[id]/pdf/PdfViewer'),
       ])
-      const blob = await pdf(<InformePDF data={data} />).toBlob()
+      const blob = await pdf(<InformePDF data={dataPdf} />).toBlob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       const codigo = data.esc?.codigo || 'CENTRO'
