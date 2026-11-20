@@ -14,19 +14,21 @@ export default function DescargarInformeBtn({ informeId, estado }: DescargarInfo
   const handleDescargar = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/informes/${informeId}/pdf/descargar`, {
-        method: 'GET',
-      })
+      const response = await fetch(`/api/informes/${informeId}/pdf/data`)
+      if (!response.ok) throw new Error('Error al obtener datos del informe')
+      const data = await response.json()
 
-      if (!response.ok) {
-        throw new Error('Error al descargar PDF')
-      }
-
-      const blob = await response.blob()
+      const [{ pdf }, { InformePDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/app/(app)/informes/[id]/pdf/PdfViewer'),
+      ])
+      const blob = await pdf(<InformePDF data={data} />).toBlob()
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
+      const codigo = data.esc?.codigo || 'CENTRO'
+      const mes = String(data.informe.periodo_mes).padStart(2, '0')
       a.href = url
-      a.download = `Informe_${informeId}.pdf`
+      a.download = `Informe_SCAS_${codigo}_${data.informe.periodo_anio}${mes}.pdf`
       document.body.appendChild(a)
       a.click()
       window.URL.revokeObjectURL(url)
